@@ -3,8 +3,9 @@
 This plan turns [`sharu_modernization_blueprint.md`](./sharu_modernization_blueprint.md)
 into a concrete, verifiable engineering roadmap, constrained by the stack
 mandated in [`vision.md`](./vision.md): a **pnpm monorepo, TypeScript, Vite,
-Preact, Zustand**, latest versions only, external dependencies only when truly
-warranted.
+Preact**, latest versions only, external dependencies only when truly warranted.
+(`vision.md` also lists Zustand; per the project owner, state is **signals
+everywhere** instead — see §0.)
 
 ## 0. Decisions Driving This Plan
 
@@ -19,7 +20,7 @@ following decisions resolve the tensions and are assumed throughout:
 | **State sync** | `iroh-docs`-style replicated documents own the file allocation tables; conflict resolution is deterministic and decoupled from transport. | Blueprint §4 — state machine consistency. |
 | **Streaming** | All ingestion/egress is stream-based. Raw files are never fully buffered in memory. | Blueprint §4 — memory budgets. |
 | **UI library** | **Cascivo** ([cascivo.com](https://cascivo.com), [docs](https://docs.cascivo.com)) is the mandated frontend component library. | Required. CSS-native, signal-driven, shadcn-style copy-paste components owned in-repo; aligns with the Preact + signals direction. |
-| **UI state model** | **Zustand** owns app/domain/SDK state (sync status, peers, transfers). **`@preact/signals`** (via `@cascivo/core`) owns Cascivo component/view state. | Cascivo forbids `useState/useEffect/useContext/useReducer` and is signal-driven; Zustand stays the domain store. The two meet only at a thin binding layer. |
+| **UI state model** | **Signals everywhere.** `@preact/signals-core` (framework-agnostic) for SDK/domain state; `@preact/signals` for Cascivo view state. **No Zustand.** | One reactive model end-to-end matches Cascivo's signal-driven mandate, removes a dependency, and eliminates a bridge layer. `signals-core` has no Preact dependency, so the SDK stays runtime-agnostic. **Supersedes `vision.md`'s Zustand listing** — deliberate, per project owner. |
 
 ### Justified external dependencies
 
@@ -30,9 +31,10 @@ Per "only if really needed", the dependency budget is deliberately small:
   (optional alternate cipher per blueprint §2.4).
 - **JS/TS**: `preact` (with `@preact/preset-vite` aliasing `react`/`react-dom`
   → `preact/compat`, since Cascivo components are typed as React),
-  `@preact/signals`, `zustand`, `vite`, `typescript`, `vitest`,
-  `@biomejs/biome` (lint+format), `wasm-pack` / `wasm-bindgen` tooling.
-  Tauri 2.0 for the desktop shell.
+  `@preact/signals` (app/view) + `@preact/signals-core` (SDK/domain,
+  framework-agnostic), `vite`, `typescript`, `vitest`, `@biomejs/biome`
+  (lint+format), `wasm-pack` / `wasm-bindgen` tooling. Tauri 2.0 for the
+  desktop shell.
 - **UI (Cascivo)**: runtime packages `@cascivo/core` and `@cascivo/i18n`;
   components are added via the copy-paste/MCP workflow (`npx @cascivo/mcp`,
   `registry.json`) and live in-repo under `apps/web` (we own the code). Theme is
@@ -155,10 +157,10 @@ transfers an encrypted asset browser-to-browser with no manual config.
 - Built entirely from **Cascivo** components (layout primitives, form controls,
   feedback). No bespoke UI where a Cascivo component exists; copy components into
   `src/ui/` via the MCP/registry workflow and own the code.
-- **State split:** Zustand store mirrors SDK domain state (sync status, transfer
-  progress, peer list). Cascivo view state uses `@preact/signals`. A thin binding
-  subscribes Zustand → signals (and dispatches user intents back to the SDK) so
-  the two models never leak into each other.
+- **State:** signals end-to-end. The SDK exposes domain state as
+  `@preact/signals-core` signals (sync status, transfer progress, peer list);
+  the web app consumes them directly with `@preact/signals` and dispatches user
+  intents back to the SDK. No separate store, no bridge layer.
 - Styling via `--cascivo-*` tokens + CSS Modules only — no Tailwind/CSS-in-JS.
   All user-facing strings go through `@cascivo/i18n` (no hardcoded English).
 - Drag-drop ingest UI; minimal, no speculative features.
@@ -251,6 +253,6 @@ proceeds milestone by milestone; later phases must not force changes to the
   aliasing usually suffices, but edge cases (refs, portals, event types) can
   surface. *Mitigation:* validate the compat path in M0 with a representative
   component (form control + portal/overlay) before building UI broadly.
-- **Signals ↔ Zustand boundary** could blur if components reach into the domain
-  store directly. *Mitigation:* enforce the single binding layer; lint against
-  cross-imports.
+- **SDK signal exposure** must stay on `@preact/signals-core` (no `@preact/
+  signals` / Preact import in `packages/sdk`). *Mitigation:* lint against
+  framework imports in the SDK to preserve runtime-agnosticism.
