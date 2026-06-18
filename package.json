@@ -1,0 +1,29 @@
+{
+  "name": "sharu-io-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "lint": "biome ci .",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.0",
+    "@preact/preset-vite": "2.10.5",
+    "@testing-library/preact": "3.2.4",
+    "@vitest/browser": "4.1.9",
+    "@vitest/browser-playwright": "4.1.9",
+    "happy-dom": "20.10.6",
+    "playwright": "1.61.0",
+    "preact": "10.29.2",
+    "typescript": "6.0.3",
+    "vitest": "4.1.9"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "@safu/crypto",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build:wasm": "wasm-pack build ../../crates/safu-crypto --release --target web --out-dir ../../packages/crypto/wasm --out-name safu_crypto",
+    "build": "pnpm build:wasm",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@safu/sdk": "workspace:*",
+    "@types/node": "24.13.2",
+    "typescript": "6.0.3"
+  }
+}

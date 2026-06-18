@@ -110,3 +110,56 @@ Before finishing any task, verify:
 2. Formatting and linting pass.
 3. Type checking passes with zero errors.
 4. All tests pass.
+
+## Part 3 — Project Safu (This Repository's Specialization)
+
+This repo is a modern rewrite of https://github.com/sharu-io: a decentralized,
+zero-knowledge, local-first backup & sync platform. The full vision is in
+[`docs/sharu_modernization_blueprint.md`](docs/sharu_modernization_blueprint.md);
+the build roadmap is in [`docs/implementation-plan.md`](docs/implementation-plan.md).
+Read both before working in this codebase.
+
+### Stack (non-negotiable)
+
+- **pnpm** monorepo, zero-hoisting. **TypeScript** strict everywhere.
+  **Vite** + **Preact** for UI. **Tauri 2.0** for desktop.
+- **State is signals everywhere** (no Zustand — deliberately supersedes
+  `vision.md`): `@preact/signals-core` for runtime-agnostic SDK/domain state,
+  `@preact/signals` for view state. No `useState/useEffect/useContext/
+  useReducer`. `packages/sdk` must import only `@preact/signals-core`, never
+  Preact.
+- UI is built with **Cascivo** ([cascivo.com](https://cascivo.com)) — a
+  CSS-native, signal-driven, shadcn-style React design system. Components are
+  copied in-repo (`apps/web/src/ui`), styled via `--cascivo-*` tokens + CSS
+  Modules (no Tailwind/CSS-in-JS), and run under Preact via `preact/compat`.
+  Strings via `@cascivo/i18n`.
+- P2P transport is **Iroh** (Rust): compiled to **WASM** for web, run natively
+  in Tauri. Crypto is **blueprint-faithful**: BLAKE3, Argon2id, AES-256-GCM.
+- **Latest versions only.** Add an external dependency only when it is truly
+  needed; justify each one in its PR against this constraint.
+
+### Layout
+
+- `apps/web` — Preact SPA (thin UI shell). `apps/desktop` — Tauri wrapper.
+- `packages/crypto` — streaming chunk/hash/encrypt engine (TS over Rust→WASM).
+- `packages/sdk` — runtime-agnostic state machine, ingestion, sync, storage
+  abstraction. **Its public API must not change to accommodate a runtime.**
+- `packages/transport` — Iroh bindings (WASM for web, native for desktop)
+  behind one TS interface. `crates/` — the Rust sources.
+
+### Invariants (enforced by tests, not just convention)
+
+- **Zero-knowledge:** only ciphertext crosses the crypto boundary; keys are
+  never persisted in plaintext.
+- **Streaming only:** never buffer a whole file in memory — use stream
+  pipelines for all crypto/transport.
+- **Deterministic state sync:** conflict resolution lives in replicated
+  documents and is fully decoupled from transport state.
+- **Content addressing:** blocks are addressed by their BLAKE3 hash.
+
+### Working here
+
+- Build phase by phase (M0→M3 in the implementation plan); each milestone has
+  explicit exit criteria — meet them before moving on.
+- CI gates every PR: typecheck, Biome (lint+format), tests, and the WASM build.
+  Zero warnings, zero errors.
