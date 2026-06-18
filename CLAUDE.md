@@ -123,6 +123,12 @@ Read both before working in this codebase.
 
 - **pnpm** monorepo, zero-hoisting. **TypeScript** strict everywhere.
   **Vite** + **Preact** + **Zustand** for UI. **Tauri 2.0** for desktop.
+- UI is built with **Cascivo** ([cascivo.com](https://cascivo.com)) — a
+  CSS-native, signal-driven, shadcn-style React design system. Components are
+  copied in-repo (`apps/web/src/ui`), styled via `--cascivo-*` tokens + CSS
+  Modules (no Tailwind/CSS-in-JS), and run under Preact via `preact/compat`.
+  Cascivo view state uses `@preact/signals` (no `useState/useEffect/useContext/
+  useReducer`); Zustand stays the app/domain store. Strings via `@cascivo/i18n`.
 - P2P transport is **Iroh** (Rust): compiled to **WASM** for web, run natively
   in Tauri. Crypto is **blueprint-faithful**: BLAKE3, Argon2id, AES-256-GCM.
 - **Latest versions only.** Add an external dependency only when it is truly

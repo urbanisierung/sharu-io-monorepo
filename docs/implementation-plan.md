@@ -18,6 +18,8 @@ following decisions resolve the tensions and are assumed throughout:
 | **Runtime parity** | Business logic lives in `packages/sdk` + `packages/crypto` and is **runtime-agnostic**. Web and desktop are thin shells. | Blueprint §1.2 — no duplicated business logic across runtimes. |
 | **State sync** | `iroh-docs`-style replicated documents own the file allocation tables; conflict resolution is deterministic and decoupled from transport. | Blueprint §4 — state machine consistency. |
 | **Streaming** | All ingestion/egress is stream-based. Raw files are never fully buffered in memory. | Blueprint §4 — memory budgets. |
+| **UI library** | **Cascivo** ([cascivo.com](https://cascivo.com), [docs](https://docs.cascivo.com)) is the mandated frontend component library. | Required. CSS-native, signal-driven, shadcn-style copy-paste components owned in-repo; aligns with the Preact + signals direction. |
+| **UI state model** | **Zustand** owns app/domain/SDK state (sync status, peers, transfers). **`@preact/signals`** (via `@cascivo/core`) owns Cascivo component/view state. | Cascivo forbids `useState/useEffect/useContext/useReducer` and is signal-driven; Zustand stays the domain store. The two meet only at a thin binding layer. |
 
 ### Justified external dependencies
 
@@ -26,9 +28,15 @@ Per "only if really needed", the dependency budget is deliberately small:
 - **Rust crates** (compiled to WASM / native): `iroh`, `iroh-blobs`,
   `iroh-docs`, `blake3`, `argon2`, an AES-GCM crate (e.g. `aes-gcm`), `age`
   (optional alternate cipher per blueprint §2.4).
-- **JS/TS**: `preact`, `@preact/signals` (optional), `zustand`, `vite`,
-  `typescript`, `vitest`, `@biomejs/biome` (lint+format), `wasm-pack` /
-  `wasm-bindgen` tooling. Tauri 2.0 for the desktop shell.
+- **JS/TS**: `preact` (with `@preact/preset-vite` aliasing `react`/`react-dom`
+  → `preact/compat`, since Cascivo components are typed as React),
+  `@preact/signals`, `zustand`, `vite`, `typescript`, `vitest`,
+  `@biomejs/biome` (lint+format), `wasm-pack` / `wasm-bindgen` tooling.
+  Tauri 2.0 for the desktop shell.
+- **UI (Cascivo)**: runtime packages `@cascivo/core` and `@cascivo/i18n`;
+  components are added via the copy-paste/MCP workflow (`npx @cascivo/mcp`,
+  `registry.json`) and live in-repo under `apps/web` (we own the code). Theme is
+  driven by `--cascivo-*` CSS custom properties; styling is CSS Modules only.
 
 Everything else must be justified in review against the vision constraint.
 
@@ -40,6 +48,7 @@ Everything else must be justified in review against the vision constraint.
 sharu-io-monorepo/
 ├─ apps/
 │  ├─ web/                # Preact SPA (Vite). Thin UI shell over the SDK.
+│  │  └─ src/ui/          # Cascivo components copied in-repo (.tsx + .module.css).
 │  └─ desktop/            # Tauri 2.0 wrapper. Injects apps/web build; native core.
 ├─ packages/
 │  ├─ crypto/             # Stream chunking, BLAKE3, Argon2id KDF, AES-256-GCM.
@@ -75,8 +84,14 @@ multi-gigabyte payload entirely locally, with verified hash parity.
 - Cargo workspace under `crates/`; `wasm-pack`/`wasm-bindgen` build wired into
   the `packages/crypto` and `packages/transport` build scripts.
 - Biome for lint+format; Vitest configured at the root.
+- `apps/web` Vite app configured with `@preact/preset-vite` (aliases
+  `react`/`react-dom` → `preact/compat` so Cascivo's React-typed components run
+  under Preact). Add `@cascivo/core` + `@cascivo/i18n`; wire the `@cascivo/mcp`
+  registry workflow; import the `--cascivo-*` token theme stylesheet at the app
+  root. CSS Modules enabled (Vite default).
 - **Verify:** `pnpm install && pnpm -r build && pnpm -r typecheck` succeed on an
-  empty skeleton in CI.
+  empty skeleton in CI; a single Cascivo component (e.g. Button) copied into
+  `apps/web/src/ui/` renders and is signal-driven (smoke test).
 
 ### 1.2 Cryptographic block engine (`packages/crypto`)
 - Rust core `safu-crypto` exposing (via wasm-bindgen): chunker, BLAKE3 hash,
@@ -137,10 +152,21 @@ transfers an encrypted asset browser-to-browser with no manual config.
   identically regardless of arrival order.
 
 ### 2.4 Web app shell (`apps/web`)
-- Preact + Zustand. Zustand store mirrors SDK state (sync status, transfer
-  progress, peer list). Drag-drop ingest UI; minimal, no speculative features.
+- Built entirely from **Cascivo** components (layout primitives, form controls,
+  feedback). No bespoke UI where a Cascivo component exists; copy components into
+  `src/ui/` via the MCP/registry workflow and own the code.
+- **State split:** Zustand store mirrors SDK domain state (sync status, transfer
+  progress, peer list). Cascivo view state uses `@preact/signals`. A thin binding
+  subscribes Zustand → signals (and dispatches user intents back to the SDK) so
+  the two models never leak into each other.
+- Styling via `--cascivo-*` tokens + CSS Modules only — no Tailwind/CSS-in-JS.
+  All user-facing strings go through `@cascivo/i18n` (no hardcoded English).
+- Drag-drop ingest UI; minimal, no speculative features.
 - **Verify (e2e):** asset dropped in tab A is chunked, encrypted, signaled via
   relay, pulled by tab B, and reassembled with hash parity — no human config.
+- **Verify (lint):** a check rejects forbidden React hooks
+  (`useState/useEffect/useContext/useReducer`) in Cascivo-derived components and
+  hardcoded user-facing strings.
 
 **Phase 2 exit criteria:** unattended browser-to-browser encrypted transfer
 passing e2e, with the SDK unchanged between Phase 1 and Phase 2 (proving the
@@ -221,3 +247,10 @@ proceeds milestone by milestone; later phases must not force changes to the
   parallelism in workers; measured in M1's round-trip benchmark.
 - **Tauri/Rust toolchain in CI** adds build complexity. *Mitigation:* cache
   Cargo + wasm artifacts; isolate Rust builds to the two `crates/` packages.
+- **Cascivo under Preact:** components are typed as React; `preact/compat`
+  aliasing usually suffices, but edge cases (refs, portals, event types) can
+  surface. *Mitigation:* validate the compat path in M0 with a representative
+  component (form control + portal/overlay) before building UI broadly.
+- **Signals ↔ Zustand boundary** could blur if components reach into the domain
+  store directly. *Mitigation:* enforce the single binding layer; lint against
+  cross-imports.
