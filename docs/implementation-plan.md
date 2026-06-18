@@ -27,18 +27,19 @@ following decisions resolve the tensions and are assumed throughout:
 Per "only if really needed", the dependency budget is deliberately small:
 
 - **Rust crates** (compiled to WASM / native): `iroh`, `iroh-blobs`,
-  `iroh-docs`, `blake3`, `argon2`, an AES-GCM crate (e.g. `aes-gcm`), `age`
-  (optional alternate cipher per blueprint §2.4).
+  `iroh-docs`, `blake3`, `argon2`, an AES-GCM crate (e.g. `aes-gcm`). (`age`
+  is deliberately excluded — no phase has a consumer for it.)
 - **JS/TS**: `preact` (with `@preact/preset-vite` aliasing `react`/`react-dom`
   → `preact/compat`, since Cascivo components are typed as React),
   `@preact/signals` (app/view) + `@preact/signals-core` (SDK/domain,
   framework-agnostic), `vite`, `typescript`, `vitest`, `@biomejs/biome`
   (lint+format), `wasm-pack` / `wasm-bindgen` tooling. Tauri 2.0 for the
   desktop shell.
-- **UI (Cascivo)**: runtime packages `@cascivo/core` and `@cascivo/i18n`;
-  components are added via the copy-paste/MCP workflow (`npx @cascivo/mcp`,
-  `registry.json`) and live in-repo under `apps/web` (we own the code). Theme is
-  driven by `--cascivo-*` CSS custom properties; styling is CSS Modules only.
+- **UI (Cascivo)**: runtime packages `@cascivo/core` and `@cascivo/i18n`
+  ([docs](https://docs.cascivo.com)); components are added via the
+  copy-paste/MCP workflow (`npx @cascivo/mcp`, `registry.json`) and live in-repo
+  under `apps/web` (we own the code). Theme is driven by `--cascivo-*` CSS
+  custom properties; styling is CSS Modules only.
 
 Everything else must be justified in review against the vision constraint.
 
@@ -75,7 +76,7 @@ a stable TS interface rather than on WASM build details.
 
 ---
 
-## 2. Phase 1 — Cryptographic Pipeline & Local Storage
+## Phase 1 — Cryptographic Pipeline & Local Storage
 
 **Goal:** ingest → chunk → hash → encrypt → persist → decrypt → reassemble a
 multi-gigabyte payload entirely locally, with verified hash parity.
@@ -100,14 +101,23 @@ multi-gigabyte payload entirely locally, with verified hash parity.
   Argon2id KDF, AES-256-GCM seal/open.
 - TS API: `createIngestStream(input, key)` → `AsyncIterable<EncryptedBlock>`;
   `createEgressStream(blocks, key)` → reconstructed byte stream.
-- Fixed-size content-defined chunking; per-block BLAKE3 fingerprint; per-block
-  AES-256-GCM with unique nonce; master key derived via Argon2id + secure salt.
+- **Content-defined chunking (CDC)** via a rolling hash (Gear or Rabin
+  fingerprinting, target chunk size 512 KiB–4 MiB); implementation in
+  `safu-crypto`. Per-block BLAKE3 fingerprint.
+- Per-block AES-256-GCM with a **12-byte random nonce** per block (generated
+  by the CSPRNG; collision probability negligible at expected block counts).
+- **Key API:** `createIngestStream(input: ReadableStream, passphrase: string)`.
+  Argon2id is invoked *inside* `packages/crypto` to derive the block-encryption
+  key from `passphrase` + a freshly generated salt stored alongside the block
+  manifest. The passphrase never leaves the caller; the derived key never
+  persists. Argon2id parameters: OWASP interactive profile minimum (m=64 MiB,
+  t=3, p=4); benchmarked and potentially reduced under WASM constraints in M1.
 - **Verify (unit):** known-answer tests for BLAKE3, Argon2id, AES-GCM against
   published vectors; chunk boundaries deterministic; tampered block fails auth.
 
 ### 1.3 Local storage abstraction (`packages/sdk`)
-- `BlockStore` interface: `put(hash, block)`, `get(hash)`, `has(hash)`,
-  `delete(hash)`, `list()`.
+- `BlockStore` interface: `put(hash, block)`, `get(hash)`, `has(hash)`.
+  (`delete` and `list` are deferred to Phase 2 — no Phase 1 consumer.)
 - Implementations: **OPFS** (web, via File System Access API) and **native FS**
   (desktop, via Tauri command bridge). Content-addressed by BLAKE3 hash.
 - **Verify (unit):** round-trip put/get/has against an in-memory fake; OPFS impl
@@ -117,7 +127,7 @@ multi-gigabyte payload entirely locally, with verified hash parity.
 - Integration test: stream a large synthetic payload (size-parameterized;
   multi-GB run gated behind an opt-in flag to keep CI fast) through ingest →
   BlockStore → egress; assert BLAKE3 of output equals input.
-- Assert peak memory stays bounded (streaming, not buffered).
+- Assert peak memory stays bounded (streaming, not buffered). **Memory ceiling:** peak RSS during a 1 GB payload ingestion must not exceed 2× the configured maximum chunk size; integration tests must assert against this bound parametrically.
 - **Verify:** integration test green on web (OPFS) and node targets; memory
   ceiling assertion passes.
 
@@ -126,24 +136,32 @@ round-trip with green unit + integration suites and clean Biome/typecheck.
 
 ---
 
-## 3. Phase 2 — Web App & P2P Synchronization
+## Phase 2 — Web App & P2P Synchronization
 
 **Goal:** a browser client that discovers a peer, syncs allocation tables, and
 transfers an encrypted asset browser-to-browser with no manual config.
 
 ### 2.1 WASM transport bindings (`packages/transport`)
-- Compile Iroh (`iroh`, `iroh-blobs`, `iroh-docs`) to WASM; load inside a Web
-  Worker to keep the main thread free.
-- Web transport: WebRTC data channels (browser↔browser) + WebTransport (QUIC)
-  for browser↔relay.
+- Compile Iroh (`iroh`, `iroh-blobs`, `iroh-docs`) to `wasm32-unknown-unknown`;
+  load inside a Web Worker to keep the main thread free.
+- **Browser transport is relay-only via WebSocket** through Iroh's public relay
+  network (n0.computer). Browsers cannot send raw UDP; direct QUIC/WebTransport
+  peer-to-peer is not available in-browser. End-to-end encryption is preserved;
+  the relay only sees ciphertext. Direct hole-punching is desktop (Phase 3)
+  only.
 - **Verify:** WASM module loads in a worker; a loopback transport test moves a
-  block between two in-process endpoints.
+  block between two in-process endpoints over the relay.
 
 ### 2.2 Pair-wise discovery
 - Ephemeral key-exchange handshake; public keys as addresses (blueprint §1.1).
-- Devices register an ephemeral signature on a relay for rendezvous.
+- Devices register with the **Iroh n0.computer relay network** for rendezvous.
+  No self-hosted relay needed for M2; n0.computer is the default DERP backend.
+- **Shared-passphrase key model:** both devices share the same passphrase
+  out-of-band (e.g. displayed as a QR code or short code). Each device
+  independently runs Argon2id with the same passphrase + block salt to derive
+  the same block-encryption key. No key is transmitted over the wire.
 - **Verify:** two SDK instances complete a handshake and establish an
-  authenticated channel via a test relay.
+  authenticated channel via the n0.computer relay.
 
 ### 2.3 Document sync engine (`packages/sdk`)
 - `iroh-docs`-backed replicated document holds the file allocation table
@@ -171,12 +189,13 @@ transfers an encrypted asset browser-to-browser with no manual config.
   hardcoded user-facing strings.
 
 **Phase 2 exit criteria:** unattended browser-to-browser encrypted transfer
-passing e2e, with the SDK unchanged between Phase 1 and Phase 2 (proving the
-storage/crypto layer is transport-agnostic).
+passing e2e. `packages/sdk` may gain new exports between Phase 1 and Phase 2
+(document sync, peer signals) but must introduce **no breaking changes** to the
+Phase 1 public API (proving the storage/crypto layer is transport-agnostic).
 
 ---
 
-## 4. Phase 3 — Tauri Desktop Wrapper & Persistence Services
+## Phase 3 — Tauri Desktop Wrapper & Persistence Services
 
 **Goal:** continuous background sync, native filesystem indexing, and direct
 UDP hole-punching outside browser constraints.
@@ -235,14 +254,20 @@ desktop runtimes.
 4. **M3 — Desktop:** §3.1–3.4. *(Phase 3 exit; depends on M2)*
 
 Each milestone is independently shippable and gated by its exit criteria. Work
-proceeds milestone by milestone; later phases must not force changes to the
-`packages/sdk` public API (a regression in runtime-agnosticism if they do).
+proceeds milestone by milestone; later phases must not introduce **breaking
+changes** to the `packages/sdk` public API (additions are permitted; removals
+and signature changes are not — a breaking change signals runtime-agnosticism
+regression). API surface is validated via TypeScript snapshot tests at each
+milestone exit.
 
 ## 7. Key Risks
 
-- **Iroh-in-WASM maturity:** browser WASM support for Iroh transports may lag
-  native. *Mitigation:* the `packages/transport` interface lets web fall back to
-  relay-only transfer while native uses full hole-punching; spike this early in M2.
+- **Iroh browser transport is relay-only (confirmed):** as of Iroh 0.32+,
+  browser builds run relay-only via WebSocket through n0.computer. Direct
+  UDP/QUIC is unavailable in-browser; all browser traffic is relayed
+  (end-to-end encrypted). This is not a risk — it is a known constraint that
+  the plan accounts for. Desktop (Phase 3) gains direct hole-punching via native
+  Iroh.
 - **OPFS quotas/throughput** across browsers. *Mitigation:* abstract behind
   `BlockStore`; benchmark in M1.
 - **WASM crypto performance** for multi-GB streams. *Mitigation:* chunk-level
@@ -251,8 +276,9 @@ proceeds milestone by milestone; later phases must not force changes to the
   Cargo + wasm artifacts; isolate Rust builds to the two `crates/` packages.
 - **Cascivo under Preact:** components are typed as React; `preact/compat`
   aliasing usually suffices, but edge cases (refs, portals, event types) can
-  surface. *Mitigation:* validate the compat path in M0 with a representative
-  component (form control + portal/overlay) before building UI broadly.
+  surface. *Mitigation:* validate the compat path in M0 with a simple component
+  (e.g. Button) before building UI broadly. Portal/overlay edge cases surface
+  naturally during §2.4.
 - **SDK signal exposure** must stay on `@preact/signals-core` (no `@preact/
   signals` / Preact import in `packages/sdk`). *Mitigation:* lint against
   framework imports in the SDK to preserve runtime-agnosticism.

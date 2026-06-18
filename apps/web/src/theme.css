@@ -1,0 +1,23 @@
+/* Cascivo theme tokens (plan §0). Real registry theme is wired in §2.4. */
+:root {
+  --cascivo-radius: 0.5rem;
+  --cascivo-color-primary: #4f46e5;
+  --cascivo-color-primary-hover: #4338ca;
+  --cascivo-color-primary-foreground: #ffffff;
+  --cascivo-color-surface: #f4f4f5;
+  --cascivo-color-foreground: #18181b;
+  --cascivo-color-border: #d4d4d8;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  color: var(--cascivo-color-foreground);
+}
+
+main {
+  display: grid;
+  place-items: center;
+  gap: 1rem;
+  min-height: 100vh;
+}
