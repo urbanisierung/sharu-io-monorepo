@@ -5,7 +5,6 @@
 // downstream depends on the SDK's interfaces.
 
 import { type ReadonlySignal, signal } from '@preact/signals';
-import { blake3, createIngestStream } from '@safu/crypto';
 import {
   BLOCK_PROTOCOL,
   DocSync,
@@ -14,8 +13,21 @@ import {
   SYNC_PROTOCOL,
   SyncDoc,
 } from '@safu/sdk';
-import type { Transport } from '@safu/transport';
+import type { PeerAddr, Transport } from '@safu/transport';
 import { IngestController } from './ingest-controller.js';
+import { blockAddresses, ingestFile, restoreFile } from './pipeline.js';
+
+export interface Runtime {
+  controller: IngestController;
+  files: ReadonlySignal<readonly FileView[]>;
+  peers: ReadonlySignal<readonly string[]>;
+  syncStatus: ReadonlySignal<'idle' | 'syncing' | 'error'>;
+  /** Reassemble a backed-up file's plaintext for download. */
+  restore: (path: string) => Promise<Uint8Array>;
+  /** Pair with a peer (id + relay) discovered out-of-band, and sync with it. */
+  pair: (peer: PeerAddr) => Promise<void>;
+  selfAddr: PeerAddr;
+}
 
 /** Pick the transport for the host runtime: the native Iroh core under Tauri
  *  (direct hole-punching), Iroh-over-WASM (relay-only) in the browser. Both
@@ -29,20 +41,6 @@ async function selectTransport(protocols: string[]): Promise<Transport> {
   return createIrohTransport(protocols);
 }
 
-export interface Runtime {
-  controller: IngestController;
-  files: ReadonlySignal<readonly FileView[]>;
-  peers: ReadonlySignal<readonly string[]>;
-  syncStatus: ReadonlySignal<'idle' | 'syncing' | 'error'>;
-}
-
-function concat(nonce: Uint8Array, ciphertext: Uint8Array): Uint8Array {
-  const frame = new Uint8Array(nonce.length + ciphertext.length);
-  frame.set(nonce, 0);
-  frame.set(ciphertext, nonce.length);
-  return frame;
-}
-
 export async function createRuntime(): Promise<Runtime> {
   const transport = await selectTransport([SYNC_PROTOCOL, BLOCK_PROTOCOL]);
   const store = new OpfsBlockStore();
@@ -52,21 +50,13 @@ export async function createRuntime(): Promise<Runtime> {
 
   const peers = signal<readonly string[]>([]);
   const syncStatus = signal<'idle' | 'syncing' | 'error'>('idle');
+  let passphrase = '';
 
-  const ingest = async (file: File, passphrase: string): Promise<void> => {
+  const ingest = async (file: File, pass: string): Promise<void> => {
     syncStatus.value = 'syncing';
     try {
-      const { blocks } = await createIngestStream(file.stream(), passphrase);
-      const addresses: string[] = [];
-      // Streaming: one block at a time. Each block is stored as nonce‖ciphertext,
-      // content-addressed by its BLAKE3 — only ciphertext touches storage.
-      for await (const block of blocks) {
-        const frame = concat(block.nonce, block.ciphertext);
-        const address = await blake3(frame);
-        await store.put(address, frame);
-        addresses.push(address);
-      }
-      doc.setFile(file.name, addresses, file.size, file.lastModified);
+      const { manifest, size } = await ingestFile(file, pass, store);
+      doc.setFile(file.name, [manifest], size, file.lastModified);
       syncStatus.value = 'idle';
     } catch (cause) {
       syncStatus.value = 'error';
@@ -74,10 +64,40 @@ export async function createRuntime(): Promise<Runtime> {
     }
   };
 
+  const restore = async (path: string): Promise<Uint8Array> => {
+    const file = doc.files.value.find((f) => f.path === path);
+    const manifest = file?.blocks[0];
+    if (!manifest) throw new Error(`unknown file: ${path}`);
+    return restoreFile(manifest, passphrase, store);
+  };
+
+  const pair = async (peer: PeerAddr): Promise<void> => {
+    // Shared-passphrase trust model: both devices authorize each other (plan
+    // §2.2). The peer authorizes us symmetrically when it pairs back.
+    doc.addWriter(peer.id);
+    await sync.connect(peer);
+    peers.value = [...new Set([...peers.value, peer.id])];
+    // Pre-fetch any blocks the synced table references but we don't hold yet.
+    for (const view of doc.files.value) {
+      const manifest = view.blocks[0];
+      if (manifest && !(await store.has(manifest))) {
+        await sync.requestBlock(peer, manifest);
+        for (const address of await blockAddresses(manifest, store)) {
+          if (!(await store.has(address))) await sync.requestBlock(peer, address);
+        }
+      }
+    }
+  };
+
   return {
-    controller: new IngestController(ingest),
+    controller: new IngestController(ingest, (pass) => {
+      passphrase = pass;
+    }),
     files: doc.files,
     peers,
     syncStatus,
+    restore,
+    pair,
+    selfAddr: transport.addr(),
   };
 }

@@ -56,6 +56,17 @@ impl IrohEndpoint {
         self.ep.addr().relay_urls().next().map(|u| u.to_string())
     }
 
+    /// Resolve once the endpoint has selected a home relay (is "online"),
+    /// returning its URL. `addr()`/`relayUrl` only include the relay after this.
+    pub fn online(&self) -> Promise {
+        let ep = self.ep.clone();
+        future_to_promise(async move {
+            ep.online().await;
+            let url = ep.addr().relay_urls().next().map(|u| u.to_string());
+            Ok(url.map_or(JsValue::NULL, |u| JsValue::from_str(&u)))
+        })
+    }
+
     /// Dial `peer` (id + relay URL) and open a bi-stream tagged `protocol`.
     pub fn connect(&self, peer: String, relay: String, protocol: String) -> Promise {
         let ep = self.ep.clone();

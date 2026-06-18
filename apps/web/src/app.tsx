@@ -17,11 +17,17 @@ export interface AppProps {
   files: ReadonlySignal<readonly FileView[]>;
   peers: ReadonlySignal<readonly string[]>;
   syncStatus: ReadonlySignal<'idle' | 'syncing' | 'error'>;
+  /** This device's id, shown so it can be shared out-of-band for pairing. */
+  selfId?: string;
+  onRestore?: (path: string) => void;
+  onPair?: (peerId: string, relayUrl: string) => void;
 }
 
 const draftPassphrase = signal('');
+const draftPeerId = signal('');
+const draftPeerRelay = signal('');
 
-export function App({ controller, files, peers, syncStatus }: AppProps) {
+export function App({ controller, files, peers, syncStatus, selfId, onRestore, onPair }: AppProps) {
   const phase = controller.phase.value;
 
   return (
@@ -75,13 +81,52 @@ export function App({ controller, files, peers, syncStatus }: AppProps) {
         {files.value.length === 0 ? (
           <p class={styles.muted}>{t(messages.empty)}</p>
         ) : (
-          <ul>
+          <ul class={styles.list}>
             {files.value.map((file) => (
-              <li key={file.path}>{file.path}</li>
+              <li key={file.path} class={styles.row}>
+                <span>{file.path}</span>
+                {onRestore && (
+                  <Button intent="neutral" onClick={() => onRestore(file.path)}>
+                    {t(messages.download)}
+                  </Button>
+                )}
+              </li>
             ))}
           </ul>
         )}
       </section>
+
+      {phase.kind !== 'first-run' && onPair && (
+        <section class={styles.gate}>
+          <h2>{t(messages.devicesHeading)}</h2>
+          {selfId && (
+            <p class={styles.muted}>
+              {t(messages.yourId)}: <code>{selfId}</code>
+            </p>
+          )}
+          <input
+            class={styles.input}
+            aria-label={t(messages.peerIdPlaceholder)}
+            placeholder={t(messages.peerIdPlaceholder)}
+            value={draftPeerId.value}
+            onInput={(event) => {
+              draftPeerId.value = (event.target as HTMLInputElement).value;
+            }}
+          />
+          <input
+            class={styles.input}
+            aria-label={t(messages.peerRelayPlaceholder)}
+            placeholder={t(messages.peerRelayPlaceholder)}
+            value={draftPeerRelay.value}
+            onInput={(event) => {
+              draftPeerRelay.value = (event.target as HTMLInputElement).value;
+            }}
+          />
+          <Button intent="primary" onClick={() => onPair(draftPeerId.value, draftPeerRelay.value)}>
+            {t(messages.pair)}
+          </Button>
+        </section>
+      )}
     </main>
   );
 }

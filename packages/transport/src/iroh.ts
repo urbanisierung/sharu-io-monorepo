@@ -41,11 +41,13 @@ class IrohChannelAdapter implements Channel {
 
 class IrohTransport implements Transport {
   readonly #endpoint: IrohEndpoint;
+  readonly #relayUrl: string | undefined;
   readonly #listeners = new Map<string, AsyncQueue<Channel>>();
   #accepting = false;
 
-  constructor(endpoint: IrohEndpoint) {
+  constructor(endpoint: IrohEndpoint, relayUrl: string | undefined) {
     this.#endpoint = endpoint;
+    this.#relayUrl = relayUrl;
   }
 
   id(): PeerId {
@@ -53,7 +55,7 @@ class IrohTransport implements Transport {
   }
 
   addr(): PeerAddr {
-    return { id: this.#endpoint.id, relayUrl: this.#endpoint.relayUrl };
+    return { id: this.#endpoint.id, relayUrl: this.#relayUrl };
   }
 
   async connect(peer: PeerAddr, protocol: string): Promise<Channel> {
@@ -93,9 +95,11 @@ class IrohTransport implements Transport {
   }
 }
 
-/** Boot the WASM module and bind a relay-only endpoint advertising `protocols`. */
+/** Boot the WASM module, bind a relay-only endpoint advertising `protocols`, and
+ *  wait until it is online (has a home relay) so its address is dialable. */
 export async function createIrohTransport(protocols: string[]): Promise<Transport> {
   await ready();
   const endpoint = (await IrohEndpoint.create(protocols)) as IrohEndpoint;
-  return new IrohTransport(endpoint);
+  const relayUrl = (await endpoint.online()) as string | null;
+  return new IrohTransport(endpoint, relayUrl ?? undefined);
 }

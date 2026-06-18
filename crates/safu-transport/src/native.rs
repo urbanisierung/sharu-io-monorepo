@@ -41,6 +41,13 @@ impl NativeEndpoint {
         self.endpoint.addr().relay_urls().next().map(|u| u.to_string())
     }
 
+    /// Resolve once the endpoint has selected a home relay (is "online"),
+    /// returning its URL. `relay_url` only reports the relay after this.
+    pub async fn online(&self) -> Option<String> {
+        self.endpoint.online().await;
+        self.relay_url()
+    }
+
     /// Dial `peer` and open a bi-stream tagged `protocol`.
     pub async fn connect(&self, peer: &str, relay: &str, protocol: &str) -> Result<NativeChannel> {
         let id = EndpointId::from_str(peer)?;

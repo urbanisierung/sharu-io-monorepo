@@ -23,7 +23,12 @@ export class IngestController {
   readonly #phase = signal<Phase>({ kind: 'first-run' });
   #passphrase = '';
 
-  constructor(private readonly ingest: IngestFile) {}
+  /** `onUnlock` lets the runtime capture the passphrase (key material) so it can
+   *  also restore/decrypt, not just ingest. */
+  constructor(
+    private readonly ingest: IngestFile,
+    private readonly onUnlock?: (passphrase: string) => void,
+  ) {}
 
   get phase(): ReadonlySignal<Phase> {
     return this.#phase;
@@ -38,6 +43,7 @@ export class IngestController {
   unlock(passphrase: string): void {
     if (passphrase.length === 0) return;
     this.#passphrase = passphrase;
+    this.onUnlock?.(passphrase);
     this.#phase.value = { kind: 'idle' };
   }
 

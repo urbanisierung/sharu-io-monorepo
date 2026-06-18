@@ -20,4 +20,10 @@ export const messages = defineMessages('safu', {
   syncStatus: 'Sync: {status}',
   filesHeading: 'Backed-up files',
   empty: 'Nothing backed up yet',
+  download: 'Download',
+  devicesHeading: 'Devices',
+  yourId: 'Your device id (share to pair)',
+  peerIdPlaceholder: 'Peer device id',
+  peerRelayPlaceholder: 'Peer relay URL',
+  pair: 'Pair',
 });
