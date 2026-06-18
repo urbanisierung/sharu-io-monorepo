@@ -1,6 +1,7 @@
 import { signal } from '@preact/signals-core';
 
 export { type BlockStore, MemoryBlockStore } from './block-store.js';
+export { OpfsBlockStore } from './opfs-block-store.js';
 
 /**
  * Domain state is exposed as framework-agnostic signals (`@preact/signals-core`,

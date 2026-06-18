@@ -9,3 +9,16 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 wasm-bindgen.workspace = true
+blake3 = "1"
+argon2 = "0.5"
+aes-gcm = "0.10"
+fastcdc = "3"
+
+# Pulled transitively via rand_core (aes-gcm/argon2). The "js" feature lets it
+# link on wasm32-unknown-unknown; we never use it for key material (nonces and
+# salts are supplied by the caller).
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+
+[dev-dependencies]
+hex = "0.4"
