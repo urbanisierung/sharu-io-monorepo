@@ -1,9 +1,8 @@
 import preact from '@preact/preset-vite';
+import { playwright } from '@vitest/browser-playwright';
 import { defineConfig } from 'vitest/config';
 
-const shared = {
-  exclude: ['**/dist/**', '**/node_modules/**', '**/wasm/**', '**/target/**'],
-};
+const exclude = ['**/dist/**', '**/node_modules/**', '**/wasm/**', '**/target/**'];
 
 export default defineConfig({
   test: {
@@ -12,8 +11,8 @@ export default defineConfig({
         test: {
           name: 'node',
           include: ['packages/*/src/**/*.test.ts'],
+          exclude: [...exclude, '**/*.browser.test.ts'],
           environment: 'node',
-          ...shared,
         },
       },
       {
@@ -21,8 +20,21 @@ export default defineConfig({
         test: {
           name: 'web',
           include: ['apps/web/src/**/*.test.tsx'],
+          exclude,
           environment: 'happy-dom',
-          ...shared,
+        },
+      },
+      {
+        test: {
+          name: 'opfs',
+          include: ['packages/sdk/src/**/*.browser.test.ts'],
+          exclude,
+          browser: {
+            enabled: true,
+            provider: playwright(),
+            headless: true,
+            instances: [{ browser: 'chromium' }],
+          },
         },
       },
     ],
