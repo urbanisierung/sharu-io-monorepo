@@ -102,6 +102,10 @@ importers:
         version: 6.0.3
 
   packages/transport:
+    dependencies:
+      '@tauri-apps/api':
+        specifier: 2.9.0
+        version: 2.9.0
     devDependencies:
       typescript:
         specifier: 6.0.3
@@ -464,6 +468,9 @@ packages:
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
+
+  '@tauri-apps/api@2.9.0':
+    resolution: {integrity: sha512-qD5tMjh7utwBk9/5PrTA/aGr3i5QaJ/Mlt7p8NilQ45WgbifUNPyKWsA63iQ8YfQq6R8ajMapU+/Q8nMcPRLNw==}
 
   '@testing-library/dom@8.20.1':
     resolution: {integrity: sha512-/DiOQ5xBxgdYRC8LNk7U+RWat0S3qRLeIw3ZIkMQ9kkVlRmwD/Eg8k8CqIpD6GW7u20JIUOfMKbxtiLutpjQ4g==}
@@ -1660,6 +1667,8 @@ snapshots:
       picomatch: 4.0.4
 
   '@standard-schema/spec@1.1.0': {}
+
+  '@tauri-apps/api@2.9.0': {}
 
   '@testing-library/dom@8.20.1':
     dependencies:

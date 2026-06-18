@@ -6,9 +6,10 @@
 // handoff uses for the OPFS browser test). When enabled it proves the full stack:
 // two endpoints rendezvous via the relay, the allocation table converges, and an
 // encrypted block transfers with hash parity — no manual configuration.
+
+import { blake3 } from '@safu/crypto';
 import { createIrohTransport } from '@safu/transport/iroh';
 import { describe, expect, it } from 'vitest';
-import { blake3 } from '@safu/crypto';
 import { MemoryBlockStore } from './block-store.js';
 import { DocSync } from './doc-sync.js';
 import { SyncDoc } from './sync-doc.js';

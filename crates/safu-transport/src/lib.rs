@@ -15,3 +15,6 @@ pub fn version() -> &'static str {
 
 #[cfg(all(target_family = "wasm", target_os = "unknown"))]
 mod wasm;
+
+#[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
+pub mod native;

@@ -14,8 +14,20 @@ import {
   SYNC_PROTOCOL,
   SyncDoc,
 } from '@safu/sdk';
-import { createIrohTransport } from '@safu/transport/iroh';
+import type { Transport } from '@safu/transport';
 import { IngestController } from './ingest-controller.js';
+
+/** Pick the transport for the host runtime: the native Iroh core under Tauri
+ *  (direct hole-punching), Iroh-over-WASM (relay-only) in the browser. Both
+ *  satisfy the same `Transport` interface (plan §3.2). */
+async function selectTransport(protocols: string[]): Promise<Transport> {
+  if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
+    const { createTauriTransport } = await import('@safu/transport/tauri');
+    return createTauriTransport();
+  }
+  const { createIrohTransport } = await import('@safu/transport/iroh');
+  return createIrohTransport(protocols);
+}
 
 export interface Runtime {
   controller: IngestController;
@@ -32,7 +44,7 @@ function concat(nonce: Uint8Array, ciphertext: Uint8Array): Uint8Array {
 }
 
 export async function createRuntime(): Promise<Runtime> {
-  const transport = await createIrohTransport([SYNC_PROTOCOL, BLOCK_PROTOCOL]);
+  const transport = await selectTransport([SYNC_PROTOCOL, BLOCK_PROTOCOL]);
   const store = new OpfsBlockStore();
   const doc = new SyncDoc(transport.id());
   const sync = new DocSync(transport, doc, store);

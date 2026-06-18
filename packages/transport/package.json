@@ -5,12 +5,16 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./iroh": "./src/iroh.ts"
+    "./iroh": "./src/iroh.ts",
+    "./tauri": "./src/tauri.ts"
   },
   "scripts": {
     "build:wasm": "wasm-pack build ../../crates/safu-transport --release --target web --out-dir ../../packages/transport/wasm --out-name safu_transport",
     "build": "pnpm build:wasm",
     "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "2.9.0"
   },
   "devDependencies": {
     "typescript": "6.0.3"

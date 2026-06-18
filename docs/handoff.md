@@ -15,8 +15,37 @@ Branch: `claude/vision-doc-plan-lu8dhf`. All work below is committed.
 | --- | --- | --- |
 | **M0 — Scaffold** | ✅ done | `feat: M0 scaffold …` |
 | **M1 — Crypto pipeline & local storage** | ✅ done (Phase 1 exit met) | `feat: M1 crypto pipeline …`, `test: complete M1 tail …` |
-| **M2 — Web App & P2P sync (§2.1–2.4)** | ⏭️ next | — |
-| **M3 — Tauri desktop (§3.1–3.4)** | ⬜ pending | — |
+| **M2 — Web App & P2P sync (§2.1–2.4)** | ✅ core done; e2e gated | `feat(M2): transport contract …`, `feat(M2): iroh→WASM binding …` |
+| **M3 — Tauri desktop (§3.1–3.4)** | 🟡 native core verified; shell scaffolded | `feat(M3): native transport + Tauri scaffold` |
+
+### M2 / M3 progress (this session)
+
+- **§2.1 spike confirmed:** `iroh` v1.0.0 compiles to `wasm32-unknown-unknown`.
+  A real binding (`crates/safu-transport`, `wasm` module) exposes
+  `IrohEndpoint`/`IrohChannel` (relay-only N0 preset, length-prefixed frames);
+  `wasm-pack` produces the artifact. Browser adapter: `@safu/transport/iroh`.
+- **Transport contract:** `packages/transport` defines the one `Transport`/
+  `Channel` interface both runtimes implement, plus an in-process
+  `LoopbackNetwork` for testing without a relay.
+- **§2.3 doc sync (resolved open questions):** `AllocationTable` is a per-path
+  LWW-register CvRDT over a Hybrid Logical Clock — converges regardless of
+  arrival order, preserves concurrent inserts, never silently drops a write.
+  `SyncDoc` adds write-authorization with **permanent revocation** (the
+  "lost device" question). `DocSync` wires deltas + block transfer over the
+  transport; only ciphertext crosses.
+- **§2.4 web shell:** signal-driven Cascivo UI with all flagged interaction
+  states (first-run/drag valid|invalid/chunking/success/error/zero-peer), i18n
+  for all copy, plus a lint guard test rejecting React hooks + hardcoded strings.
+- **e2e is gated** (`SAFU_E2E=1`): two endpoints transfer over the live n0 relay
+  with hash parity. Skipped by default (offline/deterministic CI) — run it
+  against the relay to close §2.4's exit criterion.
+- **M3:** the **native** Iroh transport (`safu_transport::native`, direct
+  hole-punching) is written and **verified to compile** (`cargo check -p
+  safu-transport`). The Tauri shell (`apps/desktop`) is scaffolded — native FS
+  block store, FS watcher, transport-bridge commands, tray/autostart, and the
+  `@safu/transport/tauri` adapter — but needs a desktop host with the webview
+  toolchain to build/run; see `apps/desktop/README.md` for what's verified vs.
+  pending (incl. the §3.4 web→relay→desktop benchmark).
 
 **Phase 1 exit criteria are met:** lossless, memory-bounded, authenticated local
 round-trip (ingest → chunk → hash → encrypt → store → decrypt → reassemble) with
