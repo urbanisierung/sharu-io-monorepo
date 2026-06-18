@@ -7,6 +7,12 @@ license.workspace = true
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+# `wasm-opt` (binaryen) is fetched from GitHub releases by wasm-pack. In sandboxed
+# build environments that download is blocked; the unoptimized module is valid and
+# functionally identical, only larger. Re-enable where binaryen is available.
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
 [dependencies]
 wasm-bindgen.workspace = true
 blake3 = "1"

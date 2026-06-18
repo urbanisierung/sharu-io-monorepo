@@ -1,7 +1,16 @@
 import { signal } from '@preact/signals-core';
 
+export {
+  AllocationTable,
+  type FileEntry,
+  Hlc,
+  type Stamp,
+  type StampedEntry,
+} from './allocation-table.js';
 export { type BlockStore, MemoryBlockStore } from './block-store.js';
+export { BLOCK_PROTOCOL, DocSync, SYNC_PROTOCOL } from './doc-sync.js';
 export { OpfsBlockStore } from './opfs-block-store.js';
+export { type Delta, type FileView, SyncDoc, type WriterOp } from './sync-doc.js';
 
 /**
  * Domain state is exposed as framework-agnostic signals (`@preact/signals-core`,

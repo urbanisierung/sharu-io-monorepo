@@ -3,17 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
+    ".": "./src/index.ts",
+    "./iroh": "./src/iroh.ts"
   },
   "scripts": {
     "build:wasm": "wasm-pack build ../../crates/safu-transport --release --target web --out-dir ../../packages/transport/wasm --out-name safu_transport",
-    "build": "pnpm build:wasm && tsc -p tsconfig.json",
+    "build": "pnpm build:wasm",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
