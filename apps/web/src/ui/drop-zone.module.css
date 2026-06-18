@@ -1,0 +1,30 @@
+.zone {
+  display: grid;
+  place-items: center;
+  min-height: 12rem;
+  width: min(32rem, 90vw);
+  padding: 2rem;
+  text-align: center;
+  border: 2px dashed var(--cascivo-color-border, #d4d4d8);
+  border-radius: var(--cascivo-radius, 0.5rem);
+  background: var(--cascivo-color-surface, #f4f4f5);
+  color: var(--cascivo-color-foreground, #18181b);
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.valid {
+  border-color: var(--cascivo-color-primary, #4f46e5);
+  background: color-mix(in srgb, var(--cascivo-color-primary, #4f46e5) 12%, transparent);
+}
+
+.invalid {
+  border-color: #b91c1c;
+  background: color-mix(in srgb, #b91c1c 10%, transparent);
+}
+
+.error {
+  border-color: #b91c1c;
+  color: #b91c1c;
+}

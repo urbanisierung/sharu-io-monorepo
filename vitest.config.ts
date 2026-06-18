@@ -19,7 +19,7 @@ export default defineConfig({
         plugins: [preact()],
         test: {
           name: 'web',
-          include: ['apps/web/src/**/*.test.tsx'],
+          include: ['apps/web/src/**/*.test.{ts,tsx}'],
           exclude,
           environment: 'happy-dom',
         },

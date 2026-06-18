@@ -50,9 +50,15 @@ importers:
       '@preact/signals':
         specifier: 2.9.2
         version: 2.9.2(preact@10.29.2)
+      '@safu/crypto':
+        specifier: workspace:*
+        version: link:../../packages/crypto
       '@safu/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
+      '@safu/transport':
+        specifier: workspace:*
+        version: link:../../packages/transport
       preact:
         specifier: 10.29.2
         version: 10.29.2
@@ -88,6 +94,9 @@ importers:
         specifier: workspace:*
         version: link:../transport
     devDependencies:
+      '@safu/crypto':
+        specifier: workspace:*
+        version: link:../crypto
       typescript:
         specifier: 6.0.3
         version: 6.0.3

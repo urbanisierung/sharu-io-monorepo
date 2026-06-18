@@ -20,6 +20,7 @@
     "@safu/transport": "workspace:*"
   },
   "devDependencies": {
+    "@safu/crypto": "workspace:*",
     "typescript": "6.0.3"
   }
 }
