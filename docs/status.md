@@ -7,9 +7,10 @@ _Snapshot as of this session. For deep build context see
 ## TL;DR
 
 A decentralized, zero-knowledge, local-first backup & sync platform. M0–M1 are
-complete; **M2 (web app + P2P sync) is functionally complete and proven
-end-to-end except the live relay hop**, which is blocked only by the CI
-sandbox's network policy (not by the code). **M3 (desktop)**: the native
+complete; **M2 (web app + P2P sync) is complete and proven end-to-end,
+including the live n0 relay hop** (the relay e2e passes on a real machine; it
+only fails inside the headless CI sandbox's network policy, not in the code).
+**M3 (desktop)**: the native
 transport core compiles and is verified; the Tauri shell is scaffolded and needs
 a desktop host to build/run.
 
@@ -19,7 +20,7 @@ a desktop host to build/run.
 | --- | --- |
 | M0 — Scaffold | ✅ done |
 | M1 — Crypto pipeline & local storage | ✅ done (lossless, memory-bounded, authenticated round-trip) |
-| M2 — Web app & P2P sync (§2.1–2.4) | ✅ core done & proven over loopback; live relay hop gated/unrun |
+| M2 — Web app & P2P sync (§2.1–2.4) | ✅ done — proven over loopback **and** the live n0 relay |
 | M3 — Tauri desktop (§3.1–3.4) | 🟡 native transport verified; shell scaffolded, unbuilt here |
 
 ## What works and is verified
@@ -56,23 +57,24 @@ a desktop host to build/run.
 Full gate is green: `pnpm -r typecheck`, Biome, `cargo test`, and the node + web
 + OPFS/Chromium vitest suites, plus both WASM builds and the web production build.
 
-## Known limitation (environment, not code)
+## CI-only limitation (environment, not code)
 
-The **live browser-to-browser transfer over the public n0 relay** cannot be
-exercised in the headless CI sandbox. Iroh's net-report HTTPS probes to the
-relays fail at the browser `fetch`/CORS layer (`TypeError: Failed to fetch`)
+The gated relay e2e (`SAFU_E2E=1`) **passes on a real machine** — two Iroh
+endpoints come online against the public n0 relay, the doc converges, and a
+block transfers with BLAKE3 parity (`packages/sdk/src/transfer.e2e.browser.test.ts`).
+It only fails inside the **headless CI sandbox**, where Iroh's net-report HTTPS
+probes fail at the browser `fetch`/CORS layer (`TypeError: Failed to fetch`)
 even though the relay hosts answer plain HTTPS, so the endpoint never goes
-"online". The transport is correct up to that boundary (binds, configures
-pkarr/DNS, issues the right probes). The e2e is gated behind `SAFU_E2E=1` and
-must be run from a normal browser origin with relay access. `createIrohTransport`
-waits for `online()` (with a startup timeout) so a dialable relay address is set
-before pairing.
+"online". That is a sandbox network policy, not a code defect. Keep the e2e
+gated so CI stays deterministic/offline-safe; run it locally to exercise the
+relay. `createIrohTransport` waits for `online()` (with a 15 s startup timeout)
+so a dialable relay address is set before pairing.
 
 ## Next steps
 
-1. **Close the relay hop (M2 exit).** Serve `apps/web/dist` from a real origin
-   (or `vite preview`) and run the gated e2e / pair two browsers against the
-   public relay. This is the one unproven link.
+1. ~~**Close the relay hop (M2 exit).**~~ ✅ Done — the gated e2e passes against
+   the live n0 relay on a real machine. Remaining nicety: a two-origin tab
+   pairing (vs. two in-process endpoints) as a stricter manual staging.
 2. ~~**Persist the document.**~~ ✅ Done — `SyncDoc.open()` restores a persisted
    CRDT snapshot from OPFS (`OpfsDocStore`); mutations auto-persist, so the file
    list survives restarts.
