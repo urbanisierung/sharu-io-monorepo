@@ -16,6 +16,7 @@
     "@safu/crypto": "workspace:*",
     "@safu/sdk": "workspace:*",
     "@safu/transport": "workspace:*",
+    "@tauri-apps/api": "2.9.0",
     "preact": "10.29.2"
   },
   "devDependencies": {

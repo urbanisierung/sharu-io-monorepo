@@ -53,6 +53,7 @@ export function Root() {
       onPair={(code) => ready.pairWithCode(code)}
       onVerify={(id) => ready.verifyPeer(id)}
       onReject={(id) => ready.rejectPeer(id)}
+      onWatch={ready.watchFolder}
     />
   );
 }

@@ -50,7 +50,9 @@ pnpm tauri build   # builds apps/web, then bundles the desktop app
   FS-watch → ingest loop, and the §3.4 cross-runtime benchmark
   (web → relay → desktop via direct hole-punching). Run `pnpm tauri dev` in a
   graphical session to exercise them.
-- ⚠️ **Known wiring gaps** (frontend, independent of this crate): `runtime.ts`
-  always uses the browser `OpfsBlockStore`, so the native `block_*` commands are
-  not yet consumed; and `watch_folder` / `file-changed` is not yet wired to
-  auto-ingest. Both are scaffolded and ready to connect.
+- ✅ **Native services wired into the frontend** (compiles + type-checks; needs a
+  host launch to exercise): under Tauri `runtime.ts` now selects the native
+  `TauriBlockStore` (`block_*` commands) instead of OPFS, and a watched folder
+  auto-ingests — `watchFolder` → `watch_folder`, and a `file-changed` listener
+  reads each path via the new `read_file` command and ingests it. The web UI
+  shows a "Watched folders" input only under the desktop shell.

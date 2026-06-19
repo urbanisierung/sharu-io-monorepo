@@ -94,4 +94,7 @@ export const messages = defineMessages('safu', {
   statusPending: 'Unverified',
   statusVerified: 'Verified',
   statusRejected: 'Rejected — writes blocked',
+  watchHeading: 'Watched folders',
+  watchPlaceholder: 'Folder path to auto-back-up',
+  watch: 'Watch folder',
 });

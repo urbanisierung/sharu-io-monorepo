@@ -101,9 +101,10 @@ so a dialable relay address is set before pairing.
    **compiles and links** against the system webview (webkit2gtk-4.1 2.52.4;
    icons generated). Still needs an attached display to exercise the window,
    tray/autostart, the FS-watch→ingest loop, and the §3.4 web→relay→desktop
-   benchmark — run `pnpm tauri dev` in a graphical session. Two frontend wiring
-   gaps remain: the desktop still uses `OpfsBlockStore` (native `block_*`
-   unused) and FS-watch isn't wired to ingest. See `apps/desktop/README.md`.
+   benchmark — run `pnpm tauri dev` in a graphical session. The frontend now
+   selects the native `TauriBlockStore` under Tauri and wires FS-watch→ingest
+   (`watch_folder` + `read_file` + a `file-changed` listener, with a
+   "Watched folders" UI). See `apps/desktop/README.md`.
 6. **Dedup decision.** Convergent encryption (dedup with a content-equality
    leak) remains a deliberate future option — decide explicitly.
 7. ~~**Crypto hardening.**~~ ✅ Done — every op is now **Ed25519-signed** by its

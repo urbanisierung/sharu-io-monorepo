@@ -59,6 +59,9 @@ importers:
       '@safu/transport':
         specifier: workspace:*
         version: link:../../packages/transport
+      '@tauri-apps/api':
+        specifier: 2.9.0
+        version: 2.9.0
       preact:
         specifier: 10.29.2
         version: 10.29.2

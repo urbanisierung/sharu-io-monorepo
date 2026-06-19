@@ -24,10 +24,13 @@ export interface AppProps {
   onPair?: (code: string) => Promise<void>;
   onVerify?: (id: string) => void;
   onReject?: (id: string) => void;
+  /** Desktop only: start watching a folder for auto-backup. */
+  onWatch?: (path: string) => Promise<void>;
 }
 
 const draftPassphrase = signal('');
 const draftPeerCode = signal('');
+const draftWatchPath = signal('');
 const copied = signal(false);
 const pairFailed = signal(false);
 
@@ -41,6 +44,7 @@ export function App({
   onPair,
   onVerify,
   onReject,
+  onWatch,
 }: AppProps) {
   const phase = controller.phase.value;
 
@@ -180,6 +184,24 @@ export function App({
               ))}
             </ul>
           )}
+        </section>
+      )}
+
+      {phase.kind !== 'first-run' && onWatch && (
+        <section class={styles.gate}>
+          <h2>{t(messages.watchHeading)}</h2>
+          <input
+            class={styles.input}
+            aria-label={t(messages.watchPlaceholder)}
+            placeholder={t(messages.watchPlaceholder)}
+            value={draftWatchPath.value}
+            onInput={(event) => {
+              draftWatchPath.value = (event.target as HTMLInputElement).value;
+            }}
+          />
+          <Button intent="neutral" onClick={() => void onWatch(draftWatchPath.value)}>
+            {t(messages.watch)}
+          </Button>
         </section>
       )}
     </main>

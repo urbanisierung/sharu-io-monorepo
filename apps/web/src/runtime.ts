@@ -7,6 +7,7 @@
 import { effect, type ReadonlySignal, signal } from '@preact/signals';
 import {
   BLOCK_PROTOCOL,
+  type BlockStore,
   DocSync,
   type FileView,
   OpfsBlockStore,
@@ -45,13 +46,21 @@ export interface Runtime {
   rejectPeer: (id: string) => void;
   /** This device's connection code (empty until unlock derives the identity). */
   connectionCode: ReadonlySignal<string>;
+  /** Desktop only: watch a folder and auto-ingest its files. Undefined in the
+   *  browser (no filesystem access). */
+  watchFolder?: (path: string) => Promise<void>;
+}
+
+/** True when running inside the Tauri desktop shell rather than a browser tab. */
+function isTauri(): boolean {
+  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 }
 
 /** Pick the transport for the host runtime: the native Iroh core under Tauri
  *  (direct hole-punching), Iroh-over-WASM (relay-only) in the browser. Both
  *  satisfy the same `Transport` interface (plan §3.2). */
 async function selectTransport(protocols: string[]): Promise<Transport> {
-  if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
+  if (isTauri()) {
     const { createTauriTransport } = await import('@safu/transport/tauri');
     return createTauriTransport();
   }
@@ -59,9 +68,19 @@ async function selectTransport(protocols: string[]): Promise<Transport> {
   return createIrohTransport(protocols);
 }
 
+/** Pick the block store: the native filesystem-backed store under Tauri (plan
+ *  §1.3 native impl), OPFS in the browser. Same `BlockStore` interface. */
+async function selectBlockStore(): Promise<BlockStore> {
+  if (isTauri()) {
+    const { createTauriBlockStore } = await import('./tauri-store.js');
+    return createTauriBlockStore();
+  }
+  return new OpfsBlockStore();
+}
+
 export async function createRuntime(): Promise<Runtime> {
   const transport = await selectTransport([SYNC_PROTOCOL, BLOCK_PROTOCOL]);
-  const store = new OpfsBlockStore();
+  const store = await selectBlockStore();
 
   const syncStatus = signal<'idle' | 'syncing' | 'error'>('idle');
   const files = signal<readonly FileView[]>([]);
@@ -116,6 +135,14 @@ export async function createRuntime(): Promise<Runtime> {
         peers.value = list;
       })();
     });
+
+    // Desktop: auto-ingest files dropped into watched folders (plan §3.3).
+    if (isTauri()) {
+      const { onWatchedFileChanged } = await import('./tauri-watch.js');
+      await onWatchedFileChanged((name, bytes) =>
+        ingest(new File([bytes as BlobPart], name), pass),
+      );
+    }
   };
 
   const ingest = async (file: File, pass: string): Promise<void> => {
@@ -159,6 +186,13 @@ export async function createRuntime(): Promise<Runtime> {
     doc?.revokeWriter(id);
   };
 
+  const watchFolder = isTauri()
+    ? async (path: string): Promise<void> => {
+        const { watchFolder: watch } = await import('./tauri-watch.js');
+        await watch(path);
+      }
+    : undefined;
+
   return {
     controller: new IngestController(ingest, (pass) => {
       void setup(pass);
@@ -171,5 +205,6 @@ export async function createRuntime(): Promise<Runtime> {
     verifyPeer,
     rejectPeer,
     connectionCode,
+    watchFolder,
   };
 }
