@@ -1,0 +1,215 @@
+.page {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 0 1.25rem 4rem;
+}
+
+/* ---- Hero ---------------------------------------------------------------- */
+
+.hero {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 1.1rem;
+  padding: 5.5rem 0 4rem;
+}
+
+.badge {
+  font-family: var(--safu-font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cascivo-color-primary);
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  background: rgba(0, 234, 255, 0.05);
+  box-shadow: var(--cascivo-glow-cyan);
+}
+
+.brand {
+  font-family: var(--safu-font-mono);
+  font-size: clamp(3.5rem, 12vw, 7rem);
+  line-height: 0.9;
+  margin: 0;
+  letter-spacing: 0.06em;
+  font-weight: 800;
+  background: linear-gradient(
+    92deg,
+    var(--cascivo-color-primary),
+    var(--cascivo-color-accent-2) 55%,
+    var(--cascivo-color-accent)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 2.4rem rgba(177, 92, 255, 0.35);
+}
+
+.title {
+  font-size: clamp(1.5rem, 3.6vw, 2.4rem);
+  font-weight: 700;
+  margin: 0;
+  max-width: 24ch;
+  color: var(--cascivo-color-foreground);
+}
+
+.subtitle {
+  margin: 0;
+  max-width: 60ch;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--cascivo-color-muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  justify-content: center;
+  margin-top: 0.6rem;
+}
+
+.ghost {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--cascivo-color-primary);
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.ghost:hover {
+  border-color: var(--cascivo-color-primary);
+  box-shadow: var(--cascivo-glow-cyan);
+}
+
+/* ---- Sections ------------------------------------------------------------ */
+
+.section {
+  padding: 3rem 0;
+  border-top: 1px solid var(--cascivo-color-border);
+}
+
+.kicker {
+  font-family: var(--safu-font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 0.74rem;
+  color: var(--cascivo-color-accent);
+  margin: 0 0 0.5rem;
+}
+
+.h2 {
+  font-size: clamp(1.5rem, 3.4vw, 2.1rem);
+  margin: 0 0 2rem;
+  max-width: 26ch;
+  color: var(--cascivo-color-foreground);
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: var(--cascivo-color-surface);
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius);
+  padding: 1.4rem;
+  transition:
+    transform 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  border-color: var(--cascivo-color-primary);
+  box-shadow: var(--cascivo-glow-cyan);
+}
+
+.principle:hover {
+  border-color: var(--cascivo-color-accent);
+  box-shadow: var(--cascivo-glow-magenta);
+}
+
+.cardTitle {
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem;
+  color: var(--cascivo-color-foreground);
+}
+
+.cardBody {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--cascivo-color-muted);
+}
+
+/* ---- How-it-works steps -------------------------------------------------- */
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+  counter-reset: step;
+}
+
+.step {
+  position: relative;
+  background: linear-gradient(180deg, var(--cascivo-color-surface-2), var(--cascivo-color-surface));
+  border: 1px solid var(--cascivo-color-border);
+  border-left: 2px solid var(--cascivo-color-primary);
+  border-radius: var(--cascivo-radius);
+  padding: 1.4rem;
+}
+
+.stepTitle {
+  font-family: var(--safu-font-mono);
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  margin: 0 0 0.55rem;
+  color: var(--cascivo-color-primary);
+}
+
+/* ---- CTA + footer -------------------------------------------------------- */
+
+.cta {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 1rem;
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius);
+  margin-top: 3rem;
+  background:
+    radial-gradient(600px 200px at 50% 0%, rgba(255, 43, 214, 0.12), transparent 70%),
+    var(--cascivo-color-surface);
+}
+
+.ctaTitle {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  margin: 0;
+  background: linear-gradient(92deg, var(--cascivo-color-primary), var(--cascivo-color-accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.footer {
+  text-align: center;
+  font-family: var(--safu-font-mono);
+  font-size: 0.82rem;
+  color: var(--cascivo-color-muted);
+  padding-top: 3rem;
+}

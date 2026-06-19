@@ -1,0 +1,30 @@
+[package]
+name = "safu-desktop"
+version = "0.0.0"
+edition = "2021"
+license = "MIT"
+description = "Project Safu desktop shell (Tauri 2.0)"
+
+# Detached from the root Cargo workspace on purpose: building this crate needs
+# the system webview (webkit2gtk-4.1 on Linux) and the Tauri CLI, neither of
+# which is present in the headless CI sandbox. Keeping it out of the root
+# workspace lets the wasm/native crates build and test there. Build this on a
+# machine with the Tauri prerequisites (see ../README.md).
+[workspace]
+
+[lib]
+name = "safu_desktop_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-autostart = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["sync", "rt-multi-thread", "macros"] }
+notify = "8"
+blake3 = "1"
+safu-transport = { path = "../../../crates/safu-transport" }

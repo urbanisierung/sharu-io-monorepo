@@ -1,0 +1,62 @@
+.main {
+  display: grid;
+  place-items: center;
+  gap: 1.5rem;
+  padding: 2rem 1rem;
+  min-height: 100vh;
+}
+
+.booting {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  font-family: var(--safu-font-mono);
+  letter-spacing: 0.08em;
+  color: var(--cascivo-color-primary);
+  text-shadow: var(--cascivo-glow-cyan);
+}
+
+.header {
+  text-align: center;
+}
+
+.muted {
+  color: color-mix(in srgb, var(--cascivo-color-foreground, #18181b) 60%, transparent);
+}
+
+.warn {
+  color: #b45309;
+}
+
+.gate {
+  display: grid;
+  gap: 0.75rem;
+  width: min(24rem, 90vw);
+  justify-items: stretch;
+}
+
+.input {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--cascivo-color-border, #d4d4d8);
+  border-radius: var(--cascivo-radius, 0.5rem);
+  font: inherit;
+}
+
+.files {
+  width: min(32rem, 90vw);
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}

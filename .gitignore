@@ -4,3 +4,7 @@ wasm/
 target/
 *.tsbuildinfo
 .DS_Store
+
+# Vitest browser test artifacts
+.vitest-attachments/
+**/__screenshots__/

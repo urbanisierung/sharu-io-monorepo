@@ -10,7 +10,9 @@ export default defineConfig({
       {
         test: {
           name: 'node',
-          include: ['packages/*/src/**/*.test.ts'],
+          // App integration tests that drive the real crypto WASM run here (plain
+          // Node, file:// URLs) rather than in the vite-based `web` project.
+          include: ['packages/*/src/**/*.test.ts', 'apps/web/src/**/*.integration.test.ts'],
           exclude: [...exclude, '**/*.browser.test.ts'],
           environment: 'node',
         },
@@ -19,12 +21,16 @@ export default defineConfig({
         plugins: [preact()],
         test: {
           name: 'web',
-          include: ['apps/web/src/**/*.test.tsx'],
-          exclude,
+          include: ['apps/web/src/**/*.test.{ts,tsx}'],
+          exclude: [...exclude, '**/*.integration.test.ts'],
           environment: 'happy-dom',
         },
       },
       {
+        // Inject the opt-in flag for the gated relay e2e. Evaluated in Node at
+        // config time, so a shell `SAFU_E2E=1` reaches the browser test bundle.
+        // (Project Vite configs do not inherit root-level options.)
+        define: { __SAFU_E2E__: JSON.stringify(process.env.SAFU_E2E === '1') },
         test: {
           name: 'opfs',
           include: ['packages/sdk/src/**/*.browser.test.ts'],

@@ -1,3 +1,7 @@
 packages:
   - "apps/*"
   - "packages/*"
+  # The Tauri desktop shell is built with the Tauri CLI on a desktop host (it
+  # needs the system webview), not via `pnpm -r`. Excluded so recursive build/
+  # typecheck/test stay green in the headless CI sandbox. See apps/desktop/README.md.
+  - "!apps/desktop"

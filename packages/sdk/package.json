@@ -16,9 +16,11 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@preact/signals-core": "1.14.3"
+    "@preact/signals-core": "1.14.3",
+    "@safu/transport": "workspace:*"
   },
   "devDependencies": {
+    "@safu/crypto": "workspace:*",
     "typescript": "6.0.3"
   }
 }
