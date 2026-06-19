@@ -35,12 +35,13 @@ function frame(nonce: Uint8Array, ciphertext: Uint8Array): Uint8Array {
 }
 
 /** Encrypt `file` into the store; returns the manifest address to record in the
- *  allocation table and the file's byte size. */
+ *  allocation table, the addresses of every data block it references (so the
+ *  table entry can be self-describing for peer auto-pull), and the byte size. */
 export async function ingestFile(
   file: File,
   passphrase: string,
   store: BlockStore,
-): Promise<{ manifest: string; size: number }> {
+): Promise<{ manifest: string; blocks: string[]; size: number }> {
   const { salt, blocks } = await createIngestStream(file.stream(), passphrase);
   const entries: ManifestBlock[] = [];
   for await (const block of blocks) {
@@ -53,7 +54,7 @@ export async function ingestFile(
   const manifestBytes = encoder.encode(JSON.stringify(manifest));
   const manifestAddress = await blake3(manifestBytes);
   await store.put(manifestAddress, manifestBytes);
-  return { manifest: manifestAddress, size: file.size };
+  return { manifest: manifestAddress, blocks: entries.map((e) => e.address), size: file.size };
 }
 
 /** The storage addresses a manifest references, for a peer to pull before

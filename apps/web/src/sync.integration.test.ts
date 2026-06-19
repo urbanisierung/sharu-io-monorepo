@@ -12,6 +12,15 @@ import { blockAddresses, ingestFile, restoreFile } from './pipeline.js';
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
+/** Poll until `predicate` holds or the timeout elapses (background auto-pull). */
+const until = async (predicate: () => Promise<boolean>, timeout = 5000): Promise<void> => {
+  const deadline = Date.now() + timeout;
+  while (!(await predicate())) {
+    if (Date.now() > deadline) throw new Error('condition not met within timeout');
+    await flush();
+  }
+};
+
 /** Random bytes of arbitrary length (getRandomValues caps at 64 KiB per call). */
 function randomBytes(length: number): Uint8Array {
   const out = new Uint8Array(length);
@@ -66,6 +75,49 @@ describe('end-to-end pipeline over loopback (no relay)', () => {
     // B restores the plaintext and it matches the original byte-for-byte.
     const restored = await restoreFile(manifest, passphrase, storeB);
     expect(restored.length).toBe(original.length);
+    expect(await blake3(restored)).toBe(await blake3(original));
+
+    await syncA.close();
+    await syncB.close();
+  });
+
+  it('B auto-pulls every referenced block on sync, then restores', async () => {
+    const net = new LoopbackNetwork();
+    const ta = net.endpoint('A');
+    const tb = net.endpoint('B');
+
+    const docA = new SyncDoc('A');
+    docA.addWriter('B');
+    const docB = new SyncDoc('B');
+    docB.addWriter('A');
+
+    const storeA = new MemoryBlockStore();
+    const storeB = new MemoryBlockStore();
+    const syncA = new DocSync(ta, docA, storeA);
+    const syncB = new DocSync(tb, docB, storeB);
+    syncA.serve();
+    syncB.serve();
+
+    const original = randomBytes(3 * 1024 * 1024);
+    const file = new File([original as BlobPart], 'big.bin');
+    const passphrase = 'correct horse battery staple';
+
+    // The allocation table entry lists every address the file needs, so a peer
+    // can pull them all without parsing the manifest.
+    const { manifest, size, blocks } = await ingestFile(file, passphrase, storeA);
+
+    await syncB.connect(ta.addr());
+    await flush();
+    docA.setFile('big.bin', [manifest, ...blocks], size, 1000);
+
+    // B converges and fetches the manifest + every data block on its own.
+    const needed = [manifest, ...blocks];
+    await until(async () => {
+      for (const hash of needed) if (!(await storeB.has(hash))) return false;
+      return true;
+    });
+
+    const restored = await restoreFile(manifest, passphrase, storeB);
     expect(await blake3(restored)).toBe(await blake3(original));
 
     await syncA.close();

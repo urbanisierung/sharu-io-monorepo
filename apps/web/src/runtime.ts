@@ -16,7 +16,7 @@ import {
 } from '@safu/sdk';
 import type { PeerAddr, Transport } from '@safu/transport';
 import { IngestController } from './ingest-controller.js';
-import { blockAddresses, ingestFile, restoreFile } from './pipeline.js';
+import { ingestFile, restoreFile } from './pipeline.js';
 
 export interface Runtime {
   controller: IngestController;
@@ -58,8 +58,10 @@ export async function createRuntime(): Promise<Runtime> {
   const ingest = async (file: File, pass: string): Promise<void> => {
     syncStatus.value = 'syncing';
     try {
-      const { manifest, size } = await ingestFile(file, pass, store);
-      doc.setFile(file.name, [manifest], size, file.lastModified);
+      const { manifest, blocks, size } = await ingestFile(file, pass, store);
+      // Record every referenced address so a peer can auto-pull the whole file
+      // from the synced table without parsing the manifest.
+      doc.setFile(file.name, [manifest, ...blocks], size, file.lastModified);
       syncStatus.value = 'idle';
     } catch (cause) {
       syncStatus.value = 'error';
@@ -80,16 +82,8 @@ export async function createRuntime(): Promise<Runtime> {
     doc.addWriter(peer.id);
     await sync.connect(peer);
     peers.value = [...new Set([...peers.value, peer.id])];
-    // Pre-fetch any blocks the synced table references but we don't hold yet.
-    for (const view of doc.files.value) {
-      const manifest = view.blocks[0];
-      if (manifest && !(await store.has(manifest))) {
-        await sync.requestBlock(peer, manifest);
-        for (const address of await blockAddresses(manifest, store)) {
-          if (!(await store.has(address))) await sync.requestBlock(peer, address);
-        }
-      }
-    }
+    // DocSync auto-pulls any blocks the synced table references but we lack,
+    // from the peer we just connected to — including the manifest itself.
   };
 
   return {

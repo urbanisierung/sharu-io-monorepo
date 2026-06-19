@@ -23,6 +23,9 @@ export class DocSync {
   readonly #doc: SyncDoc;
   readonly #store: BlockStore;
   readonly #peers = new Set<Channel>();
+  // The dialable address for each channel we initiated, so we can pull missing
+  // blocks back from that peer. Channels we only accepted have no return addr.
+  readonly #addrs = new Map<Channel, PeerAddr>();
   #unsubscribe: (() => void) | undefined;
 
   constructor(transport: Transport, doc: SyncDoc, store: BlockStore) {
@@ -42,6 +45,7 @@ export class DocSync {
   async connect(peer: PeerAddr): Promise<void> {
     this.#unsubscribe ??= this.#doc.onDelta((delta) => this.#broadcast(delta));
     const channel = await this.#transport.connect(peer, SYNC_PROTOCOL);
+    this.#addrs.set(channel, peer);
     this.#track(channel);
   }
 
@@ -65,6 +69,7 @@ export class DocSync {
     this.#unsubscribe = undefined;
     for (const channel of this.#peers) await channel.close();
     this.#peers.clear();
+    this.#addrs.clear();
     await this.#transport.close();
   }
 
@@ -100,9 +105,24 @@ export class DocSync {
   async #readDeltas(channel: Channel): Promise<void> {
     for await (const message of channel.messages()) {
       const delta = JSON.parse(dec.decode(message)) as Delta;
-      this.#doc.applyRemote(channel.peer, delta);
+      const accepted = this.#doc.applyRemote(channel.peer, delta);
+      const addr = this.#addrs.get(channel);
+      // A peer we dialed: pull any newly-referenced blocks we lack from it.
+      if (addr && accepted.entries.length > 0) void this.#pullMissing(addr);
     }
     this.#peers.delete(channel);
+    this.#addrs.delete(channel);
+  }
+
+  /** Fetch every block the document references but the local store lacks, from
+   *  `peer`. Idempotent: a `has` guard skips blocks already held or concurrently
+   *  fetched, so overlapping calls converge without double-pulling. */
+  async #pullMissing(peer: PeerAddr): Promise<void> {
+    for (const file of this.#doc.files.value) {
+      for (const hash of file.blocks) {
+        if (!(await this.#store.has(hash))) await this.requestBlock(peer, hash);
+      }
+    }
   }
 
   #broadcast(delta: Delta): void {

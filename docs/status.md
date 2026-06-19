@@ -39,7 +39,9 @@ a desktop host to build/run.
   (`@safu/transport/iroh`, relay-only) and a **native** Iroh transport
   (`safu_transport::native`, direct hole-punching) behind the same interface.
 - **Doc sync + block transfer** (`DocSync`): deltas + content-addressed blocks
-  over the transport; only ciphertext crosses (zero-knowledge).
+  over the transport; only ciphertext crosses (zero-knowledge). A peer
+  **auto-pulls** every block the synced table references but lacks, from the
+  dialed peer — the allocation entry is self-describing (`[manifest, …blocks]`).
 - **Web app** (`apps/web`): signal-driven Cascivo UI (no React state hooks; all
   copy via `@cascivo/i18n`), drag-drop ingest with all interaction states, file
   list, **restore/download**, and a device-pairing affordance. A lint-guard test
@@ -81,8 +83,11 @@ so a dialable relay address is set before pairing.
 3. **Pairing UX.** Replace the raw id+relay inputs with a QR / short-code
    exchange and an out-of-band fingerprint (SAS) check to prevent relay MITM
    (flagged open question). Auto-populate `peers` from active sync channels.
-4. **Auto-pull on sync.** When the table references blocks a peer lacks, fetch
-   them automatically (currently `pair()` pre-fetches; generalize into DocSync).
+4. ~~**Auto-pull on sync.**~~ ✅ Done — `DocSync` auto-pulls any block the synced
+   table references but the local store lacks, from the dialed peer (on catch-up
+   and on later deltas). The allocation-table entry is now self-describing
+   (`[manifest, …dataAddresses]`), so the puller needs no manifest parsing; the
+   manual prefetch loop in `pair()` is gone.
 5. **Desktop (M3).** Build `apps/desktop` on a host with the webview toolchain;
    verify tray/autostart, the FS-watch→ingest loop, and the §3.4
    web→relay→desktop benchmark (direct hole-punching). See
