@@ -21,7 +21,7 @@ a desktop host to build/run.
 | M0 — Scaffold | ✅ done |
 | M1 — Crypto pipeline & local storage | ✅ done (lossless, memory-bounded, authenticated round-trip) |
 | M2 — Web app & P2P sync (§2.1–2.4) | ✅ done — proven over loopback **and** the live n0 relay |
-| M3 — Tauri desktop (§3.1–3.4) | 🟡 native transport verified; shell scaffolded, unbuilt here |
+| M3 — Tauri desktop (§3.1–3.4) | 🟡 crate compiles & links on a host; window/tray/FS-watch/benchmark need an attached display |
 
 ## What works and is verified
 
@@ -97,10 +97,13 @@ so a dialable relay address is set before pairing.
    and on later deltas). The allocation-table entry is now self-describing
    (`[manifest, …dataAddresses]`), so the puller needs no manifest parsing; the
    manual prefetch loop in `pair()` is gone.
-5. **Desktop (M3).** Build `apps/desktop` on a host with the webview toolchain;
-   verify tray/autostart, the FS-watch→ingest loop, and the §3.4
-   web→relay→desktop benchmark (direct hole-punching). See
-   `apps/desktop/README.md`.
+5. **Desktop (M3).** 🟡 Partially done on a host: the `safu-desktop` crate now
+   **compiles and links** against the system webview (webkit2gtk-4.1 2.52.4;
+   icons generated). Still needs an attached display to exercise the window,
+   tray/autostart, the FS-watch→ingest loop, and the §3.4 web→relay→desktop
+   benchmark — run `pnpm tauri dev` in a graphical session. Two frontend wiring
+   gaps remain: the desktop still uses `OpfsBlockStore` (native `block_*`
+   unused) and FS-watch isn't wired to ingest. See `apps/desktop/README.md`.
 6. **Dedup decision.** Convergent encryption (dedup with a content-equality
    leak) remains a deliberate future option — decide explicitly.
 7. ~~**Crypto hardening.**~~ ✅ Done — every op is now **Ed25519-signed** by its

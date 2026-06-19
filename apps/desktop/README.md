@@ -39,11 +39,18 @@ pnpm tauri build   # builds apps/web, then bundles the desktop app
 
 ## Verified vs. pending
 
-- ✅ **Verified in CI**: the native transport core (`safu_transport::native`)
-  compiles on the native target (`cargo check -p safu-transport`). Its API
-  mirrors the wasm binding the browser uses.
-- ⏳ **Not verifiable in the headless sandbox** (needs a desktop host + webview):
-  compiling the `safu-desktop` crate, launching the shell, the tray / autostart,
-  the FS-watch → ingest loop, and the §3.4 cross-runtime benchmark
-  (web → relay → desktop pulls via direct hole-punching). The pieces are wired;
-  run the steps above on a desktop host to exercise them.
+- ✅ **Native transport core** compiles (`safu_transport::native`).
+- ✅ **`safu-desktop` crate compiles and links** on a desktop host (Fedora,
+  457 crates, ~95 s), producing `target/debug/safu-desktop` dynamically linked
+  against the system webview (webkit2gtk-4.1 **2.52.4**, gtk-3, libsoup-3.0,
+  javascriptcoregtk-4.1). Icons are generated under `src-tauri/icons/`. That
+  WebKitGTK is recent enough for OPFS, which the frontend's storage uses.
+- ⏳ **Needs an attached display** (not exercisable from a headless/agent shell
+  with no Wayland/X compositor): launching the window, tray / autostart, the
+  FS-watch → ingest loop, and the §3.4 cross-runtime benchmark
+  (web → relay → desktop via direct hole-punching). Run `pnpm tauri dev` in a
+  graphical session to exercise them.
+- ⚠️ **Known wiring gaps** (frontend, independent of this crate): `runtime.ts`
+  always uses the browser `OpfsBlockStore`, so the native `block_*` commands are
+  not yet consumed; and `watch_folder` / `file-changed` is not yet wired to
+  auto-ingest. Both are scaffolded and ready to connect.
