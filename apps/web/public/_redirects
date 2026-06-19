@@ -1,0 +1,4 @@
+# SPA fallback: serve index.html for any unmatched path (200, not a redirect)
+# so client-side routes resolve and hard refreshes don't 404. Real assets
+# (hashed JS/CSS/.wasm) are matched first and served directly.
+/*    /index.html    200
