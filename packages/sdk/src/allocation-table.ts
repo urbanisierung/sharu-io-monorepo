@@ -74,6 +74,17 @@ export class Hlc {
     return { wall: this.#wall, counter: this.#counter, peer: this.peer };
   }
 
+  /** Internal clock state, for persisting across restarts. */
+  state(): { wall: number; counter: number } {
+    return { wall: this.#wall, counter: this.#counter };
+  }
+
+  /** Restore clock state from a snapshot so issued stamps stay monotonic. */
+  load(wall: number, counter: number): void {
+    this.#wall = wall;
+    this.#counter = counter;
+  }
+
   /** Fold a remote stamp into local time so subsequent local stamps dominate it. */
   observe(stamp: Stamp, now: number): void {
     const wall = Math.max(this.#wall, stamp.wall, now);

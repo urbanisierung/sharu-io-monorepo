@@ -26,6 +26,7 @@ import {
   type Stamp,
   type StampedEntry,
 } from './allocation-table.js';
+import type { DocSnapshot, DocStore } from './doc-store.js';
 
 /** A grant or revocation of write access, authored by `stamp.peer`. */
 export interface WriterOp {
@@ -57,11 +58,24 @@ export class SyncDoc {
   readonly #revoked = new Set<PeerId>();
   readonly #files = signal<readonly FileView[]>([]);
   readonly #listeners = new Set<(delta: Delta) => void>();
+  readonly #store?: DocStore;
+  #pending: Promise<void> | null = null;
+  #dirty = false;
 
-  /** `self` is the genesis owner: authorized from creation. */
-  constructor(self: PeerId) {
+  /** `self` is the genesis owner: authorized from creation. A `store`, if given,
+   *  receives a coalesced snapshot after every state change. */
+  constructor(self: PeerId, store?: DocStore) {
     this.#hlc = new Hlc(self);
     this.#added.add(self);
+    this.#store = store;
+  }
+
+  /** Open a document backed by `store`, restoring its last snapshot if present. */
+  static async open(self: PeerId, store: DocStore): Promise<SyncDoc> {
+    const doc = new SyncDoc(self, store);
+    const snapshot = await store.load();
+    if (snapshot) doc.#load(snapshot);
+    return doc;
   }
 
   /** Live files, sorted by path — a domain signal the web app renders directly. */
@@ -89,14 +103,14 @@ export class SyncDoc {
   /** Grant write access to `peer`. */
   addWriter(peer: PeerId): Delta {
     const op: WriterOp = { kind: 'add', peer, stamp: this.#hlc.tick(now()) };
-    this.#applyWriterOp(op);
+    if (this.#applyWriterOp(op)) this.#scheduleSave();
     return { entries: [], writers: [op] };
   }
 
   /** Permanently revoke `peer`'s write access (e.g. a lost device). */
   revokeWriter(peer: PeerId): Delta {
     const op: WriterOp = { kind: 'revoke', peer, stamp: this.#hlc.tick(now()) };
-    this.#applyWriterOp(op);
+    if (this.#applyWriterOp(op)) this.#scheduleSave();
     return { entries: [], writers: [op] };
   }
 
@@ -122,6 +136,7 @@ export class SyncDoc {
       if (this.#table.apply(stamped)) entries.push(stamped);
     }
     if (entries.length > 0) this.#publish();
+    if (entries.length > 0 || writers.length > 0) this.#scheduleSave();
     void sender;
     return { entries, writers };
   }
@@ -130,6 +145,21 @@ export class SyncDoc {
    *  connects after mutations have already happened. */
   snapshot(): Delta {
     return { entries: this.#table.state(), writers: [] };
+  }
+
+  /** A fully serializable image of the document, for persistence. */
+  serialize(): DocSnapshot {
+    return {
+      entries: this.#table.state(),
+      added: [...this.#added],
+      revoked: [...this.#revoked],
+      hlc: this.#hlc.state(),
+    };
+  }
+
+  /** Resolve once every pending snapshot write has flushed to the store. */
+  async flush(): Promise<void> {
+    while (this.#pending) await this.#pending;
   }
 
   /** Subscribe to locally-produced and accepted-remote deltas for broadcast. */
@@ -141,9 +171,34 @@ export class SyncDoc {
   #authorLocal(stamped: StampedEntry): Delta {
     this.#table.apply(stamped);
     this.#publish();
+    this.#scheduleSave();
     const delta: Delta = { entries: [stamped], writers: [] };
     this.#emit(delta);
     return delta;
+  }
+
+  #load(snapshot: DocSnapshot): void {
+    for (const entry of snapshot.entries) this.#table.apply(entry);
+    for (const peer of snapshot.added) this.#added.add(peer);
+    for (const peer of snapshot.revoked) this.#revoked.add(peer);
+    this.#hlc.load(snapshot.hlc.wall, snapshot.hlc.counter);
+    this.#publish();
+  }
+
+  // Coalesced persistence: a state change marks the doc dirty and the drain loop
+  // writes the latest serialized snapshot, collapsing bursts into one write.
+  #scheduleSave(): void {
+    if (!this.#store) return;
+    this.#dirty = true;
+    if (!this.#pending) this.#pending = this.#drain();
+  }
+
+  async #drain(): Promise<void> {
+    while (this.#dirty) {
+      this.#dirty = false;
+      await this.#store?.save(this.serialize());
+    }
+    this.#pending = null;
   }
 
   #applyWriterOp(op: WriterOp): boolean {

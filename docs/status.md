@@ -43,6 +43,11 @@ a desktop host to build/run.
   copy via `@cascivo/i18n`), drag-drop ingest with all interaction states, file
   list, **restore/download**, and a device-pairing affordance. A lint-guard test
   enforces the no-hooks / no-hardcoded-strings rules.
+- **Persisted document** (`packages/sdk`): a `DocStore` snapshot interface
+  (`MemoryDocStore`, browser `OpfsDocStore`). `SyncDoc.open()` restores the last
+  snapshot — entries (incl. tombstones), writer set, and HLC state — and every
+  mutation (local, writer ops, accepted remote deltas) coalesces into a write,
+  so the backup list survives reloads. The web runtime opens the doc from OPFS.
 - **End-to-end pipeline proof** (`apps/web/src/sync.integration.test.ts`): A
   ingests a 3 MiB file → allocation table syncs to B over the loopback transport
   → B pulls the blocks → **B restores with BLAKE3 parity**. Plus single-device
@@ -68,9 +73,9 @@ before pairing.
 1. **Close the relay hop (M2 exit).** Serve `apps/web/dist` from a real origin
    (or `vite preview`) and run the gated e2e / pair two browsers against the
    public relay. This is the one unproven link.
-2. **Persist the document.** `SyncDoc` is in-memory; on reload the file list is
-   lost (blocks persist in OPFS). Add a persisted CRDT snapshot (OPFS/IndexedDB)
-   so backups survive restarts.
+2. ~~**Persist the document.**~~ ✅ Done — `SyncDoc.open()` restores a persisted
+   CRDT snapshot from OPFS (`OpfsDocStore`); mutations auto-persist, so the file
+   list survives restarts.
 3. **Pairing UX.** Replace the raw id+relay inputs with a QR / short-code
    exchange and an out-of-band fingerprint (SAS) check to prevent relay MITM
    (flagged open question). Auto-populate `peers` from active sync channels.

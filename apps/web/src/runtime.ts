@@ -10,6 +10,7 @@ import {
   DocSync,
   type FileView,
   OpfsBlockStore,
+  OpfsDocStore,
   SYNC_PROTOCOL,
   SyncDoc,
 } from '@safu/sdk';
@@ -44,7 +45,9 @@ async function selectTransport(protocols: string[]): Promise<Transport> {
 export async function createRuntime(): Promise<Runtime> {
   const transport = await selectTransport([SYNC_PROTOCOL, BLOCK_PROTOCOL]);
   const store = new OpfsBlockStore();
-  const doc = new SyncDoc(transport.id());
+  // Persist the allocation table to OPFS so the backup list survives a reload
+  // (status next-step #2); blocks already persist in the OpfsBlockStore.
+  const doc = await SyncDoc.open(transport.id(), new OpfsDocStore());
   const sync = new DocSync(transport, doc, store);
   sync.serve();
 
