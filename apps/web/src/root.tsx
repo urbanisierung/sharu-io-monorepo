@@ -23,7 +23,8 @@ function launch(): void {
   });
 }
 
-/** Restore a file and hand it to the browser as a download. */
+/** Restore a file and hand it to the browser as a download. Rejects if the file
+ *  cannot be decrypted (e.g. a different passphrase) so the UI can surface it. */
 async function download(path: string): Promise<void> {
   const ready = runtime.value;
   if (!ready) return;
@@ -49,7 +50,7 @@ export function Root() {
       peers={ready.peers}
       syncStatus={ready.syncStatus}
       connectionCode={ready.connectionCode}
-      onRestore={(path) => void download(path)}
+      onRestore={(path) => download(path)}
       onPair={(code) => ready.pairWithCode(code)}
       onVerify={(id) => ready.verifyPeer(id)}
       onReject={(id) => ready.rejectPeer(id)}

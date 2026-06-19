@@ -45,6 +45,17 @@ describe('App shell (plan §2.4)', () => {
     expect(await screen.findByText('photo.jpg')).toBeTruthy();
   });
 
+  it('surfaces a clear error when a restore fails (e.g. wrong passphrase)', async () => {
+    const { controller, files } = renderApp({
+      onRestore: () => Promise.reject(new Error('aes-gcm open failed')),
+    });
+    controller.unlock('p');
+    files.value = [{ path: 'secret.bin', size: 1, modified: 1, blocks: ['m'] }];
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Download' }));
+    expect(await screen.findByText(/same passphrase/)).toBeTruthy();
+  });
+
   it('shows a paired peer with its SAS and confirms it (plan §2.2)', async () => {
     const onVerify = vi.fn();
     const { controller, peers } = renderApp({

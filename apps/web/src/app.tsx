@@ -20,7 +20,7 @@ export interface AppProps {
   syncStatus: ReadonlySignal<'idle' | 'syncing' | 'error'>;
   /** This device's connection code (a signal — empty until unlock derives it). */
   connectionCode?: ReadonlySignal<string>;
-  onRestore?: (path: string) => void;
+  onRestore?: (path: string) => Promise<void>;
   onPair?: (code: string) => Promise<void>;
   onVerify?: (id: string) => void;
   onReject?: (id: string) => void;
@@ -33,6 +33,7 @@ const draftPeerCode = signal('');
 const draftWatchPath = signal('');
 const copied = signal(false);
 const pairFailed = signal(false);
+const restoreFailed = signal(false);
 
 export function App({
   controller,
@@ -104,7 +105,15 @@ export function App({
               <li key={file.path} class={styles.row}>
                 <span>{file.path}</span>
                 {onRestore && (
-                  <Button intent="neutral" onClick={() => onRestore(file.path)}>
+                  <Button
+                    intent="neutral"
+                    onClick={() => {
+                      restoreFailed.value = false;
+                      onRestore(file.path).catch(() => {
+                        restoreFailed.value = true;
+                      });
+                    }}
+                  >
                     {t(messages.download)}
                   </Button>
                 )}
@@ -112,6 +121,7 @@ export function App({
             ))}
           </ul>
         )}
+        {restoreFailed.value && <p class={styles.warn}>{t(messages.restoreFailed)}</p>}
       </section>
 
       {phase.kind !== 'first-run' && onPair && (

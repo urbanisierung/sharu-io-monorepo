@@ -81,6 +81,7 @@ export const messages = defineMessages('safu', {
   filesHeading: 'Backed-up files',
   empty: 'Nothing backed up yet',
   download: 'Download',
+  restoreFailed: 'Couldn’t decrypt this file — every device must unlock with the same passphrase.',
   devicesHeading: 'Devices',
   yourCode: 'Your connection code (share to pair)',
   copy: 'Copy',
