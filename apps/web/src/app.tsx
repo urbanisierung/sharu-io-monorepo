@@ -9,25 +9,44 @@ import type { FileView } from '@safu/sdk';
 import styles from './app.module.css';
 import type { IngestController } from './ingest-controller.js';
 import { messages } from './messages.js';
+import type { PeerInfo } from './runtime.js';
 import { Button } from './ui/button.js';
 import { DropZone } from './ui/drop-zone.js';
 
 export interface AppProps {
   controller: IngestController;
   files: ReadonlySignal<readonly FileView[]>;
-  peers: ReadonlySignal<readonly string[]>;
+  peers: ReadonlySignal<readonly PeerInfo[]>;
   syncStatus: ReadonlySignal<'idle' | 'syncing' | 'error'>;
-  /** This device's id, shown so it can be shared out-of-band for pairing. */
-  selfId?: string;
-  onRestore?: (path: string) => void;
-  onPair?: (peerId: string, relayUrl: string) => void;
+  /** This device's connection code (a signal — empty until unlock derives it). */
+  connectionCode?: ReadonlySignal<string>;
+  onRestore?: (path: string) => Promise<void>;
+  onPair?: (code: string) => Promise<void>;
+  onVerify?: (id: string) => void;
+  onReject?: (id: string) => void;
+  /** Desktop only: start watching a folder for auto-backup. */
+  onWatch?: (path: string) => Promise<void>;
 }
 
 const draftPassphrase = signal('');
-const draftPeerId = signal('');
-const draftPeerRelay = signal('');
+const draftPeerCode = signal('');
+const draftWatchPath = signal('');
+const copied = signal(false);
+const pairFailed = signal(false);
+const restoreFailed = signal(false);
 
-export function App({ controller, files, peers, syncStatus, selfId, onRestore, onPair }: AppProps) {
+export function App({
+  controller,
+  files,
+  peers,
+  syncStatus,
+  connectionCode,
+  onRestore,
+  onPair,
+  onVerify,
+  onReject,
+  onWatch,
+}: AppProps) {
   const phase = controller.phase.value;
 
   return (
@@ -86,7 +105,15 @@ export function App({ controller, files, peers, syncStatus, selfId, onRestore, o
               <li key={file.path} class={styles.row}>
                 <span>{file.path}</span>
                 {onRestore && (
-                  <Button intent="neutral" onClick={() => onRestore(file.path)}>
+                  <Button
+                    intent="neutral"
+                    onClick={() => {
+                      restoreFailed.value = false;
+                      onRestore(file.path).catch(() => {
+                        restoreFailed.value = true;
+                      });
+                    }}
+                  >
                     {t(messages.download)}
                   </Button>
                 )}
@@ -94,36 +121,96 @@ export function App({ controller, files, peers, syncStatus, selfId, onRestore, o
             ))}
           </ul>
         )}
+        {restoreFailed.value && <p class={styles.warn}>{t(messages.restoreFailed)}</p>}
       </section>
 
       {phase.kind !== 'first-run' && onPair && (
         <section class={styles.gate}>
           <h2>{t(messages.devicesHeading)}</h2>
-          {selfId && (
-            <p class={styles.muted}>
-              {t(messages.yourId)}: <code>{selfId}</code>
-            </p>
+          {connectionCode?.value && (
+            <div class={styles.codeRow}>
+              <p class={styles.muted}>{t(messages.yourCode)}</p>
+              <code class={styles.code}>{connectionCode.value}</code>
+              <Button
+                intent="neutral"
+                onClick={() => {
+                  void navigator.clipboard?.writeText(connectionCode.value);
+                  copied.value = true;
+                }}
+              >
+                {copied.value ? t(messages.copied) : t(messages.copy)}
+              </Button>
+            </div>
           )}
           <input
             class={styles.input}
-            aria-label={t(messages.peerIdPlaceholder)}
-            placeholder={t(messages.peerIdPlaceholder)}
-            value={draftPeerId.value}
+            aria-label={t(messages.peerCodePlaceholder)}
+            placeholder={t(messages.peerCodePlaceholder)}
+            value={draftPeerCode.value}
             onInput={(event) => {
-              draftPeerId.value = (event.target as HTMLInputElement).value;
+              draftPeerCode.value = (event.target as HTMLInputElement).value;
+              pairFailed.value = false;
             }}
           />
+          <Button
+            intent="primary"
+            onClick={() => {
+              pairFailed.value = false;
+              onPair(draftPeerCode.value).catch(() => {
+                pairFailed.value = true;
+              });
+            }}
+          >
+            {t(messages.pair)}
+          </Button>
+          {pairFailed.value && <p class={styles.warn}>{t(messages.pairError)}</p>}
+
+          {peers.value.length > 0 && (
+            <ul class={styles.list}>
+              {peers.value.map((peer) => (
+                <li key={peer.id} class={styles.peerRow}>
+                  <code class={styles.code}>{peer.id}</code>
+                  <span class={styles.muted}>
+                    {t(messages.sasPrompt)} <strong>{peer.sas}</strong>
+                  </span>
+                  <span class={styles.muted}>
+                    {peer.status === 'verified'
+                      ? t(messages.statusVerified)
+                      : peer.status === 'rejected'
+                        ? t(messages.statusRejected)
+                        : t(messages.statusPending)}
+                  </span>
+                  {peer.status === 'pending' && onVerify && onReject && (
+                    <span class={styles.peerActions}>
+                      <Button intent="primary" onClick={() => onVerify(peer.id)}>
+                        {t(messages.confirm)}
+                      </Button>
+                      <Button intent="neutral" onClick={() => onReject(peer.id)}>
+                        {t(messages.reject)}
+                      </Button>
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {phase.kind !== 'first-run' && onWatch && (
+        <section class={styles.gate}>
+          <h2>{t(messages.watchHeading)}</h2>
           <input
             class={styles.input}
-            aria-label={t(messages.peerRelayPlaceholder)}
-            placeholder={t(messages.peerRelayPlaceholder)}
-            value={draftPeerRelay.value}
+            aria-label={t(messages.watchPlaceholder)}
+            placeholder={t(messages.watchPlaceholder)}
+            value={draftWatchPath.value}
             onInput={(event) => {
-              draftPeerRelay.value = (event.target as HTMLInputElement).value;
+              draftWatchPath.value = (event.target as HTMLInputElement).value;
             }}
           />
-          <Button intent="primary" onClick={() => onPair(draftPeerId.value, draftPeerRelay.value)}>
-            {t(messages.pair)}
+          <Button intent="neutral" onClick={() => void onWatch(draftWatchPath.value)}>
+            {t(messages.watch)}
           </Button>
         </section>
       )}

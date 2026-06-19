@@ -22,7 +22,7 @@ export default defineConfig({
         test: {
           name: 'web',
           include: ['apps/web/src/**/*.test.{ts,tsx}'],
-          exclude: [...exclude, '**/*.integration.test.ts'],
+          exclude: [...exclude, '**/*.integration.test.ts', '**/*.browser.test.ts'],
           environment: 'happy-dom',
         },
       },
@@ -33,7 +33,7 @@ export default defineConfig({
         define: { __SAFU_E2E__: JSON.stringify(process.env.SAFU_E2E === '1') },
         test: {
           name: 'opfs',
-          include: ['packages/sdk/src/**/*.browser.test.ts'],
+          include: ['packages/sdk/src/**/*.browser.test.ts', 'apps/web/src/**/*.browser.test.ts'],
           exclude,
           browser: {
             enabled: true,

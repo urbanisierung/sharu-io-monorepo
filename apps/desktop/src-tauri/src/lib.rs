@@ -150,6 +150,13 @@ async fn channel_close(state: State<'_, Safu>, channel: u64) -> Result<(), Strin
 
 // ---- Filesystem watcher (plan §3.3) -----------------------------------------
 
+/// Read a watched file's bytes so the frontend can ingest it. Errors for a path
+/// that no longer exists (e.g. a delete event), which the caller skips.
+#[tauri::command]
+async fn read_file(path: String) -> Result<Vec<u8>, String> {
+    tokio::fs::read(&path).await.map_err(|e| e.to_string())
+}
+
 /// Watch a folder and emit a `file-changed` event with each changed path so the
 /// frontend can auto-ingest it into the synced document.
 #[tauri::command]
@@ -203,6 +210,7 @@ pub fn run() {
             channel_send,
             channel_recv,
             channel_close,
+            read_file,
             watch_folder,
         ])
         .run(tauri::generate_context!())
