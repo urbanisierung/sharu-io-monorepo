@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@noble/curves": "2.2.0",
     "@preact/signals-core": "1.14.3",
     "@safu/transport": "workspace:*"
   },

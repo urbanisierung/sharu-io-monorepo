@@ -42,6 +42,11 @@ a desktop host to build/run.
   over the transport; only ciphertext crosses (zero-knowledge). A peer
   **auto-pulls** every block the synced table references but lacks, from the
   dialed peer — the allocation entry is self-describing (`[manifest, …blocks]`).
+- **Signed authorship** (`packages/sdk`): every op is Ed25519-signed by its
+  author and verified on receipt, so a still-trusted device cannot forge another
+  peer's author id. The author id is a **stable per-device signing identity**
+  derived from `passphrase + salt` (Argon2id; secret stays in memory, only the
+  salt is persisted) — decoupled from the transport's ephemeral endpoint key.
 - **Web app** (`apps/web`): signal-driven Cascivo UI (no React state hooks; all
   copy via `@cascivo/i18n`), drag-drop ingest with all interaction states, file
   list, **restore/download**, and **device pairing** (copy-paste connection code
@@ -98,5 +103,11 @@ so a dialable relay address is set before pairing.
    `apps/desktop/README.md`.
 6. **Dedup decision.** Convergent encryption (dedup with a content-equality
    leak) remains a deliberate future option — decide explicitly.
-7. **Crypto hardening.** Per-op signatures so a still-trusted device cannot forge
-   another's author id (M2 leans on transport-authenticated identity).
+7. ~~**Crypto hardening.**~~ ✅ Done — every op is now **Ed25519-signed** by its
+   author and verified on receipt (`signing.ts`, `@noble/curves`), so a
+   still-trusted device cannot forge another's author id. Authorship moved off
+   the transport's *ephemeral* endpoint key onto a **stable per-device signing
+   identity** derived from `passphrase + per-device salt` (Argon2id; only the
+   non-secret salt is persisted). The pairing code now carries the signing
+   pubkey, the SAS binds it, and the device list is the document's authorized
+   writers (so it survives reloads). Deferred: persisted SAS verdict.

@@ -18,8 +18,8 @@ export interface AppProps {
   files: ReadonlySignal<readonly FileView[]>;
   peers: ReadonlySignal<readonly PeerInfo[]>;
   syncStatus: ReadonlySignal<'idle' | 'syncing' | 'error'>;
-  /** This device's connection code, shared out-of-band to pair. */
-  connectionCode?: string;
+  /** This device's connection code (a signal — empty until unlock derives it). */
+  connectionCode?: ReadonlySignal<string>;
   onRestore?: (path: string) => void;
   onPair?: (code: string) => Promise<void>;
   onVerify?: (id: string) => void;
@@ -113,14 +113,14 @@ export function App({
       {phase.kind !== 'first-run' && onPair && (
         <section class={styles.gate}>
           <h2>{t(messages.devicesHeading)}</h2>
-          {connectionCode && (
+          {connectionCode?.value && (
             <div class={styles.codeRow}>
               <p class={styles.muted}>{t(messages.yourCode)}</p>
-              <code class={styles.code}>{connectionCode}</code>
+              <code class={styles.code}>{connectionCode.value}</code>
               <Button
                 intent="neutral"
                 onClick={() => {
-                  void navigator.clipboard?.writeText(connectionCode);
+                  void navigator.clipboard?.writeText(connectionCode.value);
                   copied.value = true;
                 }}
               >

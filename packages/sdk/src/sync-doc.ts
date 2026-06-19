@@ -27,12 +27,41 @@ import {
   type StampedEntry,
 } from './allocation-table.js';
 import type { DocSnapshot, DocStore } from './doc-store.js';
+import { type Signer, verifySignature } from './signing.js';
 
-/** A grant or revocation of write access, authored by `stamp.peer`. */
+/** A grant or revocation of write access, authored by `stamp.peer`. The optional
+ *  `sig` is the author's signature over the op (status #7). */
 export interface WriterOp {
   kind: 'add' | 'revoke';
   peer: PeerId;
   stamp: Stamp;
+  sig?: string;
+}
+
+const enc = new TextEncoder();
+
+/** Deterministic signable bytes for an entry — a fixed-order tuple, excluding
+ *  the signature itself, so both signer and verifier hash the same input. */
+function entryBytes(e: StampedEntry): Uint8Array {
+  return enc.encode(
+    JSON.stringify([
+      e.path,
+      e.entry.blocks,
+      e.entry.size,
+      e.entry.modified,
+      e.entry.deleted,
+      e.stamp.wall,
+      e.stamp.counter,
+      e.stamp.peer,
+    ]),
+  );
+}
+
+/** Deterministic signable bytes for a writer op. */
+function writerBytes(op: WriterOp): Uint8Array {
+  return enc.encode(
+    JSON.stringify([op.kind, op.peer, op.stamp.wall, op.stamp.counter, op.stamp.peer]),
+  );
 }
 
 /** The unit of replication: stamped entries and writer-set ops to merge. */
@@ -54,25 +83,33 @@ const now = () => Date.now();
 export class SyncDoc {
   readonly #table = new AllocationTable();
   readonly #hlc: Hlc;
+  readonly #self: PeerId;
   readonly #added = new Set<PeerId>();
   readonly #revoked = new Set<PeerId>();
+  readonly #writerIds = signal<readonly PeerId[]>([]);
   readonly #files = signal<readonly FileView[]>([]);
   readonly #listeners = new Set<(delta: Delta) => void>();
   readonly #store?: DocStore;
+  readonly #signer?: Signer;
   #pending: Promise<void> | null = null;
   #dirty = false;
 
   /** `self` is the genesis owner: authorized from creation. A `store`, if given,
-   *  receives a coalesced snapshot after every state change. */
-  constructor(self: PeerId, store?: DocStore) {
+   *  receives a coalesced snapshot after every state change. A `signer`, if
+   *  given, signs every local op and puts the doc in *signed mode*: remote ops
+   *  must carry a valid signature by their claimed author or they are rejected
+   *  (status #7). `self` must be the signer's id. */
+  constructor(self: PeerId, store?: DocStore, signer?: Signer) {
     this.#hlc = new Hlc(self);
+    this.#self = self;
     this.#added.add(self);
     this.#store = store;
+    this.#signer = signer;
   }
 
   /** Open a document backed by `store`, restoring its last snapshot if present. */
-  static async open(self: PeerId, store: DocStore): Promise<SyncDoc> {
-    const doc = new SyncDoc(self, store);
+  static async open(self: PeerId, store: DocStore, signer?: Signer): Promise<SyncDoc> {
+    const doc = new SyncDoc(self, store, signer);
     const snapshot = await store.load();
     if (snapshot) doc.#load(snapshot);
     return doc;
@@ -81,6 +118,13 @@ export class SyncDoc {
   /** Live files, sorted by path — a domain signal the web app renders directly. */
   get files(): ReadonlySignal<readonly FileView[]> {
     return this.#files;
+  }
+
+  /** The other peers in the writer set (every added peer except self, including
+   *  revoked ones), as a signal — the device list the UI renders. Survives a
+   *  reload because the writer set is part of the persisted snapshot. */
+  get writers(): ReadonlySignal<readonly PeerId[]> {
+    return this.#writerIds;
   }
 
   /** Is `peer` currently allowed to author mutations? */
@@ -103,6 +147,7 @@ export class SyncDoc {
   /** Grant write access to `peer`. */
   addWriter(peer: PeerId): Delta {
     const op: WriterOp = { kind: 'add', peer, stamp: this.#hlc.tick(now()) };
+    if (this.#signer) op.sig = this.#signer.sign(writerBytes(op));
     if (this.#applyWriterOp(op)) this.#scheduleSave();
     return { entries: [], writers: [op] };
   }
@@ -110,6 +155,7 @@ export class SyncDoc {
   /** Permanently revoke `peer`'s write access (e.g. a lost device). */
   revokeWriter(peer: PeerId): Delta {
     const op: WriterOp = { kind: 'revoke', peer, stamp: this.#hlc.tick(now()) };
+    if (this.#signer) op.sig = this.#signer.sign(writerBytes(op));
     if (this.#applyWriterOp(op)) this.#scheduleSave();
     return { entries: [], writers: [op] };
   }
@@ -123,6 +169,8 @@ export class SyncDoc {
   applyRemote(sender: PeerId, delta: Delta): Delta {
     const writers: WriterOp[] = [];
     for (const op of delta.writers) {
+      // Reject a forged author before it touches our clock or state.
+      if (!this.#signValid(op.stamp.peer, writerBytes(op), op.sig)) continue;
       this.#hlc.observe(op.stamp, now());
       // Only an authorized peer may change the writer set; the genesis grant of
       // a peer is authored by an already-authorized peer.
@@ -131,6 +179,7 @@ export class SyncDoc {
     }
     const entries: StampedEntry[] = [];
     for (const stamped of delta.entries) {
+      if (!this.#signValid(stamped.stamp.peer, entryBytes(stamped), stamped.sig)) continue;
       this.#hlc.observe(stamped.stamp, now());
       if (!this.authorized(stamped.stamp.peer)) continue;
       if (this.#table.apply(stamped)) entries.push(stamped);
@@ -169,6 +218,7 @@ export class SyncDoc {
   }
 
   #authorLocal(stamped: StampedEntry): Delta {
+    if (this.#signer) stamped.sig = this.#signer.sign(entryBytes(stamped));
     this.#table.apply(stamped);
     this.#publish();
     this.#scheduleSave();
@@ -177,11 +227,19 @@ export class SyncDoc {
     return delta;
   }
 
+  /** In signed mode, an op is valid only if it carries a signature its claimed
+   *  author actually produced. In unsigned mode (no signer), nothing to enforce. */
+  #signValid(authorId: PeerId, bytes: Uint8Array, sig: string | undefined): boolean {
+    if (!this.#signer) return true;
+    return sig !== undefined && verifySignature(authorId, bytes, sig);
+  }
+
   #load(snapshot: DocSnapshot): void {
     for (const entry of snapshot.entries) this.#table.apply(entry);
     for (const peer of snapshot.added) this.#added.add(peer);
     for (const peer of snapshot.revoked) this.#revoked.add(peer);
     this.#hlc.load(snapshot.hlc.wall, snapshot.hlc.counter);
+    this.#refreshWriters();
     this.#publish();
   }
 
@@ -205,11 +263,17 @@ export class SyncDoc {
     if (op.kind === 'add') {
       if (this.#added.has(op.peer)) return false;
       this.#added.add(op.peer);
+      this.#refreshWriters();
       return true;
     }
     if (this.#revoked.has(op.peer)) return false;
     this.#revoked.add(op.peer);
+    this.#refreshWriters();
     return true;
+  }
+
+  #refreshWriters(): void {
+    this.#writerIds.value = [...this.#added].filter((peer) => peer !== this.#self);
   }
 
   #publish(): void {

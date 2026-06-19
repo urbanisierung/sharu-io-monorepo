@@ -5,7 +5,7 @@
 // blocks, and B restores the plaintext with BLAKE3 parity. This exercises
 // crypto + storage + CRDT sync + transport + manifest restore as one system.
 import { blake3 } from '@safu/crypto';
-import { DocSync, MemoryBlockStore, SyncDoc } from '@safu/sdk';
+import { createSigner, DocSync, MemoryBlockStore, SyncDoc } from '@safu/sdk';
 import { LoopbackNetwork } from '@safu/transport';
 import { describe, expect, it } from 'vitest';
 import { blockAddresses, ingestFile, restoreFile } from './pipeline.js';
@@ -123,6 +123,49 @@ describe('end-to-end pipeline over loopback (no relay)', () => {
     await syncA.close();
     await syncB.close();
   });
+
+  it('signed identities: A signs ops, B verifies, auto-pulls and restores (status #7)', async () => {
+    const net = new LoopbackNetwork();
+    const ta = net.endpoint('ta');
+    const tb = net.endpoint('tb');
+
+    // Authorship is the Ed25519 signing id, decoupled from the transport id.
+    const alice = createSigner(new Uint8Array(32).fill(11));
+    const bob = createSigner(new Uint8Array(32).fill(22));
+    const docA = new SyncDoc(alice.id, undefined, alice);
+    docA.addWriter(bob.id);
+    const docB = new SyncDoc(bob.id, undefined, bob);
+    docB.addWriter(alice.id);
+
+    const storeA = new MemoryBlockStore();
+    const storeB = new MemoryBlockStore();
+    const syncA = new DocSync(ta, docA, storeA);
+    const syncB = new DocSync(tb, docB, storeB);
+    syncA.serve();
+    syncB.serve();
+
+    const original = randomBytes(1024 * 1024);
+    const file = new File([original as BlobPart], 'signed.bin');
+    const passphrase = 'shared secret';
+    const { manifest, blocks, size } = await ingestFile(file, passphrase, storeA);
+
+    await syncB.connect(ta.addr());
+    await flush();
+    docA.setFile('signed.bin', [manifest, ...blocks], size, 1000);
+
+    // B accepts only because Alice's signature verifies against her authorized id.
+    const needed = [manifest, ...blocks];
+    await until(async () => {
+      for (const hash of needed) if (!(await storeB.has(hash))) return false;
+      return true;
+    });
+
+    const restored = await restoreFile(manifest, passphrase, storeB);
+    expect(await blake3(restored)).toBe(await blake3(original));
+
+    await syncA.close();
+    await syncB.close();
+  }, 30_000);
 
   it('a single device restores what it ingested (round-trip)', async () => {
     const store = new MemoryBlockStore();

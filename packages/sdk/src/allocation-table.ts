@@ -39,11 +39,13 @@ export interface FileEntry {
   deleted: boolean;
 }
 
-/** A stamped entry as it lives in the table and travels on the wire. */
+/** A stamped entry as it lives in the table and travels on the wire. The
+ *  optional `sig` is the author's signature over the entry (status #7). */
 export interface StampedEntry {
   path: string;
   entry: FileEntry;
   stamp: Stamp;
+  sig?: string;
 }
 
 /** Total order over stamps: wall, then counter, then peer id. Deterministic on

@@ -48,7 +48,7 @@ describe('App shell (plan §2.4)', () => {
   it('shows a paired peer with its SAS and confirms it (plan §2.2)', async () => {
     const onVerify = vi.fn();
     const { controller, peers } = renderApp({
-      connectionCode: 'MY-CODE',
+      connectionCode: signal('MY-CODE'),
       onPair: async () => {},
       onVerify,
       onReject: () => {},
@@ -65,7 +65,7 @@ describe('App shell (plan §2.4)', () => {
 
   it('reflects a rejected peer as writes-blocked', async () => {
     const { controller, peers } = renderApp({
-      connectionCode: 'MY-CODE',
+      connectionCode: signal('MY-CODE'),
       onPair: async () => {},
       onVerify: () => {},
       onReject: () => {},

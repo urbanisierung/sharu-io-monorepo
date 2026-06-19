@@ -11,16 +11,19 @@ import {
   type FileView,
   OpfsBlockStore,
   OpfsDocStore,
+  type Signer,
   SYNC_PROTOCOL,
   SyncDoc,
 } from '@safu/sdk';
-import { decodePeerAddr, encodePeerAddr, type PeerAddr, type Transport } from '@safu/transport';
+import type { Transport } from '@safu/transport';
+import { loadOrCreateSigner } from './identity.js';
 import { IngestController } from './ingest-controller.js';
+import { decodePairingCode, encodePairingCode } from './pairing.js';
 import { ingestFile, restoreFile } from './pipeline.js';
 import { deriveSas } from './sas.js';
 
-/** A connected peer as the UI shows it: its id, the out-of-band SAS to compare,
- *  and the user's verification verdict. */
+/** A paired peer as the UI shows it: its signing id, the out-of-band SAS to
+ *  compare, and the verification verdict. `rejected` means write-revoked. */
 export interface PeerInfo {
   id: string;
   sas: string;
@@ -40,9 +43,8 @@ export interface Runtime {
   verifyPeer: (id: string) => void;
   /** Mark a peer's SAS as mismatched: revoke its write access. */
   rejectPeer: (id: string) => void;
-  /** This device's connection code, to share out-of-band for pairing. */
-  connectionCode: string;
-  selfAddr: PeerAddr;
+  /** This device's connection code (empty until unlock derives the identity). */
+  connectionCode: ReadonlySignal<string>;
 }
 
 /** Pick the transport for the host runtime: the native Iroh core under Tauri
@@ -60,45 +62,64 @@ async function selectTransport(protocols: string[]): Promise<Transport> {
 export async function createRuntime(): Promise<Runtime> {
   const transport = await selectTransport([SYNC_PROTOCOL, BLOCK_PROTOCOL]);
   const store = new OpfsBlockStore();
-  // Persist the allocation table to OPFS so the backup list survives a reload
-  // (status next-step #2); blocks already persist in the OpfsBlockStore.
-  const doc = await SyncDoc.open(transport.id(), new OpfsDocStore());
-  const sync = new DocSync(transport, doc, store);
-  sync.serve();
 
   const syncStatus = signal<'idle' | 'syncing' | 'error'>('idle');
+  const files = signal<readonly FileView[]>([]);
+  const peers = signal<readonly PeerInfo[]>([]);
+  const connectionCode = signal('');
+  // The user's per-peer "SAS matched" verdict — session UI state, distinct from
+  // the persisted authorization in the document.
+  const verified = signal<ReadonlySet<string>>(new Set());
+  const sasCache = new Map<string, string>();
+
+  // The document and signing identity come online at unlock: the identity is
+  // derived from the passphrase, and the doc is opened under it so every local
+  // op is signed (status #7).
+  let doc: SyncDoc | undefined;
+  let sync: DocSync | undefined;
   let passphrase = '';
 
-  // The peer list is derived from DocSync's live channels (so a peer that dials
-  // us also appears), enriched with each peer's SAS and the user's verdict.
-  const verified = signal<ReadonlySet<string>>(new Set());
-  const rejected = signal<ReadonlySet<string>>(new Set());
-  const peers = signal<readonly PeerInfo[]>([]);
-  const sasCache = new Map<string, string>();
-  effect(() => {
-    const ids = sync.peers.value;
-    const isVerified = verified.value;
-    const isRejected = rejected.value;
-    void (async () => {
-      const list: PeerInfo[] = [];
-      for (const id of ids) {
-        let sas = sasCache.get(id);
-        if (sas === undefined) {
-          sas = await deriveSas(transport.id(), id);
-          sasCache.set(id, sas);
+  const setup = async (pass: string): Promise<void> => {
+    passphrase = pass;
+    const id: Signer = await loadOrCreateSigner(pass);
+    connectionCode.value = encodePairingCode({ addr: transport.addr(), signId: id.id });
+    const ready = await SyncDoc.open(id.id, new OpfsDocStore(), id);
+    doc = ready;
+    const docSync = new DocSync(transport, ready, store);
+    docSync.serve();
+    sync = docSync;
+
+    effect(() => {
+      files.value = ready.files.value;
+    });
+    // The device list is the document's authorized writers (signing ids), so it
+    // survives reloads via the persisted writer set. SAS binds the two signing
+    // identities; a revoked writer shows as "rejected".
+    effect(() => {
+      const writerIds = ready.writers.value;
+      const isVerified = verified.value;
+      void (async () => {
+        const list: PeerInfo[] = [];
+        for (const peerId of writerIds) {
+          let sas = sasCache.get(peerId);
+          if (sas === undefined) {
+            sas = await deriveSas(id.id, peerId);
+            sasCache.set(peerId, sas);
+          }
+          const status = !ready.authorized(peerId)
+            ? 'rejected'
+            : isVerified.has(peerId)
+              ? 'verified'
+              : 'pending';
+          list.push({ id: peerId, sas, status });
         }
-        const status = isRejected.has(id)
-          ? 'rejected'
-          : isVerified.has(id)
-            ? 'verified'
-            : 'pending';
-        list.push({ id, sas, status });
-      }
-      peers.value = list;
-    })();
-  });
+        peers.value = list;
+      })();
+    });
+  };
 
   const ingest = async (file: File, pass: string): Promise<void> => {
+    if (!doc) return;
     syncStatus.value = 'syncing';
     try {
       const { manifest, blocks, size } = await ingestFile(file, pass, store);
@@ -113,19 +134,20 @@ export async function createRuntime(): Promise<Runtime> {
   };
 
   const restore = async (path: string): Promise<Uint8Array> => {
-    const file = doc.files.value.find((f) => f.path === path);
+    const file = doc?.files.value.find((f) => f.path === path);
     const manifest = file?.blocks[0];
     if (!manifest) throw new Error(`unknown file: ${path}`);
     return restoreFile(manifest, passphrase, store);
   };
 
   const pairWithCode = async (code: string): Promise<void> => {
-    const peer = decodePeerAddr(code);
-    // Shared-passphrase trust model: both devices authorize each other (plan
-    // §2.2). The peer authorizes us symmetrically when it pairs back. The peer
-    // list and block auto-pull then follow from the live channel.
-    doc.addWriter(peer.id);
-    await sync.connect(peer);
+    if (!doc || !sync) throw new Error('runtime not unlocked');
+    const { addr, signId } = decodePairingCode(code);
+    // Authorize the peer's signing identity, then dial its transport address.
+    // The peer authorizes us symmetrically when it pairs back; DocSync then
+    // auto-pulls any referenced blocks we lack.
+    doc.addWriter(signId);
+    await sync.connect(addr);
   };
 
   const verifyPeer = (id: string): void => {
@@ -134,22 +156,20 @@ export async function createRuntime(): Promise<Runtime> {
 
   const rejectPeer = (id: string): void => {
     // A mismatched SAS means a possible relay MITM: stop trusting this writer.
-    doc.revokeWriter(id);
-    rejected.value = new Set([...rejected.value, id]);
+    doc?.revokeWriter(id);
   };
 
   return {
     controller: new IngestController(ingest, (pass) => {
-      passphrase = pass;
+      void setup(pass);
     }),
-    files: doc.files,
+    files,
     peers,
     syncStatus,
     restore,
     pairWithCode,
     verifyPeer,
     rejectPeer,
-    connectionCode: encodePeerAddr(transport.addr()),
-    selfAddr: transport.addr(),
+    connectionCode,
   };
 }

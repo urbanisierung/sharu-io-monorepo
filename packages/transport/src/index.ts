@@ -7,5 +7,4 @@
 // so the storage/crypto/sync layers stay transport-agnostic (blueprint §4).
 
 export { LoopbackNetwork } from './loopback.js';
-export { decodePeerAddr, encodePeerAddr } from './pairing-code.js';
 export type { Channel, PeerAddr, PeerId, Transport } from './transport.js';

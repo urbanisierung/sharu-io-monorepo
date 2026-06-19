@@ -145,3 +145,11 @@ export async function blake3(data: Uint8Array): Promise<string> {
   await ready();
   return toHex(blake3_hash(data));
 }
+
+/** Argon2id-derive a 32-byte key from `passphrase` and `salt`. Used both for
+ *  per-file encryption and to derive a device's stable signing seed (status #7).
+ *  The passphrase never leaves the caller; only the non-secret salt is stored. */
+export async function deriveKey(passphrase: string, salt: Uint8Array): Promise<Uint8Array> {
+  await ready();
+  return derive_key(new TextEncoder().encode(passphrase), salt);
+}

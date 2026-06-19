@@ -12,6 +12,7 @@ export { type DocSnapshot, type DocStore, MemoryDocStore } from './doc-store.js'
 export { BLOCK_PROTOCOL, DocSync, SYNC_PROTOCOL } from './doc-sync.js';
 export { OpfsBlockStore } from './opfs-block-store.js';
 export { OpfsDocStore } from './opfs-doc-store.js';
+export { createSigner, type Signer, verifySignature } from './signing.js';
 export { type Delta, type FileView, SyncDoc, type WriterOp } from './sync-doc.js';
 
 /**
