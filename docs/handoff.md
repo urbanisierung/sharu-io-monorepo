@@ -183,10 +183,13 @@ These were decided with the project owner; do not silently revisit them.
   `rand_core` (aes-gcm/argon2). `Cargo.toml` enables its `js` feature *only* for
   `cfg(target_arch = "wasm32")` so the WASM build links. We never use it for key
   material.
-- **`@safu/crypto` exports TypeScript source** (`"exports": "./src/index.ts"`),
-  not a compiled `dist`. All consumers are Vite/vitest and compile it directly.
-  This sidesteps the tsc-rootDir-vs-generated-wasm friction. Its `build` script
-  only runs `wasm-pack`.
+- **Packages export TypeScript source** (`"exports": "./src/index.ts"`), not a
+  compiled `dist`: `@safu/crypto`, `@safu/transport`, and `@safu/sdk` all do.
+  All consumers are Vite/vitest and compile the source directly, so there is no
+  build step to forget and no stale-`dist` hazard. (`@safu/sdk` previously
+  shipped a `dist`, which meant app-level tests silently ran old SDK code until
+  a rebuild — fixed by exporting source like its siblings.) `crypto`/`transport`
+  keep a `build` script only for `wasm-pack`; `sdk` has none.
 - **vitest 4 browser provider** is a factory: `provider: playwright()` imported
   from `@vitest/browser-playwright` — *not* the string `'playwright'`.
 - **`--expose-gc` for the memory bench**: vitest project-level
