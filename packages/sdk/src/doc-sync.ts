@@ -7,7 +7,8 @@
 // as the opaque bytes the BlockStore holds, addressed by hash; the relay and the
 // transport never see plaintext or keys.
 
-import type { Channel, PeerAddr, Transport } from '@safu/transport';
+import { type ReadonlySignal, signal } from '@preact/signals-core';
+import type { Channel, PeerAddr, PeerId, Transport } from '@safu/transport';
 import type { BlockStore } from './block-store.js';
 import type { Delta, SyncDoc } from './sync-doc.js';
 
@@ -26,12 +27,20 @@ export class DocSync {
   // The dialable address for each channel we initiated, so we can pull missing
   // blocks back from that peer. Channels we only accepted have no return addr.
   readonly #addrs = new Map<Channel, PeerAddr>();
+  readonly #peerIds = signal<readonly PeerId[]>([]);
   #unsubscribe: (() => void) | undefined;
 
   constructor(transport: Transport, doc: SyncDoc, store: BlockStore) {
     this.#transport = transport;
     this.#doc = doc;
     this.#store = store;
+  }
+
+  /** The ids of currently-connected peers (dialed or accepted), as a signal the
+   *  UI renders directly — so the peer list reflects live channels, not manual
+   *  bookkeeping. */
+  get peers(): ReadonlySignal<readonly PeerId[]> {
+    return this.#peerIds;
   }
 
   /** Begin accepting inbound sync and block channels. Runs until `close`. */
@@ -70,6 +79,7 @@ export class DocSync {
     for (const channel of this.#peers) await channel.close();
     this.#peers.clear();
     this.#addrs.clear();
+    this.#refreshPeers();
     await this.#transport.close();
   }
 
@@ -98,6 +108,7 @@ export class DocSync {
    *  deltas, and remember it for broadcasting future mutations. */
   #track(channel: Channel): void {
     this.#peers.add(channel);
+    this.#refreshPeers();
     void channel.send(enc.encode(JSON.stringify(this.#doc.snapshot())));
     void this.#readDeltas(channel);
   }
@@ -112,6 +123,12 @@ export class DocSync {
     }
     this.#peers.delete(channel);
     this.#addrs.delete(channel);
+    this.#refreshPeers();
+  }
+
+  /** Recompute the distinct connected-peer ids from the live sync channels. */
+  #refreshPeers(): void {
+    this.#peerIds.value = [...new Set([...this.#peers].map((channel) => channel.peer))];
   }
 
   /** Fetch every block the document references but the local store lacks, from

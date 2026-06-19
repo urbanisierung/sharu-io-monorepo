@@ -4,7 +4,7 @@
 // This is the only place the app names a concrete transport/store; everything
 // downstream depends on the SDK's interfaces.
 
-import { type ReadonlySignal, signal } from '@preact/signals';
+import { effect, type ReadonlySignal, signal } from '@preact/signals';
 import {
   BLOCK_PROTOCOL,
   DocSync,
@@ -14,19 +14,34 @@ import {
   SYNC_PROTOCOL,
   SyncDoc,
 } from '@safu/sdk';
-import type { PeerAddr, Transport } from '@safu/transport';
+import { decodePeerAddr, encodePeerAddr, type PeerAddr, type Transport } from '@safu/transport';
 import { IngestController } from './ingest-controller.js';
 import { ingestFile, restoreFile } from './pipeline.js';
+import { deriveSas } from './sas.js';
+
+/** A connected peer as the UI shows it: its id, the out-of-band SAS to compare,
+ *  and the user's verification verdict. */
+export interface PeerInfo {
+  id: string;
+  sas: string;
+  status: 'pending' | 'verified' | 'rejected';
+}
 
 export interface Runtime {
   controller: IngestController;
   files: ReadonlySignal<readonly FileView[]>;
-  peers: ReadonlySignal<readonly string[]>;
+  peers: ReadonlySignal<readonly PeerInfo[]>;
   syncStatus: ReadonlySignal<'idle' | 'syncing' | 'error'>;
   /** Reassemble a backed-up file's plaintext for download. */
   restore: (path: string) => Promise<Uint8Array>;
-  /** Pair with a peer (id + relay) discovered out-of-band, and sync with it. */
-  pair: (peer: PeerAddr) => Promise<void>;
+  /** Pair with a peer from the connection code they shared out-of-band. */
+  pairWithCode: (code: string) => Promise<void>;
+  /** Mark a peer's SAS as matching (trusted). */
+  verifyPeer: (id: string) => void;
+  /** Mark a peer's SAS as mismatched: revoke its write access. */
+  rejectPeer: (id: string) => void;
+  /** This device's connection code, to share out-of-band for pairing. */
+  connectionCode: string;
   selfAddr: PeerAddr;
 }
 
@@ -51,9 +66,37 @@ export async function createRuntime(): Promise<Runtime> {
   const sync = new DocSync(transport, doc, store);
   sync.serve();
 
-  const peers = signal<readonly string[]>([]);
   const syncStatus = signal<'idle' | 'syncing' | 'error'>('idle');
   let passphrase = '';
+
+  // The peer list is derived from DocSync's live channels (so a peer that dials
+  // us also appears), enriched with each peer's SAS and the user's verdict.
+  const verified = signal<ReadonlySet<string>>(new Set());
+  const rejected = signal<ReadonlySet<string>>(new Set());
+  const peers = signal<readonly PeerInfo[]>([]);
+  const sasCache = new Map<string, string>();
+  effect(() => {
+    const ids = sync.peers.value;
+    const isVerified = verified.value;
+    const isRejected = rejected.value;
+    void (async () => {
+      const list: PeerInfo[] = [];
+      for (const id of ids) {
+        let sas = sasCache.get(id);
+        if (sas === undefined) {
+          sas = await deriveSas(transport.id(), id);
+          sasCache.set(id, sas);
+        }
+        const status = isRejected.has(id)
+          ? 'rejected'
+          : isVerified.has(id)
+            ? 'verified'
+            : 'pending';
+        list.push({ id, sas, status });
+      }
+      peers.value = list;
+    })();
+  });
 
   const ingest = async (file: File, pass: string): Promise<void> => {
     syncStatus.value = 'syncing';
@@ -76,14 +119,23 @@ export async function createRuntime(): Promise<Runtime> {
     return restoreFile(manifest, passphrase, store);
   };
 
-  const pair = async (peer: PeerAddr): Promise<void> => {
+  const pairWithCode = async (code: string): Promise<void> => {
+    const peer = decodePeerAddr(code);
     // Shared-passphrase trust model: both devices authorize each other (plan
-    // §2.2). The peer authorizes us symmetrically when it pairs back.
+    // §2.2). The peer authorizes us symmetrically when it pairs back. The peer
+    // list and block auto-pull then follow from the live channel.
     doc.addWriter(peer.id);
     await sync.connect(peer);
-    peers.value = [...new Set([...peers.value, peer.id])];
-    // DocSync auto-pulls any blocks the synced table references but we lack,
-    // from the peer we just connected to — including the manifest itself.
+  };
+
+  const verifyPeer = (id: string): void => {
+    verified.value = new Set([...verified.value, id]);
+  };
+
+  const rejectPeer = (id: string): void => {
+    // A mismatched SAS means a possible relay MITM: stop trusting this writer.
+    doc.revokeWriter(id);
+    rejected.value = new Set([...rejected.value, id]);
   };
 
   return {
@@ -94,7 +146,10 @@ export async function createRuntime(): Promise<Runtime> {
     peers,
     syncStatus,
     restore,
-    pair,
+    pairWithCode,
+    verifyPeer,
+    rejectPeer,
+    connectionCode: encodePeerAddr(transport.addr()),
     selfAddr: transport.addr(),
   };
 }

@@ -125,6 +125,30 @@ describe('DocSync over a transport', () => {
     await syncB.close();
   });
 
+  it('exposes connected peers as a signal, in both directions', async () => {
+    const net = new LoopbackNetwork();
+    const ta = net.endpoint('A');
+    const tb = net.endpoint('B');
+    const syncA = new DocSync(ta, new SyncDoc('A'), new MemoryBlockStore());
+    const syncB = new DocSync(tb, new SyncDoc('B'), new MemoryBlockStore());
+    syncA.serve();
+    syncB.serve();
+
+    expect(syncB.peers.value).toEqual([]);
+
+    await syncB.connect(ta.addr());
+    await flush();
+    // The dialer tracks the peer it connected to; the acceptor tracks the dialer.
+    expect(syncB.peers.value).toEqual(['A']);
+    expect(syncA.peers.value).toEqual(['B']);
+
+    await syncB.close();
+    await flush();
+    expect(syncA.peers.value).toEqual([]);
+
+    await syncA.close();
+  });
+
   it('returns undefined when the peer lacks the requested block', async () => {
     const net = new LoopbackNetwork();
     const ta = net.endpoint('A');

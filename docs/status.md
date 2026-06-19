@@ -44,8 +44,9 @@ a desktop host to build/run.
   dialed peer — the allocation entry is self-describing (`[manifest, …blocks]`).
 - **Web app** (`apps/web`): signal-driven Cascivo UI (no React state hooks; all
   copy via `@cascivo/i18n`), drag-drop ingest with all interaction states, file
-  list, **restore/download**, and a device-pairing affordance. A lint-guard test
-  enforces the no-hooks / no-hardcoded-strings rules.
+  list, **restore/download**, and **device pairing** (copy-paste connection code
+  + 6-digit SAS verify/reject; peer list auto-populated from live channels). A
+  lint-guard test enforces the no-hooks / no-hardcoded-strings rules.
 - **Persisted document** (`packages/sdk`): a `DocStore` snapshot interface
   (`MemoryDocStore`, browser `OpfsDocStore`). `SyncDoc.open()` restores the last
   snapshot — entries (incl. tombstones), writer set, and HLC state — and every
@@ -80,9 +81,12 @@ so a dialable relay address is set before pairing.
 2. ~~**Persist the document.**~~ ✅ Done — `SyncDoc.open()` restores a persisted
    CRDT snapshot from OPFS (`OpfsDocStore`); mutations auto-persist, so the file
    list survives restarts.
-3. **Pairing UX.** Replace the raw id+relay inputs with a QR / short-code
-   exchange and an out-of-band fingerprint (SAS) check to prevent relay MITM
-   (flagged open question). Auto-populate `peers` from active sync channels.
+3. ~~**Pairing UX.**~~ ✅ Done — copy-paste **connection code** (`encodePeerAddr`/
+   `decodePeerAddr`, no new dep, QR-ready) replaces the raw id+relay inputs; a
+   6-digit **SAS** (`deriveSas`, BLAKE3 of the sorted peer pair) is shown for
+   out-of-band comparison with confirm/reject (reject revokes the writer);
+   `peers` is auto-populated from `DocSync.peers` (live channels, both
+   directions). Deferred: QR/camera, verify-gating-sync, persisted verification.
 4. ~~**Auto-pull on sync.**~~ ✅ Done — `DocSync` auto-pulls any block the synced
    table references but the local store lacks, from the dialed peer (on catch-up
    and on later deltas). The allocation-table entry is now self-describing

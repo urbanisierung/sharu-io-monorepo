@@ -48,9 +48,11 @@ export function Root() {
       files={ready.files}
       peers={ready.peers}
       syncStatus={ready.syncStatus}
-      selfId={ready.selfAddr.id}
+      connectionCode={ready.connectionCode}
       onRestore={(path) => void download(path)}
-      onPair={(peerId, relayUrl) => void ready.pair({ id: peerId, relayUrl })}
+      onPair={(code) => ready.pairWithCode(code)}
+      onVerify={(id) => ready.verifyPeer(id)}
+      onReject={(id) => ready.rejectPeer(id)}
     />
   );
 }
