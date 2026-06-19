@@ -6,6 +6,16 @@
   min-height: 100vh;
 }
 
+.booting {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  font-family: var(--safu-font-mono);
+  letter-spacing: 0.08em;
+  color: var(--cascivo-color-primary);
+  text-shadow: var(--cascivo-glow-cyan);
+}
+
 .header {
   text-align: center;
 }

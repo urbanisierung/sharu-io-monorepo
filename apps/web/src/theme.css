@@ -1,23 +1,65 @@
-/* Cascivo theme tokens (plan §0). Real registry theme is wired in §2.4. */
+/* Cyberpunk theme for Sharu, driven entirely by `--cascivo-*` tokens (plan §0).
+ * Neon cyan / magenta on deep space-black, monospace accents, subtle glow.
+ * No web fonts: local-first means no runtime dependency on a font CDN. */
 :root {
-  --cascivo-radius: 0.5rem;
-  --cascivo-color-primary: #4f46e5;
-  --cascivo-color-primary-hover: #4338ca;
-  --cascivo-color-primary-foreground: #ffffff;
-  --cascivo-color-surface: #f4f4f5;
-  --cascivo-color-foreground: #18181b;
-  --cascivo-color-border: #d4d4d8;
+  --cascivo-radius: 0.375rem;
+
+  /* Surfaces */
+  --cascivo-color-bg: #07070f;
+  --cascivo-color-surface: #11111f;
+  --cascivo-color-surface-2: #181830;
+  --cascivo-color-foreground: #e6f1ff;
+  --cascivo-color-muted: #8a93b2;
+  --cascivo-color-border: #2a2a4a;
+
+  /* Neon accents */
+  --cascivo-color-primary: #00eaff;
+  --cascivo-color-primary-hover: #5cf2ff;
+  --cascivo-color-primary-foreground: #04111a;
+  --cascivo-color-accent: #ff2bd6;
+  --cascivo-color-accent-2: #b15cff;
+  --cascivo-color-success: #36f9a0;
+  --cascivo-color-danger: #ff4d6d;
+
+  /* Glow */
+  --cascivo-glow-cyan: 0 0 0.6rem rgba(0, 234, 255, 0.55);
+  --cascivo-glow-magenta: 0 0 0.7rem rgba(255, 43, 214, 0.5);
+
+  --safu-font-mono:
+    ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", "JetBrains Mono", "Roboto Mono",
+    monospace;
+  --safu-font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html {
+  color-scheme: dark;
 }
 
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
+  font-family: var(--safu-font-sans);
   color: var(--cascivo-color-foreground);
+  background-color: var(--cascivo-color-bg);
+  /* Faint neon grid + radial glows for the cyberpunk backdrop. */
+  background-image:
+    radial-gradient(1100px 600px at 80% -10%, rgba(255, 43, 214, 0.12), transparent 60%),
+    radial-gradient(900px 600px at 0% 0%, rgba(0, 234, 255, 0.12), transparent 55%),
+    linear-gradient(rgba(0, 234, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 234, 255, 0.045) 1px, transparent 1px);
+  background-size:
+    auto,
+    auto,
+    44px 44px,
+    44px 44px;
+  background-attachment: fixed;
+  min-height: 100vh;
 }
 
-main {
-  display: grid;
-  place-items: center;
-  gap: 1rem;
-  min-height: 100vh;
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: var(--cascivo-color-accent);
+  color: #fff;
 }

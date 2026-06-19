@@ -95,11 +95,19 @@ class IrohTransport implements Transport {
   }
 }
 
-/** Boot the WASM module, bind a relay-only endpoint advertising `protocols`, and
- *  wait until it is online (has a home relay) so its address is dialable. */
-export async function createIrohTransport(protocols: string[]): Promise<Transport> {
+/** Boot the WASM module and bind a relay-only endpoint advertising `protocols`.
+ *  Waits up to `onlineTimeoutMs` for a home relay so the address is dialable;
+ *  if the relay is unreachable the transport still returns (local features keep
+ *  working — only peer dialing needs the relay), rather than blocking forever. */
+export async function createIrohTransport(
+  protocols: string[],
+  onlineTimeoutMs = 15_000,
+): Promise<Transport> {
   await ready();
   const endpoint = (await IrohEndpoint.create(protocols)) as IrohEndpoint;
-  const relayUrl = (await endpoint.online()) as string | null;
+  const relayUrl = await Promise.race([
+    endpoint.online() as Promise<string | null>,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), onlineTimeoutMs)),
+  ]);
   return new IrohTransport(endpoint, relayUrl ?? undefined);
 }
