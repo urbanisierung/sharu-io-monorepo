@@ -48,7 +48,15 @@ describe('App shell (plan §2.4)', () => {
     const { controller } = renderApp();
     controller.unlock('p');
     expect(await screen.findByText(/No other devices yet/)).toBeTruthy();
-    expect(screen.getByText('Nothing backed up yet')).toBeTruthy();
+    expect(screen.getByText(/Nothing here yet/)).toBeTruthy();
+  });
+
+  it('offers an Add files control so backing up needs no drag (touch-friendly)', async () => {
+    const { controller } = renderApp();
+    controller.unlock('p');
+    const input = (await screen.findByLabelText('Add files')) as HTMLInputElement;
+    expect(input.type).toBe('file');
+    expect(input.multiple).toBe(true);
   });
 
   it('renders synced files from the SDK signal', async () => {

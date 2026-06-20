@@ -25,7 +25,7 @@ afterEach(cleanup);
 describe('FileTable', () => {
   it('shows the empty state when nothing is backed up', () => {
     render(<FileTable files={signal<readonly FileView[]>([])} />);
-    expect(screen.getByText('Nothing backed up yet')).toBeTruthy();
+    expect(screen.getByText(/Nothing here yet/)).toBeTruthy();
   });
 
   it('renders metadata: human size, date, chunk count, and a storage summary', () => {

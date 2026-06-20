@@ -9,6 +9,7 @@ import type { FileView } from '@safu/sdk';
 import styles from './app.module.css';
 import { FileTable } from './file-table.js';
 import type { IngestController } from './ingest-controller.js';
+import { IngestProgress } from './ingest-progress.js';
 import { messages } from './messages.js';
 import type { PeerInfo } from './runtime.js';
 import { StatusBanner } from './status-banner.js';
@@ -74,9 +75,25 @@ export function App({
             onLeave={() => controller.dragLeave()}
             onFiles={(dropped) => void controller.drop(dropped)}
           />
+          <label class={styles.addButton}>
+            <span aria-hidden="true">{t(messages.addFiles)}</span>
+            <input
+              type="file"
+              multiple
+              aria-label={t(messages.addFiles)}
+              class={styles.hiddenInput}
+              onChange={(event) => {
+                const input = event.target as HTMLInputElement;
+                const picked = Array.from(input.files ?? []);
+                input.value = '';
+                if (picked.length > 0) void controller.drop(picked);
+              }}
+            />
+          </label>
+          <IngestProgress progress={controller.progress} />
           {(phase.kind === 'success' || phase.kind === 'error') && (
             <Button intent="neutral" onClick={() => controller.reset()}>
-              {t(messages.retry)}
+              {phase.kind === 'success' ? t(messages.addMore) : t(messages.retry)}
             </Button>
           )}
           <p class={cn(styles.muted, peers.value.length === 0 && styles.warn)}>

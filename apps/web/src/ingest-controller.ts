@@ -19,8 +19,18 @@ export type Phase =
  *  surrounding UX. */
 export type IngestFile = (file: File, passphrase: string) => Promise<void>;
 
+/** Per-file feedback for the "what's being backed up right now" list, so the
+ *  user sees each file move from queued → adding → safe (or failed), not just a
+ *  global counter. */
+export interface FileProgress {
+  name: string;
+  size: number;
+  status: 'queued' | 'adding' | 'done' | 'error';
+}
+
 export class IngestController {
   readonly #phase = signal<Phase>({ kind: 'first-run' });
+  readonly #progress = signal<readonly FileProgress[]>([]);
   #passphrase = '';
 
   /** `onUnlock` lets the runtime capture the passphrase (key material) so it can
@@ -32,6 +42,11 @@ export class IngestController {
 
   get phase(): ReadonlySignal<Phase> {
     return this.#phase;
+  }
+
+  /** Live per-file progress for the current/last drop (empty when idle). */
+  get progress(): ReadonlySignal<readonly FileProgress[]> {
+    return this.#progress;
   }
 
   /** Whether a passphrase has been entered (gates the drop zone). */
@@ -64,25 +79,43 @@ export class IngestController {
       this.#phase.value = { kind: 'idle' };
       return;
     }
+    this.#progress.value = files.map((file) => ({
+      name: file.name,
+      size: file.size,
+      status: 'queued',
+    }));
     let done = 0;
     this.#phase.value = { kind: 'chunking', done, total: files.length };
-    try {
-      for (const file of files) {
+    for (const [index, file] of files.entries()) {
+      this.#mark(index, 'adding');
+      try {
         await this.ingest(file, this.#passphrase);
-        done += 1;
-        this.#phase.value = { kind: 'chunking', done, total: files.length };
+      } catch (cause) {
+        this.#mark(index, 'error');
+        this.#phase.value = {
+          kind: 'error',
+          message: cause instanceof Error ? cause.message : String(cause),
+        };
+        return;
       }
-      this.#phase.value = { kind: 'success', count: done };
-    } catch (cause) {
-      this.#phase.value = {
-        kind: 'error',
-        message: cause instanceof Error ? cause.message : String(cause),
-      };
+      this.#mark(index, 'done');
+      done += 1;
+      this.#phase.value = { kind: 'chunking', done, total: files.length };
     }
+    this.#phase.value = { kind: 'success', count: done };
   }
 
-  /** Return to the idle drop state after a success or error. */
+  /** Return to the idle drop state after a success or error, clearing the list. */
   reset(): void {
-    if (this.unlocked) this.#phase.value = { kind: 'idle' };
+    if (!this.unlocked) return;
+    this.#progress.value = [];
+    this.#phase.value = { kind: 'idle' };
+  }
+
+  /** Update one file's status, leaving the rest of the list untouched. */
+  #mark(index: number, status: FileProgress['status']): void {
+    this.#progress.value = this.#progress.value.map((item, i) =>
+      i === index ? { ...item, status } : item,
+    );
   }
 }

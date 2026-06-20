@@ -50,4 +50,22 @@ describe('IngestController interaction states', () => {
     c.reset();
     expect(c.phase.value).toEqual({ kind: 'idle' });
   });
+
+  it('tracks per-file progress to done and exposes file names + sizes', async () => {
+    const c = new IngestController(async () => {});
+    c.unlock('p');
+    await c.drop([file('a.txt'), file('b.txt')]);
+    expect(c.progress.value.map((p) => p.status)).toEqual(['done', 'done']);
+    expect(c.progress.value.map((p) => p.name)).toEqual(['a.txt', 'b.txt']);
+    expect(c.progress.value[0]?.size).toBe(3);
+  });
+
+  it('marks the failing file as error and clears the list on reset', async () => {
+    const c = new IngestController(vi.fn().mockRejectedValue(new Error('x')));
+    c.unlock('p');
+    await c.drop([file('a.txt')]);
+    expect(c.progress.value[0]?.status).toBe('error');
+    c.reset();
+    expect(c.progress.value).toEqual([]);
+  });
 });
