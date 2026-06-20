@@ -61,4 +61,12 @@ describe('UnlockGate (returning mode)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Unlock' }));
     expect(onUnlock).toHaveBeenCalledWith('correcthorse');
   });
+
+  it('shows a clear message when the password is wrong for this device', async () => {
+    const onUnlock = vi.fn().mockRejectedValue(new Error('wrong-password'));
+    render(<UnlockGate returning onUnlock={onUnlock} />);
+    fireEvent.input(screen.getByLabelText('Password'), { target: { value: 'wrongguess' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Unlock' }));
+    expect(await screen.findByText(/doesn’t match/)).toBeTruthy();
+  });
 });

@@ -26,6 +26,9 @@ export interface AppProps {
   returning?: boolean;
   /** This device's connection code (a signal — empty until unlock derives it). */
   connectionCode?: ReadonlySignal<string>;
+  /** Derive + verify the identity and bring the app online; rejects on a wrong
+   *  password. When absent (tests), the gate just flips the controller. */
+  onUnlock?: (password: string) => Promise<void>;
   onRestore?: (path: string) => Promise<void>;
   onDelete?: (path: string) => void;
   onPair?: (code: string) => Promise<void>;
@@ -47,6 +50,7 @@ export function App({
   syncStatus,
   returning = false,
   connectionCode,
+  onUnlock,
   onRestore,
   onDelete,
   onPair,
@@ -65,7 +69,10 @@ export function App({
       </header>
 
       {phase.kind === 'first-run' ? (
-        <UnlockGate returning={returning} onUnlock={(password) => controller.unlock(password)} />
+        <UnlockGate
+          returning={returning}
+          onUnlock={onUnlock ?? ((password) => controller.unlock(password))}
+        />
       ) : (
         <>
           <StatusBanner files={files} peers={peers} />

@@ -79,6 +79,10 @@ export const messages = defineMessages('safu', {
     'This password is your only key. If you forget it, your files can’t be recovered — there is no reset.',
   create: 'Create password',
   unlock: 'Unlock',
+  unlocking: 'Unlocking…',
+  wrongPassword:
+    'That password doesn’t match the one set on this device. Enter the password you created here.',
+  unlockFailed: 'Something went wrong unlocking. Please try again.',
   saveRecovery: 'Save a recovery sheet',
   recoveryFilename: 'sharu-recovery.txt',
   recoverySheet:

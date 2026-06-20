@@ -17,7 +17,7 @@ import {
   SyncDoc,
 } from '@safu/sdk';
 import type { Transport } from '@safu/transport';
-import { hasStoredIdentity, loadOrCreateSigner } from './identity.js';
+import { hasStoredIdentity, unlockIdentity } from './identity.js';
 import { IngestController } from './ingest-controller.js';
 import { decodePairingCode, encodePairingCode } from './pairing.js';
 import { ingestFile, restoreFile } from './pipeline.js';
@@ -33,6 +33,9 @@ export interface PeerInfo {
 
 export interface Runtime {
   controller: IngestController;
+  /** Unlock with a password: derives + verifies the identity, brings the doc
+   *  online, then reveals the app. Rejects on a wrong password (returning user). */
+  unlock: (passphrase: string) => Promise<void>;
   files: ReadonlySignal<readonly FileView[]>;
   peers: ReadonlySignal<readonly PeerInfo[]>;
   syncStatus: ReadonlySignal<'idle' | 'syncing' | 'error'>;
@@ -105,8 +108,11 @@ export async function createRuntime(): Promise<Runtime> {
   let passphrase = '';
 
   const setup = async (pass: string): Promise<void> => {
+    // Verify the password against the id recorded on this device *before* doing
+    // anything else, so a returning user's typo is caught immediately (throws
+    // WrongPasswordError) rather than silently producing a divergent identity.
+    const id: Signer = await unlockIdentity(pass);
     passphrase = pass;
-    const id: Signer = await loadOrCreateSigner(pass);
     connectionCode.value = encodePairingCode({ addr: transport.addr(), signId: id.id });
     const ready = await SyncDoc.open(id.id, new OpfsDocStore(), id);
     doc = ready;
@@ -206,10 +212,18 @@ export async function createRuntime(): Promise<Runtime> {
       }
     : undefined;
 
+  const controller = new IngestController(ingest);
+  // The gate calls this and awaits it: on success the doc + identity are live
+  // and the controller flips into the drop view; on a wrong password `setup`
+  // rejects and the gate stays put with a clear message.
+  const unlock = async (pass: string): Promise<void> => {
+    await setup(pass);
+    controller.unlock(pass);
+  };
+
   return {
-    controller: new IngestController(ingest, (pass) => {
-      void setup(pass);
-    }),
+    controller,
+    unlock,
     files,
     peers,
     syncStatus,

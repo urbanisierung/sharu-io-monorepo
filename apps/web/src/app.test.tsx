@@ -26,7 +26,7 @@ afterEach(() => {
 });
 
 describe('App shell (plan §2.4)', () => {
-  it('starts at the create-password gate and unlocks into the drop zone', () => {
+  it('starts at the create-password gate and unlocks into the drop zone', async () => {
     renderApp();
     expect(screen.getByText('Create your password')).toBeTruthy();
 
@@ -35,7 +35,7 @@ describe('App shell (plan §2.4)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create password' }));
 
     // Signal-driven: unlocking re-renders into the drop surface, no useState.
-    expect(screen.getByLabelText('Drop files here to back them up')).toBeTruthy();
+    expect(await screen.findByLabelText('Drop files here to back them up')).toBeTruthy();
   });
 
   it('greets a returning user instead of asking to create a password', () => {

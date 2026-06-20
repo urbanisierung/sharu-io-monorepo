@@ -51,6 +51,7 @@ export function Root() {
       syncStatus={ready.syncStatus}
       returning={ready.returning}
       connectionCode={ready.connectionCode}
+      onUnlock={(password) => ready.unlock(password)}
       onRestore={(path) => download(path)}
       onDelete={(path) => ready.remove(path)}
       onPair={(code) => ready.pairWithCode(code)}

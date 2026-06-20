@@ -17,6 +17,7 @@ const password = signal('');
 const confirm = signal('');
 const reveal = signal(false);
 const error = signal<string | null>(null);
+const busy = signal(false);
 
 /** Reset the module-level field state — for deterministic tests and to drop the
  *  password from memory once the gate is done. */
@@ -25,19 +26,23 @@ export function resetUnlockGate(): void {
   confirm.value = '';
   reveal.value = false;
   error.value = null;
+  busy.value = false;
 }
 
 export interface UnlockGateProps {
   /** True once this device already has a stored identity (a returning user). */
   returning: boolean;
-  onUnlock: (password: string) => void;
+  /** Derives + verifies the identity; rejects (e.g. WrongPasswordError, carrying
+   *  message 'wrong-password') when a returning user mistypes their password. */
+  onUnlock: (password: string) => void | Promise<void>;
 }
 
 export function UnlockGate({ returning, onUnlock }: UnlockGateProps) {
   const ready =
     password.value.length >= MIN_LENGTH && (returning || password.value === confirm.value);
 
-  const submit = (): void => {
+  const submit = async (): Promise<void> => {
+    if (busy.value) return;
     if (password.value.length < MIN_LENGTH) {
       error.value = t(messages.passwordTooShort);
       return;
@@ -47,8 +52,16 @@ export function UnlockGate({ returning, onUnlock }: UnlockGateProps) {
       return;
     }
     const entered = password.value;
-    resetUnlockGate();
-    onUnlock(entered);
+    busy.value = true;
+    error.value = null;
+    try {
+      await onUnlock(entered);
+      resetUnlockGate(); // success: the app reveals; drop the password from memory
+    } catch (cause) {
+      const wrong = cause instanceof Error && cause.message === 'wrong-password';
+      error.value = wrong ? t(messages.wrongPassword) : t(messages.unlockFailed);
+      busy.value = false;
+    }
   };
 
   return (
@@ -99,8 +112,8 @@ export function UnlockGate({ returning, onUnlock }: UnlockGateProps) {
 
       {!returning && <p class={styles.notice}>{t(messages.passwordWarning)}</p>}
 
-      <Button intent="primary" onClick={submit}>
-        {returning ? t(messages.unlock) : t(messages.create)}
+      <Button intent="primary" onClick={() => void submit()}>
+        {busy.value ? t(messages.unlocking) : returning ? t(messages.unlock) : t(messages.create)}
       </Button>
 
       {!returning && ready && (
