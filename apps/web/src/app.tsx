@@ -60,88 +60,104 @@ export function App({
   onWatch,
 }: AppProps) {
   const phase = controller.phase.value;
+  const sync = syncStatus.value;
+  const syncLabel =
+    sync === 'syncing'
+      ? t(messages.syncingNow)
+      : sync === 'error'
+        ? t(messages.syncProblem)
+        : t(messages.syncUpToDate);
+  const dotClass =
+    sync === 'syncing' ? styles.dotSyncing : sync === 'error' ? styles.dotError : styles.dotIdle;
 
   return (
-    <main class={styles.main}>
-      <header class={styles.header}>
-        <h1>{t(messages.title)}</h1>
-        <p>{t(messages.tagline)}</p>
-        <p class={styles.muted}>{t(messages.syncStatus, { status: syncStatus.value })}</p>
+    <div class={styles.app}>
+      <header class={styles.topbar}>
+        <div class={styles.brand}>
+          <h1 class={styles.brandName}>{t(messages.title)}</h1>
+          <span class={styles.brandTag}>{t(messages.tagline)}</span>
+        </div>
+        <span class={styles.sync}>
+          <span class={cn(styles.dot, dotClass)} aria-hidden="true" />
+          {syncLabel}
+        </span>
       </header>
 
-      {phase.kind === 'first-run' ? (
-        <UnlockGate
-          returning={returning}
-          onUnlock={onUnlock ?? ((password) => controller.unlock(password))}
-        />
-      ) : (
-        <>
-          <StatusBanner files={files} peers={peers} />
-          <DropZone
-            phase={phase}
-            onDragValidity={(valid) => controller.dragOver(valid)}
-            onLeave={() => controller.dragLeave()}
-            onFiles={(dropped) => void controller.drop(dropped)}
+      <main class={styles.content}>
+        {phase.kind === 'first-run' ? (
+          <UnlockGate
+            returning={returning}
+            onUnlock={onUnlock ?? ((password) => controller.unlock(password))}
           />
-          <label class={styles.addButton}>
-            <span aria-hidden="true">{t(messages.addFiles)}</span>
-            <input
-              type="file"
-              multiple
-              aria-label={t(messages.addFiles)}
-              class={styles.hiddenInput}
-              onChange={(event) => {
-                const input = event.target as HTMLInputElement;
-                const picked = Array.from(input.files ?? []);
-                input.value = '';
-                if (picked.length > 0) void controller.drop(picked);
-              }}
+        ) : (
+          <>
+            <StatusBanner files={files} peers={peers} />
+            <DropZone
+              phase={phase}
+              onDragValidity={(valid) => controller.dragOver(valid)}
+              onLeave={() => controller.dragLeave()}
+              onFiles={(dropped) => void controller.drop(dropped)}
             />
-          </label>
-          <IngestProgress progress={controller.progress} />
-          {(phase.kind === 'success' || phase.kind === 'error') && (
-            <Button intent="neutral" onClick={() => controller.reset()}>
-              {phase.kind === 'success' ? t(messages.addMore) : t(messages.retry)}
-            </Button>
-          )}
-          <p class={cn(styles.muted, peers.value.length === 0 && styles.warn)}>
-            {peers.value.length === 0
-              ? t(messages.noPeers)
-              : t(messages.peersOnline, { count: peers.value.length })}
-          </p>
-        </>
-      )}
+            <label class={styles.addButton}>
+              <span aria-hidden="true">{t(messages.addFiles)}</span>
+              <input
+                type="file"
+                multiple
+                aria-label={t(messages.addFiles)}
+                class={styles.hiddenInput}
+                onChange={(event) => {
+                  const input = event.target as HTMLInputElement;
+                  const picked = Array.from(input.files ?? []);
+                  input.value = '';
+                  if (picked.length > 0) void controller.drop(picked);
+                }}
+              />
+            </label>
+            <IngestProgress progress={controller.progress} />
+            {(phase.kind === 'success' || phase.kind === 'error') && (
+              <Button intent="neutral" onClick={() => controller.reset()}>
+                {phase.kind === 'success' ? t(messages.addMore) : t(messages.retry)}
+              </Button>
+            )}
+            <p class={cn(styles.muted, peers.value.length === 0 && styles.warn)}>
+              {peers.value.length === 0
+                ? t(messages.noPeers)
+                : t(messages.peersOnline, { count: peers.value.length })}
+            </p>
 
-      <FileTable files={files} onRestore={onRestore} onDelete={onDelete} />
+            <FileTable files={files} onRestore={onRestore} onDelete={onDelete} />
 
-      {phase.kind !== 'first-run' && onPair && (
-        <Devices
-          connectionCode={connectionCode}
-          peers={peers}
-          onPair={onPair}
-          onVerify={onVerify}
-          onReject={onReject}
-          onRename={onRename}
-        />
-      )}
+            {onPair && (
+              <Devices
+                connectionCode={connectionCode}
+                peers={peers}
+                onPair={onPair}
+                onVerify={onVerify}
+                onReject={onReject}
+                onRename={onRename}
+              />
+            )}
 
-      {phase.kind !== 'first-run' && onWatch && (
-        <section class={styles.gate}>
-          <h2>{t(messages.watchHeading)}</h2>
-          <input
-            class={styles.input}
-            aria-label={t(messages.watchPlaceholder)}
-            placeholder={t(messages.watchPlaceholder)}
-            value={draftWatchPath.value}
-            onInput={(event) => {
-              draftWatchPath.value = (event.target as HTMLInputElement).value;
-            }}
-          />
-          <Button intent="neutral" onClick={() => void onWatch(draftWatchPath.value)}>
-            {t(messages.watch)}
-          </Button>
-        </section>
-      )}
-    </main>
+            {onWatch && (
+              <section class={styles.gate}>
+                <h2>{t(messages.watchHeading)}</h2>
+                <input
+                  class={styles.input}
+                  aria-label={t(messages.watchPlaceholder)}
+                  placeholder={t(messages.watchPlaceholder)}
+                  value={draftWatchPath.value}
+                  onInput={(event) => {
+                    draftWatchPath.value = (event.target as HTMLInputElement).value;
+                  }}
+                />
+                <Button intent="neutral" onClick={() => void onWatch(draftWatchPath.value)}>
+                  {t(messages.watch)}
+                </Button>
+              </section>
+            )}
+          </>
+        )}
+      </main>
+    </div>
   );
 }

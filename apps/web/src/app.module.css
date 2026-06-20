@@ -1,9 +1,92 @@
-.main {
-  display: grid;
-  place-items: center;
-  gap: 1.5rem;
-  padding: 2rem 1rem;
+.app {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sticky top bar: brand on the left, a calm sync indicator on the right. Wraps
+   on narrow screens so it stays usable on a phone. */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem clamp(1rem, 4vw, 2rem);
+  border-bottom: 1px solid var(--cascivo-color-border);
+  background: color-mix(in srgb, var(--cascivo-color-bg) 86%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.brandName {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--cascivo-color-primary);
+  text-shadow: var(--cascivo-glow-cyan);
+}
+
+.brandTag {
+  font-size: 0.8rem;
+  color: var(--cascivo-color-muted);
+}
+
+.sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--cascivo-color-muted);
+}
+
+.dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--cascivo-color-muted);
+}
+
+.dotIdle {
+  background: var(--cascivo-color-success);
+  box-shadow: 0 0 0.4rem var(--cascivo-color-success);
+}
+
+.dotSyncing {
+  background: var(--cascivo-color-primary);
+  box-shadow: var(--cascivo-glow-cyan);
+}
+
+.dotError {
+  background: var(--cascivo-color-danger);
+  box-shadow: 0 0 0.4rem var(--cascivo-color-danger);
+}
+
+/* Centered content column with comfortable, screen-aware padding. */
+.content {
+  flex: 1;
+  width: 100%;
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: clamp(1rem, 4vw, 2rem) clamp(1rem, 4vw, 2rem) 4rem;
+  display: grid;
+  justify-items: center;
+  gap: 1.5rem;
+}
+
+@media (max-width: 32rem) {
+  .brandTag {
+    display: none;
+  }
 }
 
 .booting {
@@ -14,10 +97,6 @@
   letter-spacing: 0.08em;
   color: var(--cascivo-color-primary);
   text-shadow: var(--cascivo-glow-cyan);
-}
-
-.header {
-  text-align: center;
 }
 
 .muted {

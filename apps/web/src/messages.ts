@@ -62,9 +62,12 @@ export const landing = defineMessages('safu.landing', {
 });
 
 export const messages = defineMessages('safu', {
-  title: 'Safu',
+  title: 'Sharu',
   tagline: 'Zero-knowledge, local-first backup & sync',
   booting: 'Getting things ready…',
+  syncUpToDate: 'Up to date',
+  syncingNow: 'Syncing…',
+  syncProblem: 'Sync problem',
   createTitle: 'Create your password',
   createSubtitle: 'This password locks your files. Pick something you’ll remember.',
   unlockTitle: 'Welcome back',

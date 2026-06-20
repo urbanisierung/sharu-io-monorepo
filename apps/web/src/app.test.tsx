@@ -28,6 +28,13 @@ afterEach(() => {
 });
 
 describe('App shell (plan §2.4)', () => {
+  it('shows a calm, plain-language sync status in the top bar', async () => {
+    const { syncStatus } = renderApp();
+    expect(screen.getByText('Up to date')).toBeTruthy();
+    syncStatus.value = 'syncing';
+    expect(await screen.findByText('Syncing…')).toBeTruthy();
+  });
+
   it('starts at the create-password gate and unlocks into the drop zone', async () => {
     renderApp();
     expect(screen.getByText('Create your password')).toBeTruthy();
