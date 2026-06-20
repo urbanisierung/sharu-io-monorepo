@@ -49,6 +49,7 @@ export function Root() {
       files={ready.files}
       peers={ready.peers}
       syncStatus={ready.syncStatus}
+      returning={ready.returning}
       connectionCode={ready.connectionCode}
       onRestore={(path) => download(path)}
       onDelete={(path) => ready.remove(path)}

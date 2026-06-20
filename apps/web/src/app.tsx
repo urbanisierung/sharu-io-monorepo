@@ -11,14 +11,18 @@ import { FileTable } from './file-table.js';
 import type { IngestController } from './ingest-controller.js';
 import { messages } from './messages.js';
 import type { PeerInfo } from './runtime.js';
+import { StatusBanner } from './status-banner.js';
 import { Button } from './ui/button.js';
 import { DropZone } from './ui/drop-zone.js';
+import { UnlockGate } from './unlock-gate.js';
 
 export interface AppProps {
   controller: IngestController;
   files: ReadonlySignal<readonly FileView[]>;
   peers: ReadonlySignal<readonly PeerInfo[]>;
   syncStatus: ReadonlySignal<'idle' | 'syncing' | 'error'>;
+  /** True once this device already has a stored identity (returning user). */
+  returning?: boolean;
   /** This device's connection code (a signal — empty until unlock derives it). */
   connectionCode?: ReadonlySignal<string>;
   onRestore?: (path: string) => Promise<void>;
@@ -30,7 +34,6 @@ export interface AppProps {
   onWatch?: (path: string) => Promise<void>;
 }
 
-const draftPassphrase = signal('');
 const draftPeerCode = signal('');
 const draftWatchPath = signal('');
 const copied = signal(false);
@@ -41,6 +44,7 @@ export function App({
   files,
   peers,
   syncStatus,
+  returning = false,
   connectionCode,
   onRestore,
   onDelete,
@@ -60,24 +64,10 @@ export function App({
       </header>
 
       {phase.kind === 'first-run' ? (
-        <section class={styles.gate}>
-          <p>{t(messages.firstRunPrompt)}</p>
-          <input
-            class={styles.input}
-            type="password"
-            aria-label={t(messages.passphrasePlaceholder)}
-            placeholder={t(messages.passphrasePlaceholder)}
-            value={draftPassphrase.value}
-            onInput={(event) => {
-              draftPassphrase.value = (event.target as HTMLInputElement).value;
-            }}
-          />
-          <Button intent="primary" onClick={() => controller.unlock(draftPassphrase.value)}>
-            {t(messages.unlock)}
-          </Button>
-        </section>
+        <UnlockGate returning={returning} onUnlock={(password) => controller.unlock(password)} />
       ) : (
         <>
+          <StatusBanner files={files} peers={peers} />
           <DropZone
             phase={phase}
             onDragValidity={(valid) => controller.dragOver(valid)}

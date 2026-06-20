@@ -42,6 +42,23 @@
   font: inherit;
 }
 
+.revealRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: color-mix(in srgb, var(--cascivo-color-foreground, #18181b) 60%, transparent);
+}
+
+.notice {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #b45309;
+  background: color-mix(in srgb, #b45309 12%, transparent);
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--cascivo-radius, 0.5rem);
+}
+
 .list {
   list-style: none;
   padding: 0;

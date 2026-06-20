@@ -6,6 +6,7 @@ import { App } from './app.js';
 import { resetFileTableView } from './file-table.js';
 import { IngestController } from './ingest-controller.js';
 import type { PeerInfo } from './runtime.js';
+import { resetUnlockGate } from './unlock-gate.js';
 
 function renderApp(props: Partial<Parameters<typeof App>[0]> = {}) {
   const controller = new IngestController(async () => {});
@@ -21,24 +22,32 @@ function renderApp(props: Partial<Parameters<typeof App>[0]> = {}) {
 afterEach(() => {
   cleanup();
   resetFileTableView();
+  resetUnlockGate();
 });
 
 describe('App shell (plan §2.4)', () => {
-  it('starts at the first-run passphrase gate and unlocks into the drop zone', () => {
+  it('starts at the create-password gate and unlocks into the drop zone', () => {
     renderApp();
-    expect(screen.getByText('Enter a passphrase to derive your encryption key')).toBeTruthy();
+    expect(screen.getByText('Create your password')).toBeTruthy();
 
-    fireEvent.input(screen.getByLabelText('Passphrase'), { target: { value: 'hunter2' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Unlock' }));
+    fireEvent.input(screen.getByLabelText('Password'), { target: { value: 'hunter2pass' } });
+    fireEvent.input(screen.getByLabelText('Repeat password'), { target: { value: 'hunter2pass' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create password' }));
 
     // Signal-driven: unlocking re-renders into the drop surface, no useState.
     expect(screen.getByLabelText('Drop files here to back them up')).toBeTruthy();
   });
 
+  it('greets a returning user instead of asking to create a password', () => {
+    renderApp({ returning: true });
+    expect(screen.getByText('Welcome back')).toBeTruthy();
+    expect(screen.queryByLabelText('Repeat password')).toBeNull();
+  });
+
   it('shows the zero-peer hint and the empty-files state once unlocked', async () => {
     const { controller } = renderApp();
     controller.unlock('p');
-    expect(await screen.findByText(/No paired devices yet/)).toBeTruthy();
+    expect(await screen.findByText(/No other devices yet/)).toBeTruthy();
     expect(screen.getByText('Nothing backed up yet')).toBeTruthy();
   });
 
@@ -57,7 +66,7 @@ describe('App shell (plan §2.4)', () => {
     files.value = [{ path: 'secret.bin', size: 1, modified: 1, blocks: ['m'] }];
 
     fireEvent.click(await screen.findByRole('button', { name: 'Download' }));
-    expect(await screen.findByText(/same passphrase/)).toBeTruthy();
+    expect(await screen.findByText(/same password/)).toBeTruthy();
   });
 
   it('shows a paired peer with its SAS and confirms it (plan §2.2)', async () => {
@@ -87,6 +96,6 @@ describe('App shell (plan §2.4)', () => {
     });
     controller.unlock('p');
     peers.value = [{ id: 'PEER1', sas: '123456', status: 'rejected' }];
-    expect(await screen.findByText(/writes blocked/)).toBeTruthy();
+    expect(await screen.findByText(/no longer make changes/)).toBeTruthy();
   });
 });

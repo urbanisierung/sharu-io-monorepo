@@ -19,6 +19,20 @@ async function identityDir(): Promise<FileSystemDirectoryHandle> {
   return root.getDirectoryHandle('identity', { create: true });
 }
 
+/** Whether this device already has a stored identity (i.e. a password was set
+ *  here before). Lets the UI show "create your password" on first run and
+ *  "welcome back" afterwards, without creating anything. */
+export async function hasStoredIdentity(): Promise<boolean> {
+  const dir = await identityDir();
+  try {
+    await dir.getFileHandle('signer.salt');
+    return true;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'NotFoundError') return false;
+    throw error;
+  }
+}
+
 async function loadOrCreateSalt(): Promise<Uint8Array> {
   const dir = await identityDir();
   try {

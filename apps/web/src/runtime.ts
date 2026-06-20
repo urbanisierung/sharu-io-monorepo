@@ -17,7 +17,7 @@ import {
   SyncDoc,
 } from '@safu/sdk';
 import type { Transport } from '@safu/transport';
-import { loadOrCreateSigner } from './identity.js';
+import { hasStoredIdentity, loadOrCreateSigner } from './identity.js';
 import { IngestController } from './ingest-controller.js';
 import { decodePairingCode, encodePairingCode } from './pairing.js';
 import { ingestFile, restoreFile } from './pipeline.js';
@@ -51,6 +51,9 @@ export interface Runtime {
   /** Desktop only: watch a folder and auto-ingest its files. Undefined in the
    *  browser (no filesystem access). */
   watchFolder?: (path: string) => Promise<void>;
+  /** True if a password was already set on this device (a returning user), so
+   *  the unlock screen greets instead of asking to create a password. */
+  returning: boolean;
 }
 
 /** True when running inside the Tauri desktop shell rather than a browser tab. */
@@ -83,6 +86,7 @@ async function selectBlockStore(): Promise<BlockStore> {
 export async function createRuntime(): Promise<Runtime> {
   const transport = await selectTransport([SYNC_PROTOCOL, BLOCK_PROTOCOL]);
   const store = await selectBlockStore();
+  const returning = await hasStoredIdentity();
 
   const syncStatus = signal<'idle' | 'syncing' | 'error'>('idle');
   const files = signal<readonly FileView[]>([]);
@@ -216,5 +220,6 @@ export async function createRuntime(): Promise<Runtime> {
     rejectPeer,
     connectionCode,
     watchFolder,
+    returning,
   };
 }
