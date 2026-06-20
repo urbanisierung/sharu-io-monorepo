@@ -122,4 +122,16 @@
 .peerActions {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.qrBlock {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+}
+
+.deviceName {
+  font-weight: 600;
 }

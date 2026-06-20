@@ -57,6 +57,7 @@ export function Root() {
       onPair={(code) => ready.pairWithCode(code)}
       onVerify={(id) => ready.verifyPeer(id)}
       onReject={(id) => ready.rejectPeer(id)}
+      onRename={(id, name) => ready.renameDevice(id, name)}
       onWatch={ready.watchFolder}
     />
   );

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { decodePairingCode, encodePairingCode } from './pairing.js';
+import {
+  decodePairingCode,
+  encodePairingCode,
+  pairingLink,
+  readPairingFromHash,
+} from './pairing.js';
 
 describe('pairing code', () => {
   it('round-trips the dial address and the signing identity', () => {
@@ -27,5 +32,24 @@ describe('pairing code', () => {
       .replace(/\//g, '_')
       .replace(/=+$/, '');
     expect(() => decodePairingCode(payload)).toThrow();
+  });
+});
+
+describe('pairing deep link', () => {
+  it('builds a #pair= link and reads the code back from the hash', () => {
+    const link = pairingLink('CODE-123', 'https://safu.app');
+    expect(link).toBe('https://safu.app/#pair=CODE-123');
+    expect(readPairingFromHash(new URL(link).hash)).toBe('CODE-123');
+  });
+
+  it('round-trips codes that need URL-encoding', () => {
+    const code = 'a b/c+d';
+    const hash = new URL(pairingLink(code, 'https://x')).hash;
+    expect(readPairingFromHash(hash)).toBe(code);
+  });
+
+  it('returns undefined when no pair param is present', () => {
+    expect(readPairingFromHash('#other=1')).toBeUndefined();
+    expect(readPairingFromHash('')).toBeUndefined();
   });
 });

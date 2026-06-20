@@ -43,3 +43,23 @@ export function decodePairingCode(code: string): PairingInfo {
   const addr: PeerAddr = relayUrl === undefined ? { id } : { id, relayUrl };
   return { addr, signId };
 }
+
+/** A deep link that carries a pairing code in the URL hash. Scanning the QR of
+ *  this link with a phone's *native* camera opens the app with the code ready —
+ *  no in-app camera/scanner needed. The hash never leaves the device (browsers
+ *  don't send it to servers). */
+export function pairingLink(code: string, origin: string): string {
+  return `${origin}/#pair=${encodeURIComponent(code)}`;
+}
+
+/** Extract a pairing code from a URL hash (`#pair=…`), or undefined if absent.
+ *  Lets a freshly-opened tab prefill the "link a device" field automatically. */
+export function readPairingFromHash(hash: string): string | undefined {
+  const match = /[#&]pair=([^&]+)/.exec(hash);
+  if (!match?.[1]) return undefined;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return undefined;
+  }
+}

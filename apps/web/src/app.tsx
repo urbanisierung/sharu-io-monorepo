@@ -7,6 +7,7 @@ import { t } from '@cascivo/i18n';
 import { type ReadonlySignal, signal } from '@preact/signals';
 import type { FileView } from '@safu/sdk';
 import styles from './app.module.css';
+import { Devices } from './devices.js';
 import { FileTable } from './file-table.js';
 import type { IngestController } from './ingest-controller.js';
 import { IngestProgress } from './ingest-progress.js';
@@ -34,14 +35,13 @@ export interface AppProps {
   onPair?: (code: string) => Promise<void>;
   onVerify?: (id: string) => void;
   onReject?: (id: string) => void;
+  /** Give a paired device a friendly local name. */
+  onRename?: (id: string, name: string) => void;
   /** Desktop only: start watching a folder for auto-backup. */
   onWatch?: (path: string) => Promise<void>;
 }
 
-const draftPeerCode = signal('');
 const draftWatchPath = signal('');
-const copied = signal(false);
-const pairFailed = signal(false);
 
 export function App({
   controller,
@@ -56,6 +56,7 @@ export function App({
   onPair,
   onVerify,
   onReject,
+  onRename,
   onWatch,
 }: AppProps) {
   const phase = controller.phase.value;
@@ -114,76 +115,14 @@ export function App({
       <FileTable files={files} onRestore={onRestore} onDelete={onDelete} />
 
       {phase.kind !== 'first-run' && onPair && (
-        <section class={styles.gate}>
-          <h2>{t(messages.devicesHeading)}</h2>
-          {connectionCode?.value && (
-            <div class={styles.codeRow}>
-              <p class={styles.muted}>{t(messages.yourCode)}</p>
-              <code class={styles.code}>{connectionCode.value}</code>
-              <Button
-                intent="neutral"
-                onClick={() => {
-                  void navigator.clipboard?.writeText(connectionCode.value);
-                  copied.value = true;
-                }}
-              >
-                {copied.value ? t(messages.copied) : t(messages.copy)}
-              </Button>
-            </div>
-          )}
-          <input
-            class={styles.input}
-            aria-label={t(messages.peerCodePlaceholder)}
-            placeholder={t(messages.peerCodePlaceholder)}
-            value={draftPeerCode.value}
-            onInput={(event) => {
-              draftPeerCode.value = (event.target as HTMLInputElement).value;
-              pairFailed.value = false;
-            }}
-          />
-          <Button
-            intent="primary"
-            onClick={() => {
-              pairFailed.value = false;
-              onPair(draftPeerCode.value).catch(() => {
-                pairFailed.value = true;
-              });
-            }}
-          >
-            {t(messages.pair)}
-          </Button>
-          {pairFailed.value && <p class={styles.warn}>{t(messages.pairError)}</p>}
-
-          {peers.value.length > 0 && (
-            <ul class={styles.list}>
-              {peers.value.map((peer) => (
-                <li key={peer.id} class={styles.peerRow}>
-                  <code class={styles.code}>{peer.id}</code>
-                  <span class={styles.muted}>
-                    {t(messages.sasPrompt)} <strong>{peer.sas}</strong>
-                  </span>
-                  <span class={styles.muted}>
-                    {peer.status === 'verified'
-                      ? t(messages.statusVerified)
-                      : peer.status === 'rejected'
-                        ? t(messages.statusRejected)
-                        : t(messages.statusPending)}
-                  </span>
-                  {peer.status === 'pending' && onVerify && onReject && (
-                    <span class={styles.peerActions}>
-                      <Button intent="primary" onClick={() => onVerify(peer.id)}>
-                        {t(messages.confirm)}
-                      </Button>
-                      <Button intent="neutral" onClick={() => onReject(peer.id)}>
-                        {t(messages.reject)}
-                      </Button>
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <Devices
+          connectionCode={connectionCode}
+          peers={peers}
+          onPair={onPair}
+          onVerify={onVerify}
+          onReject={onReject}
+          onRename={onRename}
+        />
       )}
 
       {phase.kind !== 'first-run' && onWatch && (

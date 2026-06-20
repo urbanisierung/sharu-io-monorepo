@@ -17,16 +17,19 @@ import {
   SyncDoc,
 } from '@safu/sdk';
 import type { Transport } from '@safu/transport';
+import { loadDeviceNames, saveDeviceName } from './device-names.js';
 import { hasStoredIdentity, unlockIdentity } from './identity.js';
 import { IngestController } from './ingest-controller.js';
 import { decodePairingCode, encodePairingCode } from './pairing.js';
 import { ingestFile, restoreFile } from './pipeline.js';
 import { deriveSas } from './sas.js';
 
-/** A paired peer as the UI shows it: its signing id, the out-of-band SAS to
- *  compare, and the verification verdict. `rejected` means write-revoked. */
+/** A paired peer as the UI shows it: its signing id, an optional friendly name,
+ *  the out-of-band SAS to compare, and the verification verdict. `rejected`
+ *  means write-revoked. */
 export interface PeerInfo {
   id: string;
+  name?: string;
   sas: string;
   status: 'pending' | 'verified' | 'rejected';
 }
@@ -49,6 +52,8 @@ export interface Runtime {
   verifyPeer: (id: string) => void;
   /** Mark a peer's SAS as mismatched: revoke its write access. */
   rejectPeer: (id: string) => void;
+  /** Give a paired device a friendly local name (empty clears it). */
+  renameDevice: (id: string, name: string) => void;
   /** This device's connection code (empty until unlock derives the identity). */
   connectionCode: ReadonlySignal<string>;
   /** Desktop only: watch a folder and auto-ingest its files. Undefined in the
@@ -95,6 +100,8 @@ export async function createRuntime(): Promise<Runtime> {
   const files = signal<readonly FileView[]>([]);
   const peers = signal<readonly PeerInfo[]>([]);
   const connectionCode = signal('');
+  // Friendly local device labels (peer id → name); drives PeerInfo.name.
+  const deviceNames = signal<Record<string, string>>(loadDeviceNames());
   // The user's per-peer "SAS matched" verdict — session UI state, distinct from
   // the persisted authorization in the document.
   const verified = signal<ReadonlySet<string>>(new Set());
@@ -129,6 +136,7 @@ export async function createRuntime(): Promise<Runtime> {
     effect(() => {
       const writerIds = ready.writers.value;
       const isVerified = verified.value;
+      const names = deviceNames.value;
       void (async () => {
         const list: PeerInfo[] = [];
         for (const peerId of writerIds) {
@@ -142,7 +150,7 @@ export async function createRuntime(): Promise<Runtime> {
             : isVerified.has(peerId)
               ? 'verified'
               : 'pending';
-          list.push({ id: peerId, sas, status });
+          list.push({ id: peerId, name: names[peerId], sas, status });
         }
         peers.value = list;
       })();
@@ -205,6 +213,10 @@ export async function createRuntime(): Promise<Runtime> {
     doc?.revokeWriter(id);
   };
 
+  const renameDevice = (id: string, name: string): void => {
+    deviceNames.value = saveDeviceName(id, name);
+  };
+
   const watchFolder = isTauri()
     ? async (path: string): Promise<void> => {
         const { watchFolder: watch } = await import('./tauri-watch.js');
@@ -232,6 +244,7 @@ export async function createRuntime(): Promise<Runtime> {
     pairWithCode,
     verifyPeer,
     rejectPeer,
+    renameDevice,
     connectionCode,
     watchFolder,
     returning,
