@@ -38,6 +38,8 @@ export interface Runtime {
   syncStatus: ReadonlySignal<'idle' | 'syncing' | 'error'>;
   /** Reassemble a backed-up file's plaintext for download. */
   restore: (path: string) => Promise<Uint8Array>;
+  /** Remove a file from the backup set (a CRDT tombstone that syncs to peers). */
+  remove: (path: string) => void;
   /** Pair with a peer from the connection code they shared out-of-band. */
   pairWithCode: (code: string) => Promise<void>;
   /** Mark a peer's SAS as matching (trusted). */
@@ -160,6 +162,13 @@ export async function createRuntime(): Promise<Runtime> {
     }
   };
 
+  const remove = (path: string): void => {
+    // Tombstone the entry; it converges to peers and drops out of every file
+    // list. Blocks are left in the store (no dedup yet, and BlockStore has no
+    // delete) — reclaiming space is a deliberate future step.
+    doc?.deleteFile(path);
+  };
+
   const restore = async (path: string): Promise<Uint8Array> => {
     const file = doc?.files.value.find((f) => f.path === path);
     const manifest = file?.blocks[0];
@@ -201,6 +210,7 @@ export async function createRuntime(): Promise<Runtime> {
     peers,
     syncStatus,
     restore,
+    remove,
     pairWithCode,
     verifyPeer,
     rejectPeer,

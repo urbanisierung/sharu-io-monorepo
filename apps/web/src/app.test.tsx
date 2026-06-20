@@ -3,6 +3,7 @@ import type { FileView } from '@safu/sdk';
 import { cleanup, fireEvent, render, screen } from '@testing-library/preact';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './app.js';
+import { resetFileTableView } from './file-table.js';
 import { IngestController } from './ingest-controller.js';
 import type { PeerInfo } from './runtime.js';
 
@@ -17,7 +18,10 @@ function renderApp(props: Partial<Parameters<typeof App>[0]> = {}) {
   return { controller, files, peers, syncStatus };
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  resetFileTableView();
+});
 
 describe('App shell (plan §2.4)', () => {
   it('starts at the first-run passphrase gate and unlocks into the drop zone', () => {

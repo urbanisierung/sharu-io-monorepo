@@ -51,6 +51,7 @@ export function Root() {
       syncStatus={ready.syncStatus}
       connectionCode={ready.connectionCode}
       onRestore={(path) => download(path)}
+      onDelete={(path) => ready.remove(path)}
       onPair={(code) => ready.pairWithCode(code)}
       onVerify={(id) => ready.verifyPeer(id)}
       onReject={(id) => ready.rejectPeer(id)}

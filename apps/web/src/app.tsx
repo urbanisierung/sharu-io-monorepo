@@ -7,6 +7,7 @@ import { t } from '@cascivo/i18n';
 import { type ReadonlySignal, signal } from '@preact/signals';
 import type { FileView } from '@safu/sdk';
 import styles from './app.module.css';
+import { FileTable } from './file-table.js';
 import type { IngestController } from './ingest-controller.js';
 import { messages } from './messages.js';
 import type { PeerInfo } from './runtime.js';
@@ -21,6 +22,7 @@ export interface AppProps {
   /** This device's connection code (a signal — empty until unlock derives it). */
   connectionCode?: ReadonlySignal<string>;
   onRestore?: (path: string) => Promise<void>;
+  onDelete?: (path: string) => void;
   onPair?: (code: string) => Promise<void>;
   onVerify?: (id: string) => void;
   onReject?: (id: string) => void;
@@ -33,7 +35,6 @@ const draftPeerCode = signal('');
 const draftWatchPath = signal('');
 const copied = signal(false);
 const pairFailed = signal(false);
-const restoreFailed = signal(false);
 
 export function App({
   controller,
@@ -42,6 +43,7 @@ export function App({
   syncStatus,
   connectionCode,
   onRestore,
+  onDelete,
   onPair,
   onVerify,
   onReject,
@@ -95,34 +97,7 @@ export function App({
         </>
       )}
 
-      <section class={styles.files}>
-        <h2>{t(messages.filesHeading)}</h2>
-        {files.value.length === 0 ? (
-          <p class={styles.muted}>{t(messages.empty)}</p>
-        ) : (
-          <ul class={styles.list}>
-            {files.value.map((file) => (
-              <li key={file.path} class={styles.row}>
-                <span>{file.path}</span>
-                {onRestore && (
-                  <Button
-                    intent="neutral"
-                    onClick={() => {
-                      restoreFailed.value = false;
-                      onRestore(file.path).catch(() => {
-                        restoreFailed.value = true;
-                      });
-                    }}
-                  >
-                    {t(messages.download)}
-                  </Button>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-        {restoreFailed.value && <p class={styles.warn}>{t(messages.restoreFailed)}</p>}
-      </section>
+      <FileTable files={files} onRestore={onRestore} onDelete={onDelete} />
 
       {phase.kind !== 'first-run' && onPair && (
         <section class={styles.gate}>
