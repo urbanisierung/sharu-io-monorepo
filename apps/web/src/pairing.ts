@@ -44,12 +44,13 @@ export function decodePairingCode(code: string): PairingInfo {
   return { addr, signId };
 }
 
-/** A deep link that carries a pairing code in the URL hash. Scanning the QR of
- *  this link with a phone's *native* camera opens the app with the code ready —
- *  no in-app camera/scanner needed. The hash never leaves the device (browsers
- *  don't send it to servers). */
+/** A deep link that carries a pairing code in the URL hash. It points straight
+ *  at the app (`/app`) so opening it skips the landing page and lands the user
+ *  in the unlock/link flow, where the code auto-links once they unlock. Scanning
+ *  the QR with a phone's *native* camera needs no in-app scanner. The hash never
+ *  leaves the device (browsers don't send it to servers). */
 export function pairingLink(code: string, origin: string): string {
-  return `${origin}/#pair=${encodeURIComponent(code)}`;
+  return `${origin}/app#pair=${encodeURIComponent(code)}`;
 }
 
 /** Extract a pairing code from a URL hash (`#pair=…`), or undefined if absent.

@@ -5,6 +5,8 @@ import { defineMessages } from '@cascivo/i18n';
 /** Landing page copy: what Sharu is, the problem it solves, and how. */
 export const landing = defineMessages('safu.landing', {
   brand: 'SHARU',
+  logoAlt: 'Sharu wolf logo',
+  whitepaper: 'Read the whitepaper',
   badge: 'zero-knowledge · local-first · peer-to-peer',
   heroTitle: 'Your data. Your devices. Nobody else.',
   heroSubtitle:
@@ -61,17 +63,102 @@ export const landing = defineMessages('safu.landing', {
   footer: 'Sharu — zero-knowledge, local-first backup & sync',
 });
 
+/** Whitepaper copy: a technical description of how Sharu works. Inspired by the
+ *  original sharu-io whitepaper, but rewritten for this architecture (Iroh +
+ *  BLAKE3 + Argon2id + AES-256-GCM + a CRDT allocation table). */
+export const whitepaper = defineMessages('safu.whitepaper', {
+  back: 'Back',
+  title: 'Sharu Whitepaper',
+  subtitle: 'A zero-knowledge, local-first backup & sync protocol',
+  meta: 'Revision 1 · 2026 · sharu.io',
+  launch: 'Launch the app',
+
+  abstractKicker: 'Abstract',
+  abstractTitle: 'Backup you do not have to trust anyone to keep.',
+  abstractBody:
+    'Sharu is a decentralized, zero-knowledge, local-first backup and sync system. Files are encrypted on the device that owns them and replicated peer-to-peer across the user’s own machines. There are no servers that hold plaintext, no accounts, and no operator who can read, scan, or withhold a user’s data. This paper describes the protocol: how identity and keys are derived, how files are encrypted and addressed, how devices discover one another and exchange blocks, and how concurrent edits converge without a coordinator.',
+
+  modelKicker: 'Threat model',
+  modelTitle: 'Assume the network and any relay are hostile.',
+  modelBody:
+    'Sharu treats every byte that leaves a device as observable by an adversary. Relays, transit links, and storage that outlive a device are all assumed to be controlled by an attacker whose goal is to read or tamper with user data. The only trusted boundary is the user’s own device while it is unlocked.',
+  modelBody2:
+    'From this it follows that only ciphertext may cross the wire, keys may never be persisted in plaintext, and every block a device receives must be verifiable against an address it already trusts. Availability — keeping a copy reachable — is explicitly separated from confidentiality and integrity, so an untrusted host can help store data without ever being able to read it.',
+
+  identityKicker: 'Identity & keys',
+  identityTitle: 'One passphrase, derived locally, never transmitted.',
+  identityBody:
+    'A device’s identity is derived from a single user passphrase using Argon2id, a memory-hard key-derivation function chosen to make brute-force search expensive. The derived root key never leaves the device and is never written to disk in plaintext; it exists only in memory while the app is unlocked. Forgetting the passphrase is therefore unrecoverable by design — there is no reset and no escrow, because anyone who could reset it could also read the data.',
+  identityBody2:
+    'From the root key the device derives the symmetric keys used to seal content and the long-lived keypair that identifies it to peers. A recovery sheet — the passphrase, printed for offline storage — is the user’s sole backstop.',
+
+  cryptoKicker: 'Encryption & chunking',
+  cryptoTitle: 'Stream, split, seal — never buffer a whole file.',
+  cryptoBody:
+    'Files are processed as streams. Each file is split into content-defined chunks so that an edit re-encrypts only the chunks that actually changed, and identical chunks across files are stored once. Every chunk is sealed independently with AES-256-GCM, whose authentication tag lets the reader detect any tampering before the plaintext is ever exposed.',
+  cryptoBody2:
+    'Because the pipeline is streaming end to end, a multi-gigabyte file is encrypted, hashed, and transferred in bounded memory. The plaintext is never assembled in full, on disk or in RAM, on either side of a transfer.',
+
+  addressingKicker: 'Content addressing',
+  addressingTitle: 'Every block is named by its BLAKE3 hash.',
+  addressingBody:
+    'Each sealed block is addressed by the BLAKE3 hash of its ciphertext. The address is both the storage key and a proof of integrity: a device asks for a block by hash and verifies the bytes it receives against that same hash before trusting them. A corrupted or substituted block simply fails to match and is discarded.',
+  addressingBody2:
+    'Content addressing also gives Sharu deduplication for free and makes storage tamper-evident — the name of a block cannot agree with altered contents.',
+
+  syncKicker: 'Peer-to-peer sync',
+  syncTitle: 'Devices talk directly; the relay only sees ciphertext.',
+  syncBody:
+    'Devices find and connect to each other over Iroh, a QUIC-based peer-to-peer transport. On desktop, NAT hole-punching establishes direct connections between machines; in the browser, where direct sockets are unavailable, traffic is carried through a relay. In both cases the relay and the network see only authenticated ciphertext blocks — never keys, never plaintext, never file names.',
+  syncBody2:
+    'Synchronization is a content exchange: a device announces which block hashes it has, requests the ones it is missing, and verifies each against its address on arrival. The transport is therefore interchangeable and untrusted; security does not depend on it.',
+
+  crdtKicker: 'Conflict-free state',
+  crdtTitle: 'A replicated table that converges without a coordinator.',
+  crdtBody:
+    'Which blocks compose which file, and the current state of every file across devices, is tracked in a conflict-free replicated data type (CRDT) — an allocation table that every device holds a copy of and updates locally. When devices reconnect, their tables merge deterministically: the same set of updates always yields the same result, regardless of the order they arrive in.',
+  crdtBody2:
+    'Conflict resolution lives entirely in this replicated document and is decoupled from transport state, so a write is never silently dropped and two devices that have seen the same history always agree. Offline edits are first-class: the network is an optimization, not a prerequisite.',
+
+  trustKicker: 'Device trust',
+  trustTitle: 'Pair deliberately, verify out of band, revoke cleanly.',
+  trustBody:
+    'Adding a device is an explicit act. A new device presents a link code (also rendered as a QR code) and, on pairing, both devices display a short authentication string (SAS) derived from the connection. The user confirms that the two strings match out of band, which defeats a machine-in-the-middle attempting to impersonate a peer.',
+  trustBody2:
+    'Trust is revocable: a lost or compromised device can be blocked so it can no longer make changes, without re-keying the entire history. Verified, unverified, and blocked are explicit states surfaced in the UI.',
+
+  guaranteesKicker: 'Guarantees',
+  guaranteesTitle: 'Properties enforced by construction, not by policy.',
+  guarantee1:
+    'Zero-knowledge — only ciphertext crosses the wire; keys are never persisted in plaintext.',
+  guarantee2: 'Local-first — data lives on the user’s devices and works fully offline.',
+  guarantee3: 'Peer-to-peer — no central server owns the data; devices sync directly.',
+  guarantee4: 'Streaming — files are never fully buffered, so backups stay memory-bounded.',
+  guarantee5: 'Content-addressed — blocks are named by BLAKE3 hash and are tamper-evident.',
+  guarantee6:
+    'Conflict-free — a CRDT allocation table converges deterministically and never drops a write.',
+
+  footer: 'Sharu — zero-knowledge, local-first backup & sync',
+});
+
 export const messages = defineMessages('safu', {
   title: 'Sharu',
+  logoAlt: 'Sharu wolf logo',
   tagline: 'Zero-knowledge, local-first backup & sync',
   booting: 'Getting things ready…',
   syncUpToDate: 'Up to date',
   syncingNow: 'Syncing…',
   syncProblem: 'Sync problem',
-  createTitle: 'Create your password',
-  createSubtitle: 'This password locks your files. Pick something you’ll remember.',
+  createTitle: 'Create a wallet',
+  createSubtitle:
+    'Name it and set a password. The password locks this wallet — pick something you’ll remember.',
   unlockTitle: 'Welcome back',
-  unlockSubtitle: 'Enter your password to open your files.',
+  unlockSubtitle: 'Enter your password to open this wallet.',
+  pairTitle: 'Link this device',
+  pairSubtitle:
+    'Enter the same password you use on your other device. We’ll link them automatically once it’s unlocked.',
+  walletNameLabel: 'Wallet name',
+  walletNamePlaceholder: 'Name this wallet (e.g. Personal)',
   passwordLabel: 'Password',
   passwordConfirmLabel: 'Repeat password',
   showPassword: 'Show password',
@@ -80,9 +167,21 @@ export const messages = defineMessages('safu', {
   passwordMismatch: 'The two passwords don’t match.',
   passwordWarning:
     'This password is your only key. If you forget it, your files can’t be recovered — there is no reset.',
-  create: 'Create password',
+  create: 'Create wallet',
   unlock: 'Unlock',
   unlocking: 'Unlocking…',
+  useAnotherWallet: 'Use a different wallet',
+  walletsTitle: 'Your wallets',
+  walletsSubtitle: 'Choose a wallet to open, or add another to this device.',
+  newWallet: 'Create a new wallet',
+  restoreWallet: 'Restore from a backup',
+  restoreError: 'That file isn’t a valid Sharu wallet backup.',
+  linking: 'Linking your other device…',
+  walletHeading: 'Wallet',
+  backupWallet: 'Back up this wallet',
+  backupHint:
+    'Save a backup file to restore this wallet on another device. It contains your password — keep it private.',
+  switchWallet: 'Switch wallet',
   wrongPassword:
     'That password doesn’t match the one set on this device. Enter the password you created here.',
   unlockFailed: 'Something went wrong unlocking. Please try again.',

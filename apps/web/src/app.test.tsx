@@ -35,22 +35,21 @@ describe('App shell (plan §2.4)', () => {
     expect(await screen.findByText('Syncing…')).toBeTruthy();
   });
 
-  it('starts at the create-password gate and unlocks into the drop zone', async () => {
-    renderApp();
-    expect(screen.getByText('Create your password')).toBeTruthy();
-
-    fireEvent.input(screen.getByLabelText('Password'), { target: { value: 'hunter2pass' } });
-    fireEvent.input(screen.getByLabelText('Repeat password'), { target: { value: 'hunter2pass' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Create password' }));
-
-    // Signal-driven: unlocking re-renders into the drop surface, no useState.
+  it('reveals the drop surface once the controller is unlocked', async () => {
+    const { controller } = renderApp();
+    controller.unlock('hunter2pass');
     expect(await screen.findByLabelText('Drop files here to back them up')).toBeTruthy();
   });
 
-  it('greets a returning user instead of asking to create a password', () => {
-    renderApp({ returning: true });
-    expect(screen.getByText('Welcome back')).toBeTruthy();
-    expect(screen.queryByLabelText('Repeat password')).toBeNull();
+  it('shows the active wallet name and backup/switch controls', () => {
+    const onBackup = vi.fn();
+    const onSwitchWallet = vi.fn();
+    renderApp({ walletName: 'Personal', onBackup, onSwitchWallet });
+    expect(screen.getByText('Personal')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Back up this wallet' }));
+    expect(onBackup).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole('button', { name: 'Switch wallet' }));
+    expect(onSwitchWallet).toHaveBeenCalledOnce();
   });
 
   it('shows the zero-peer hint and the empty-files state once unlocked', async () => {

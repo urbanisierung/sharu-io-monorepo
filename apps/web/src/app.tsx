@@ -16,20 +16,20 @@ import type { PeerInfo } from './runtime.js';
 import { StatusBanner } from './status-banner.js';
 import { Button } from './ui/button.js';
 import { DropZone } from './ui/drop-zone.js';
-import { UnlockGate } from './unlock-gate.js';
 
 export interface AppProps {
   controller: IngestController;
   files: ReadonlySignal<readonly FileView[]>;
   peers: ReadonlySignal<readonly PeerInfo[]>;
   syncStatus: ReadonlySignal<'idle' | 'syncing' | 'error'>;
-  /** True once this device already has a stored identity (returning user). */
-  returning?: boolean;
   /** This device's connection code (a signal — empty until unlock derives it). */
   connectionCode?: ReadonlySignal<string>;
-  /** Derive + verify the identity and bring the app online; rejects on a wrong
-   *  password. When absent (tests), the gate just flips the controller. */
-  onUnlock?: (password: string) => Promise<void>;
+  /** The active wallet's name, shown in the header. */
+  walletName?: string;
+  /** Download a portable backup of the active wallet. */
+  onBackup?: () => void;
+  /** Lock the active wallet and return to the wallet picker. */
+  onSwitchWallet?: () => void;
   onRestore?: (path: string) => Promise<void>;
   onDelete?: (path: string) => void;
   onPair?: (code: string) => Promise<void>;
@@ -48,9 +48,10 @@ export function App({
   files,
   peers,
   syncStatus,
-  returning = false,
   connectionCode,
-  onUnlock,
+  walletName,
+  onBackup,
+  onSwitchWallet,
   onRestore,
   onDelete,
   onPair,
@@ -74,8 +75,13 @@ export function App({
     <div class={styles.app}>
       <header class={styles.topbar}>
         <div class={styles.brand}>
+          <img class={styles.brandLogo} src="/logo.png" alt={t(messages.logoAlt)} />
           <h1 class={styles.brandName}>{t(messages.title)}</h1>
-          <span class={styles.brandTag}>{t(messages.tagline)}</span>
+          {walletName ? (
+            <span class={styles.brandTag}>{walletName}</span>
+          ) : (
+            <span class={styles.brandTag}>{t(messages.tagline)}</span>
+          )}
         </div>
         <span class={styles.sync}>
           <span class={cn(styles.dot, dotClass)} aria-hidden="true" />
@@ -84,78 +90,88 @@ export function App({
       </header>
 
       <main class={styles.content}>
-        {phase.kind === 'first-run' ? (
-          <UnlockGate
-            returning={returning}
-            onUnlock={onUnlock ?? ((password) => controller.unlock(password))}
+        <StatusBanner files={files} peers={peers} />
+        <DropZone
+          phase={phase}
+          onDragValidity={(valid) => controller.dragOver(valid)}
+          onLeave={() => controller.dragLeave()}
+          onFiles={(dropped) => void controller.drop(dropped)}
+        />
+        <label class={styles.addButton}>
+          <span aria-hidden="true">{t(messages.addFiles)}</span>
+          <input
+            type="file"
+            multiple
+            aria-label={t(messages.addFiles)}
+            class={styles.hiddenInput}
+            onChange={(event) => {
+              const input = event.target as HTMLInputElement;
+              const picked = Array.from(input.files ?? []);
+              input.value = '';
+              if (picked.length > 0) void controller.drop(picked);
+            }}
           />
-        ) : (
-          <>
-            <StatusBanner files={files} peers={peers} />
-            <DropZone
-              phase={phase}
-              onDragValidity={(valid) => controller.dragOver(valid)}
-              onLeave={() => controller.dragLeave()}
-              onFiles={(dropped) => void controller.drop(dropped)}
+        </label>
+        <IngestProgress progress={controller.progress} />
+        {(phase.kind === 'success' || phase.kind === 'error') && (
+          <Button intent="neutral" onClick={() => controller.reset()}>
+            {phase.kind === 'success' ? t(messages.addMore) : t(messages.retry)}
+          </Button>
+        )}
+        <p class={cn(styles.muted, peers.value.length === 0 && styles.warn)}>
+          {peers.value.length === 0
+            ? t(messages.noPeers)
+            : t(messages.peersOnline, { count: peers.value.length })}
+        </p>
+
+        <FileTable files={files} onRestore={onRestore} onDelete={onDelete} />
+
+        {onPair && (
+          <Devices
+            connectionCode={connectionCode}
+            peers={peers}
+            onPair={onPair}
+            onVerify={onVerify}
+            onReject={onReject}
+            onRename={onRename}
+          />
+        )}
+
+        {onWatch && (
+          <section class={styles.gate}>
+            <h2>{t(messages.watchHeading)}</h2>
+            <input
+              class={styles.input}
+              aria-label={t(messages.watchPlaceholder)}
+              placeholder={t(messages.watchPlaceholder)}
+              value={draftWatchPath.value}
+              onInput={(event) => {
+                draftWatchPath.value = (event.target as HTMLInputElement).value;
+              }}
             />
-            <label class={styles.addButton}>
-              <span aria-hidden="true">{t(messages.addFiles)}</span>
-              <input
-                type="file"
-                multiple
-                aria-label={t(messages.addFiles)}
-                class={styles.hiddenInput}
-                onChange={(event) => {
-                  const input = event.target as HTMLInputElement;
-                  const picked = Array.from(input.files ?? []);
-                  input.value = '';
-                  if (picked.length > 0) void controller.drop(picked);
-                }}
-              />
-            </label>
-            <IngestProgress progress={controller.progress} />
-            {(phase.kind === 'success' || phase.kind === 'error') && (
-              <Button intent="neutral" onClick={() => controller.reset()}>
-                {phase.kind === 'success' ? t(messages.addMore) : t(messages.retry)}
+            <Button intent="neutral" onClick={() => void onWatch(draftWatchPath.value)}>
+              {t(messages.watch)}
+            </Button>
+          </section>
+        )}
+
+        {(onBackup || onSwitchWallet) && (
+          <section class={styles.gate}>
+            <h2>{t(messages.walletHeading)}</h2>
+            {onBackup && (
+              <>
+                <p class={styles.muted}>{t(messages.backupHint)}</p>
+                <Button intent="neutral" onClick={onBackup}>
+                  {t(messages.backupWallet)}
+                </Button>
+              </>
+            )}
+            {onSwitchWallet && (
+              <Button intent="neutral" onClick={onSwitchWallet}>
+                {t(messages.switchWallet)}
               </Button>
             )}
-            <p class={cn(styles.muted, peers.value.length === 0 && styles.warn)}>
-              {peers.value.length === 0
-                ? t(messages.noPeers)
-                : t(messages.peersOnline, { count: peers.value.length })}
-            </p>
-
-            <FileTable files={files} onRestore={onRestore} onDelete={onDelete} />
-
-            {onPair && (
-              <Devices
-                connectionCode={connectionCode}
-                peers={peers}
-                onPair={onPair}
-                onVerify={onVerify}
-                onReject={onReject}
-                onRename={onRename}
-              />
-            )}
-
-            {onWatch && (
-              <section class={styles.gate}>
-                <h2>{t(messages.watchHeading)}</h2>
-                <input
-                  class={styles.input}
-                  aria-label={t(messages.watchPlaceholder)}
-                  placeholder={t(messages.watchPlaceholder)}
-                  value={draftWatchPath.value}
-                  onInput={(event) => {
-                    draftWatchPath.value = (event.target as HTMLInputElement).value;
-                  }}
-                />
-                <Button intent="neutral" onClick={() => void onWatch(draftWatchPath.value)}>
-                  {t(messages.watch)}
-                </Button>
-              </section>
-            )}
-          </>
+          </section>
         )}
       </main>
     </div>

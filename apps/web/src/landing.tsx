@@ -31,12 +31,14 @@ const principles = [
 
 export interface LandingProps {
   onLaunch: () => void;
+  onWhitepaper: () => void;
 }
 
-export function Landing({ onLaunch }: LandingProps) {
+export function Landing({ onLaunch, onWhitepaper }: LandingProps) {
   return (
     <div class={styles.page}>
       <header class={styles.hero}>
+        <img class={styles.logo} src="/logo.png" alt={t(landing.logoAlt)} />
         <span class={styles.badge}>{t(landing.badge)}</span>
         <h1 class={styles.brand}>{t(landing.brand)}</h1>
         <p class={styles.title}>{t(landing.heroTitle)}</p>
@@ -48,6 +50,9 @@ export function Landing({ onLaunch }: LandingProps) {
           <a class={styles.ghost} href="#how">
             {t(landing.learnMore)}
           </a>
+          <button class={styles.ghost} type="button" onClick={onWhitepaper}>
+            {t(landing.whitepaper)}
+          </button>
         </div>
       </header>
 

@@ -1,18 +1,20 @@
-// The password screen — the highest-stakes moment in the app. Two modes from
-// one component: "create your password" on a device's first run (with a confirm
-// field, a show/hide toggle, the no-reset warning, and a recovery-sheet
-// download) and "welcome back" on later runs. Signal-driven, no React hooks; all
-// copy via @cascivo/i18n. It only collects + validates the password and hands it
-// to `onUnlock`; key derivation lives in the runtime.
+// The password screen — the highest-stakes moment in the app — as a centered,
+// professional card. Three shades of one component: create a new wallet (name +
+// password + confirm, with the no-reset warning and a recovery download), unlock
+// a known wallet ("welcome back"), and the pairing variant ("link this device",
+// shown when the user arrived via a device-link URL). Signal-driven, no React
+// hooks; all copy via @cascivo/i18n. It only collects + validates input and
+// hands the password (and, when creating, the name) to `onSubmit`.
 import { t } from '@cascivo/i18n';
 import { signal } from '@preact/signals';
-import styles from './app.module.css';
+import styles from './auth.module.css';
 import { messages } from './messages.js';
 import { saveRecoverySheet } from './recovery.js';
 import { Button } from './ui/button.js';
 
 const MIN_LENGTH = 8;
 
+const name = signal('');
 const password = signal('');
 const confirm = signal('');
 const reveal = signal(false);
@@ -22,6 +24,7 @@ const busy = signal(false);
 /** Reset the module-level field state — for deterministic tests and to drop the
  *  password from memory once the gate is done. */
 export function resetUnlockGate(): void {
+  name.value = '';
   password.value = '';
   confirm.value = '';
   reveal.value = false;
@@ -30,16 +33,35 @@ export function resetUnlockGate(): void {
 }
 
 export interface UnlockGateProps {
-  /** True once this device already has a stored identity (a returning user). */
-  returning: boolean;
-  /** Derives + verifies the identity; rejects (e.g. WrongPasswordError, carrying
+  /** 'create' shows the name + confirm fields and the no-reset warning; 'unlock'
+   *  greets a returning user with just a password. */
+  mode: 'create' | 'unlock';
+  /** The wallet's name, shown as a chip when unlocking a known wallet. */
+  walletName?: string;
+  /** Create variant tuned for linking a device reached via a pairing URL. */
+  pairing?: boolean;
+  /** Collects the password (and, when creating, the wallet name). Rejects (with
    *  message 'wrong-password') when a returning user mistypes their password. */
-  onUnlock: (password: string) => void | Promise<void>;
+  onSubmit: (password: string, walletName: string) => void | Promise<void>;
+  /** Return to the wallet picker, when there is one to go back to. */
+  onBack?: () => void;
 }
 
-export function UnlockGate({ returning, onUnlock }: UnlockGateProps) {
+export function UnlockGate({ mode, walletName, pairing, onSubmit, onBack }: UnlockGateProps) {
+  const creating = mode === 'create';
   const ready =
-    password.value.length >= MIN_LENGTH && (returning || password.value === confirm.value);
+    password.value.length >= MIN_LENGTH && (!creating || password.value === confirm.value);
+
+  const title = creating
+    ? pairing
+      ? messages.pairTitle
+      : messages.createTitle
+    : messages.unlockTitle;
+  const subtitle = creating
+    ? pairing
+      ? messages.pairSubtitle
+      : messages.createSubtitle
+    : messages.unlockSubtitle;
 
   const submit = async (): Promise<void> => {
     if (busy.value) return;
@@ -47,15 +69,16 @@ export function UnlockGate({ returning, onUnlock }: UnlockGateProps) {
       error.value = t(messages.passwordTooShort);
       return;
     }
-    if (!returning && password.value !== confirm.value) {
+    if (creating && password.value !== confirm.value) {
       error.value = t(messages.passwordMismatch);
       return;
     }
     const entered = password.value;
+    const walletName = name.value;
     busy.value = true;
     error.value = null;
     try {
-      await onUnlock(entered);
+      await onSubmit(entered, walletName);
       resetUnlockGate(); // success: the app reveals; drop the password from memory
     } catch (cause) {
       const wrong = cause instanceof Error && cause.message === 'wrong-password';
@@ -65,62 +88,104 @@ export function UnlockGate({ returning, onUnlock }: UnlockGateProps) {
   };
 
   return (
-    <section class={styles.gate}>
-      <h2>{returning ? t(messages.unlockTitle) : t(messages.createTitle)}</h2>
-      <p class={styles.muted}>
-        {returning ? t(messages.unlockSubtitle) : t(messages.createSubtitle)}
-      </p>
+    <section class={styles.screen}>
+      <div class={styles.card}>
+        <div class={styles.brand}>
+          <img class={styles.logo} src="/logo.png" alt={t(messages.logoAlt)} />
+          <h1 class={styles.title}>{t(title)}</h1>
+          {!creating && walletName && <span class={styles.walletChip}>{walletName}</span>}
+          <p class={styles.subtitle}>{t(subtitle)}</p>
+        </div>
 
-      <input
-        class={styles.input}
-        type={reveal.value ? 'text' : 'password'}
-        aria-label={t(messages.passwordLabel)}
-        placeholder={t(messages.passwordLabel)}
-        value={password.value}
-        onInput={(event) => {
-          password.value = (event.target as HTMLInputElement).value;
-          error.value = null;
-        }}
-      />
+        <div class={styles.form}>
+          {creating && (
+            <label class={styles.field}>
+              <span class={styles.label}>{t(messages.walletNameLabel)}</span>
+              <input
+                class={styles.input}
+                aria-label={t(messages.walletNameLabel)}
+                placeholder={t(messages.walletNamePlaceholder)}
+                value={name.value}
+                onInput={(event) => {
+                  name.value = (event.target as HTMLInputElement).value;
+                }}
+              />
+            </label>
+          )}
 
-      {!returning && (
-        <input
-          class={styles.input}
-          type={reveal.value ? 'text' : 'password'}
-          aria-label={t(messages.passwordConfirmLabel)}
-          placeholder={t(messages.passwordConfirmLabel)}
-          value={confirm.value}
-          onInput={(event) => {
-            confirm.value = (event.target as HTMLInputElement).value;
-            error.value = null;
-          }}
-        />
-      )}
+          <label class={styles.field}>
+            <span class={styles.label}>{t(messages.passwordLabel)}</span>
+            <input
+              class={styles.input}
+              type={reveal.value ? 'text' : 'password'}
+              aria-label={t(messages.passwordLabel)}
+              placeholder={t(messages.passwordLabel)}
+              value={password.value}
+              onInput={(event) => {
+                password.value = (event.target as HTMLInputElement).value;
+                error.value = null;
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !creating) void submit();
+              }}
+            />
+          </label>
 
-      <label class={styles.revealRow}>
-        <input
-          type="checkbox"
-          checked={reveal.value}
-          onChange={(event) => {
-            reveal.value = (event.target as HTMLInputElement).checked;
-          }}
-        />
-        {reveal.value ? t(messages.hidePassword) : t(messages.showPassword)}
-      </label>
+          {creating && (
+            <label class={styles.field}>
+              <span class={styles.label}>{t(messages.passwordConfirmLabel)}</span>
+              <input
+                class={styles.input}
+                type={reveal.value ? 'text' : 'password'}
+                aria-label={t(messages.passwordConfirmLabel)}
+                placeholder={t(messages.passwordConfirmLabel)}
+                value={confirm.value}
+                onInput={(event) => {
+                  confirm.value = (event.target as HTMLInputElement).value;
+                  error.value = null;
+                }}
+              />
+            </label>
+          )}
 
-      {error.value && <p class={styles.warn}>{error.value}</p>}
+          <label class={styles.revealRow}>
+            <input
+              type="checkbox"
+              checked={reveal.value}
+              onChange={(event) => {
+                reveal.value = (event.target as HTMLInputElement).checked;
+              }}
+            />
+            {reveal.value ? t(messages.hidePassword) : t(messages.showPassword)}
+          </label>
+        </div>
 
-      {!returning && <p class={styles.notice}>{t(messages.passwordWarning)}</p>}
+        {error.value && <p class={styles.error}>{error.value}</p>}
 
-      <Button intent="primary" onClick={() => void submit()}>
-        {busy.value ? t(messages.unlocking) : returning ? t(messages.unlock) : t(messages.create)}
-      </Button>
+        {creating && <p class={styles.notice}>{t(messages.passwordWarning)}</p>}
 
-      {!returning && ready && (
-        <Button intent="neutral" onClick={() => saveRecoverySheet(password.value)}>
-          {t(messages.saveRecovery)}
-        </Button>
-      )}
+        <div class={styles.actions}>
+          <Button intent="primary" onClick={() => void submit()}>
+            {busy.value
+              ? t(messages.unlocking)
+              : creating
+                ? t(messages.create)
+                : t(messages.unlock)}
+          </Button>
+
+          {creating && ready && (
+            <Button intent="neutral" onClick={() => saveRecoverySheet(password.value)}>
+              {t(messages.saveRecovery)}
+            </Button>
+          )}
+        </div>
+
+        {onBack && (
+          <button type="button" class={styles.link} onClick={onBack}>
+            {t(messages.useAnotherWallet)}
+          </button>
+        )}
+      </div>
     </section>
   );
 }

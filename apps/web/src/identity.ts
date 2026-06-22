@@ -6,6 +6,9 @@
 // across reloads, so the writer set and authored ops stay valid.
 import { deriveKey } from '@safu/crypto';
 import { createSigner, type Signer } from '@safu/sdk';
+import { WrongPasswordError } from './wallet-registry.js';
+
+export { WrongPasswordError } from './wallet-registry.js';
 
 const SALT_BYTES = 16;
 
@@ -17,20 +20,6 @@ export async function deriveSigner(passphrase: string, salt: Uint8Array): Promis
 async function identityDir(): Promise<FileSystemDirectoryHandle> {
   const root = await navigator.storage.getDirectory();
   return root.getDirectoryHandle('identity', { create: true });
-}
-
-/** Whether this device already has a stored identity (i.e. a password was set
- *  here before). Lets the UI show "create your password" on first run and
- *  "welcome back" afterwards, without creating anything. */
-export async function hasStoredIdentity(): Promise<boolean> {
-  const dir = await identityDir();
-  try {
-    await dir.getFileHandle('signer.salt');
-    return true;
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'NotFoundError') return false;
-    throw error;
-  }
 }
 
 async function loadOrCreateSalt(): Promise<Uint8Array> {
@@ -58,18 +47,6 @@ export async function loadOrCreateSigner(passphrase: string): Promise<Signer> {
   return deriveSigner(passphrase, await loadOrCreateSalt());
 }
 
-const ID_FILE = 'signer.id';
-
-/** Thrown when a derived id doesn't match the one recorded on this device —
- *  i.e. the entered password differs from the one used to create the identity
- *  here. Caught at the unlock screen and shown as a friendly message. */
-export class WrongPasswordError extends Error {
-  constructor() {
-    super('wrong-password');
-    this.name = 'WrongPasswordError';
-  }
-}
-
 /** Persistence for the expected signing id (a public key, safe to store). */
 export interface IdVerifierStore {
   load(): Promise<string | undefined>;
@@ -87,41 +64,4 @@ export async function verifyOrRecordId(derivedId: string, store: IdVerifierStore
     return;
   }
   if (expected !== derivedId) throw new WrongPasswordError();
-}
-
-async function readIdFile(name: string): Promise<string | undefined> {
-  const dir = await identityDir();
-  let handle: FileSystemFileHandle;
-  try {
-    handle = await dir.getFileHandle(name);
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'NotFoundError') return undefined;
-    throw error;
-  }
-  return (await handle.getFile()).text();
-}
-
-async function writeIdFile(name: string, text: string): Promise<void> {
-  const dir = await identityDir();
-  const handle = await dir.getFileHandle(name, { create: true });
-  const writable = await handle.createWritable();
-  try {
-    await writable.write(text);
-  } finally {
-    await writable.close();
-  }
-}
-
-const opfsIdStore: IdVerifierStore = {
-  load: () => readIdFile(ID_FILE),
-  save: (id) => writeIdFile(ID_FILE, id),
-};
-
-/** Derive this device's identity and check the password against the one used to
- *  create it here, recording the expected id the first time. Throws
- *  {@link WrongPasswordError} when a returning user mistypes their password. */
-export async function unlockIdentity(passphrase: string): Promise<Signer> {
-  const signer = await loadOrCreateSigner(passphrase);
-  await verifyOrRecordId(signer.id, opfsIdStore);
-  return signer;
 }

@@ -38,7 +38,7 @@ describe('pairing code', () => {
 describe('pairing deep link', () => {
   it('builds a #pair= link and reads the code back from the hash', () => {
     const link = pairingLink('CODE-123', 'https://safu.app');
-    expect(link).toBe('https://safu.app/#pair=CODE-123');
+    expect(link).toBe('https://safu.app/app#pair=CODE-123');
     expect(readPairingFromHash(new URL(link).hash)).toBe('CODE-123');
   });
 
