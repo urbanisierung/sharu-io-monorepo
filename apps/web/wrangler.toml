@@ -1,0 +1,6 @@
+# Cloudflare Pages project config for the Safu web app. The CI workflow builds
+# the SPA into ./dist and runs `wrangler pages deploy` from this directory, so
+# Wrangler reads the project name and output dir from here. Static assets only —
+# no Functions, no Workers runtime — so no compatibility_date is required.
+name = "safu-web"
+pages_build_output_dir = "dist"

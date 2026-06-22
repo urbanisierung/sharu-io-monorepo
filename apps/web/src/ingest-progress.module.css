@@ -1,0 +1,56 @@
+.panel {
+  width: min(32rem, 90vw);
+}
+
+.heading {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--cascivo-color-border, #d4d4d8);
+  border-radius: var(--cascivo-radius, 0.5rem);
+}
+
+.icon {
+  text-align: center;
+}
+
+.name {
+  font-family: var(--safu-font-mono);
+  word-break: break-all;
+}
+
+.size {
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--cascivo-color-foreground, #18181b) 60%, transparent);
+}
+
+.queued,
+.adding {
+  color: color-mix(in srgb, var(--cascivo-color-foreground, #18181b) 60%, transparent);
+  white-space: nowrap;
+}
+
+.done {
+  color: #15803d;
+  white-space: nowrap;
+}
+
+.error {
+  color: #b91c1c;
+  white-space: nowrap;
+}

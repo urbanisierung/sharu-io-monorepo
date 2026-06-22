@@ -49,11 +49,15 @@ export function Root() {
       files={ready.files}
       peers={ready.peers}
       syncStatus={ready.syncStatus}
+      returning={ready.returning}
       connectionCode={ready.connectionCode}
+      onUnlock={(password) => ready.unlock(password)}
       onRestore={(path) => download(path)}
+      onDelete={(path) => ready.remove(path)}
       onPair={(code) => ready.pairWithCode(code)}
       onVerify={(id) => ready.verifyPeer(id)}
       onReject={(id) => ready.rejectPeer(id)}
+      onRename={(id, name) => ready.renameDevice(id, name)}
       onWatch={ready.watchFolder}
     />
   );

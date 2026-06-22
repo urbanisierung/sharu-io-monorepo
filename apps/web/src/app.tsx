@@ -7,213 +7,157 @@ import { t } from '@cascivo/i18n';
 import { type ReadonlySignal, signal } from '@preact/signals';
 import type { FileView } from '@safu/sdk';
 import styles from './app.module.css';
+import { Devices } from './devices.js';
+import { FileTable } from './file-table.js';
 import type { IngestController } from './ingest-controller.js';
+import { IngestProgress } from './ingest-progress.js';
 import { messages } from './messages.js';
 import type { PeerInfo } from './runtime.js';
+import { StatusBanner } from './status-banner.js';
 import { Button } from './ui/button.js';
 import { DropZone } from './ui/drop-zone.js';
+import { UnlockGate } from './unlock-gate.js';
 
 export interface AppProps {
   controller: IngestController;
   files: ReadonlySignal<readonly FileView[]>;
   peers: ReadonlySignal<readonly PeerInfo[]>;
   syncStatus: ReadonlySignal<'idle' | 'syncing' | 'error'>;
+  /** True once this device already has a stored identity (returning user). */
+  returning?: boolean;
   /** This device's connection code (a signal — empty until unlock derives it). */
   connectionCode?: ReadonlySignal<string>;
+  /** Derive + verify the identity and bring the app online; rejects on a wrong
+   *  password. When absent (tests), the gate just flips the controller. */
+  onUnlock?: (password: string) => Promise<void>;
   onRestore?: (path: string) => Promise<void>;
+  onDelete?: (path: string) => void;
   onPair?: (code: string) => Promise<void>;
   onVerify?: (id: string) => void;
   onReject?: (id: string) => void;
+  /** Give a paired device a friendly local name. */
+  onRename?: (id: string, name: string) => void;
   /** Desktop only: start watching a folder for auto-backup. */
   onWatch?: (path: string) => Promise<void>;
 }
 
-const draftPassphrase = signal('');
-const draftPeerCode = signal('');
 const draftWatchPath = signal('');
-const copied = signal(false);
-const pairFailed = signal(false);
-const restoreFailed = signal(false);
 
 export function App({
   controller,
   files,
   peers,
   syncStatus,
+  returning = false,
   connectionCode,
+  onUnlock,
   onRestore,
+  onDelete,
   onPair,
   onVerify,
   onReject,
+  onRename,
   onWatch,
 }: AppProps) {
   const phase = controller.phase.value;
+  const sync = syncStatus.value;
+  const syncLabel =
+    sync === 'syncing'
+      ? t(messages.syncingNow)
+      : sync === 'error'
+        ? t(messages.syncProblem)
+        : t(messages.syncUpToDate);
+  const dotClass =
+    sync === 'syncing' ? styles.dotSyncing : sync === 'error' ? styles.dotError : styles.dotIdle;
 
   return (
-    <main class={styles.main}>
-      <header class={styles.header}>
-        <h1>{t(messages.title)}</h1>
-        <p>{t(messages.tagline)}</p>
-        <p class={styles.muted}>{t(messages.syncStatus, { status: syncStatus.value })}</p>
+    <div class={styles.app}>
+      <header class={styles.topbar}>
+        <div class={styles.brand}>
+          <h1 class={styles.brandName}>{t(messages.title)}</h1>
+          <span class={styles.brandTag}>{t(messages.tagline)}</span>
+        </div>
+        <span class={styles.sync}>
+          <span class={cn(styles.dot, dotClass)} aria-hidden="true" />
+          {syncLabel}
+        </span>
       </header>
 
-      {phase.kind === 'first-run' ? (
-        <section class={styles.gate}>
-          <p>{t(messages.firstRunPrompt)}</p>
-          <input
-            class={styles.input}
-            type="password"
-            aria-label={t(messages.passphrasePlaceholder)}
-            placeholder={t(messages.passphrasePlaceholder)}
-            value={draftPassphrase.value}
-            onInput={(event) => {
-              draftPassphrase.value = (event.target as HTMLInputElement).value;
-            }}
+      <main class={styles.content}>
+        {phase.kind === 'first-run' ? (
+          <UnlockGate
+            returning={returning}
+            onUnlock={onUnlock ?? ((password) => controller.unlock(password))}
           />
-          <Button intent="primary" onClick={() => controller.unlock(draftPassphrase.value)}>
-            {t(messages.unlock)}
-          </Button>
-        </section>
-      ) : (
-        <>
-          <DropZone
-            phase={phase}
-            onDragValidity={(valid) => controller.dragOver(valid)}
-            onLeave={() => controller.dragLeave()}
-            onFiles={(dropped) => void controller.drop(dropped)}
-          />
-          {(phase.kind === 'success' || phase.kind === 'error') && (
-            <Button intent="neutral" onClick={() => controller.reset()}>
-              {t(messages.retry)}
-            </Button>
-          )}
-          <p class={cn(styles.muted, peers.value.length === 0 && styles.warn)}>
-            {peers.value.length === 0
-              ? t(messages.noPeers)
-              : t(messages.peersOnline, { count: peers.value.length })}
-          </p>
-        </>
-      )}
-
-      <section class={styles.files}>
-        <h2>{t(messages.filesHeading)}</h2>
-        {files.value.length === 0 ? (
-          <p class={styles.muted}>{t(messages.empty)}</p>
         ) : (
-          <ul class={styles.list}>
-            {files.value.map((file) => (
-              <li key={file.path} class={styles.row}>
-                <span>{file.path}</span>
-                {onRestore && (
-                  <Button
-                    intent="neutral"
-                    onClick={() => {
-                      restoreFailed.value = false;
-                      onRestore(file.path).catch(() => {
-                        restoreFailed.value = true;
-                      });
-                    }}
-                  >
-                    {t(messages.download)}
-                  </Button>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-        {restoreFailed.value && <p class={styles.warn}>{t(messages.restoreFailed)}</p>}
-      </section>
-
-      {phase.kind !== 'first-run' && onPair && (
-        <section class={styles.gate}>
-          <h2>{t(messages.devicesHeading)}</h2>
-          {connectionCode?.value && (
-            <div class={styles.codeRow}>
-              <p class={styles.muted}>{t(messages.yourCode)}</p>
-              <code class={styles.code}>{connectionCode.value}</code>
-              <Button
-                intent="neutral"
-                onClick={() => {
-                  void navigator.clipboard?.writeText(connectionCode.value);
-                  copied.value = true;
+          <>
+            <StatusBanner files={files} peers={peers} />
+            <DropZone
+              phase={phase}
+              onDragValidity={(valid) => controller.dragOver(valid)}
+              onLeave={() => controller.dragLeave()}
+              onFiles={(dropped) => void controller.drop(dropped)}
+            />
+            <label class={styles.addButton}>
+              <span aria-hidden="true">{t(messages.addFiles)}</span>
+              <input
+                type="file"
+                multiple
+                aria-label={t(messages.addFiles)}
+                class={styles.hiddenInput}
+                onChange={(event) => {
+                  const input = event.target as HTMLInputElement;
+                  const picked = Array.from(input.files ?? []);
+                  input.value = '';
+                  if (picked.length > 0) void controller.drop(picked);
                 }}
-              >
-                {copied.value ? t(messages.copied) : t(messages.copy)}
+              />
+            </label>
+            <IngestProgress progress={controller.progress} />
+            {(phase.kind === 'success' || phase.kind === 'error') && (
+              <Button intent="neutral" onClick={() => controller.reset()}>
+                {phase.kind === 'success' ? t(messages.addMore) : t(messages.retry)}
               </Button>
-            </div>
-          )}
-          <input
-            class={styles.input}
-            aria-label={t(messages.peerCodePlaceholder)}
-            placeholder={t(messages.peerCodePlaceholder)}
-            value={draftPeerCode.value}
-            onInput={(event) => {
-              draftPeerCode.value = (event.target as HTMLInputElement).value;
-              pairFailed.value = false;
-            }}
-          />
-          <Button
-            intent="primary"
-            onClick={() => {
-              pairFailed.value = false;
-              onPair(draftPeerCode.value).catch(() => {
-                pairFailed.value = true;
-              });
-            }}
-          >
-            {t(messages.pair)}
-          </Button>
-          {pairFailed.value && <p class={styles.warn}>{t(messages.pairError)}</p>}
+            )}
+            <p class={cn(styles.muted, peers.value.length === 0 && styles.warn)}>
+              {peers.value.length === 0
+                ? t(messages.noPeers)
+                : t(messages.peersOnline, { count: peers.value.length })}
+            </p>
 
-          {peers.value.length > 0 && (
-            <ul class={styles.list}>
-              {peers.value.map((peer) => (
-                <li key={peer.id} class={styles.peerRow}>
-                  <code class={styles.code}>{peer.id}</code>
-                  <span class={styles.muted}>
-                    {t(messages.sasPrompt)} <strong>{peer.sas}</strong>
-                  </span>
-                  <span class={styles.muted}>
-                    {peer.status === 'verified'
-                      ? t(messages.statusVerified)
-                      : peer.status === 'rejected'
-                        ? t(messages.statusRejected)
-                        : t(messages.statusPending)}
-                  </span>
-                  {peer.status === 'pending' && onVerify && onReject && (
-                    <span class={styles.peerActions}>
-                      <Button intent="primary" onClick={() => onVerify(peer.id)}>
-                        {t(messages.confirm)}
-                      </Button>
-                      <Button intent="neutral" onClick={() => onReject(peer.id)}>
-                        {t(messages.reject)}
-                      </Button>
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
+            <FileTable files={files} onRestore={onRestore} onDelete={onDelete} />
 
-      {phase.kind !== 'first-run' && onWatch && (
-        <section class={styles.gate}>
-          <h2>{t(messages.watchHeading)}</h2>
-          <input
-            class={styles.input}
-            aria-label={t(messages.watchPlaceholder)}
-            placeholder={t(messages.watchPlaceholder)}
-            value={draftWatchPath.value}
-            onInput={(event) => {
-              draftWatchPath.value = (event.target as HTMLInputElement).value;
-            }}
-          />
-          <Button intent="neutral" onClick={() => void onWatch(draftWatchPath.value)}>
-            {t(messages.watch)}
-          </Button>
-        </section>
-      )}
-    </main>
+            {onPair && (
+              <Devices
+                connectionCode={connectionCode}
+                peers={peers}
+                onPair={onPair}
+                onVerify={onVerify}
+                onReject={onReject}
+                onRename={onRename}
+              />
+            )}
+
+            {onWatch && (
+              <section class={styles.gate}>
+                <h2>{t(messages.watchHeading)}</h2>
+                <input
+                  class={styles.input}
+                  aria-label={t(messages.watchPlaceholder)}
+                  placeholder={t(messages.watchPlaceholder)}
+                  value={draftWatchPath.value}
+                  onInput={(event) => {
+                    draftWatchPath.value = (event.target as HTMLInputElement).value;
+                  }}
+                />
+                <Button intent="neutral" onClick={() => void onWatch(draftWatchPath.value)}>
+                  {t(messages.watch)}
+                </Button>
+              </section>
+            )}
+          </>
+        )}
+      </main>
+    </div>
   );
 }

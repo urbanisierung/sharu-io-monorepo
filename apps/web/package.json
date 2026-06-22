@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:host": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
+    "preview:host": "vite preview --host",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -17,7 +19,8 @@
     "@safu/sdk": "workspace:*",
     "@safu/transport": "workspace:*",
     "@tauri-apps/api": "2.9.0",
-    "preact": "10.29.2"
+    "preact": "10.29.2",
+    "qrcode-generator": "2.0.4"
   },
   "devDependencies": {
     "@preact/preset-vite": "2.10.5",

@@ -1,0 +1,8 @@
+.qr {
+  width: min(12rem, 60vw);
+  height: auto;
+  image-rendering: pixelated;
+  border-radius: var(--cascivo-radius, 0.5rem);
+  background: #ffffff;
+  padding: 0.5rem;
+}

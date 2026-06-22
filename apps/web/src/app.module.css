@@ -1,9 +1,92 @@
-.main {
-  display: grid;
-  place-items: center;
-  gap: 1.5rem;
-  padding: 2rem 1rem;
+.app {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sticky top bar: brand on the left, a calm sync indicator on the right. Wraps
+   on narrow screens so it stays usable on a phone. */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem clamp(1rem, 4vw, 2rem);
+  border-bottom: 1px solid var(--cascivo-color-border);
+  background: color-mix(in srgb, var(--cascivo-color-bg) 86%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.brandName {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--cascivo-color-primary);
+  text-shadow: var(--cascivo-glow-cyan);
+}
+
+.brandTag {
+  font-size: 0.8rem;
+  color: var(--cascivo-color-muted);
+}
+
+.sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--cascivo-color-muted);
+}
+
+.dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--cascivo-color-muted);
+}
+
+.dotIdle {
+  background: var(--cascivo-color-success);
+  box-shadow: 0 0 0.4rem var(--cascivo-color-success);
+}
+
+.dotSyncing {
+  background: var(--cascivo-color-primary);
+  box-shadow: var(--cascivo-glow-cyan);
+}
+
+.dotError {
+  background: var(--cascivo-color-danger);
+  box-shadow: 0 0 0.4rem var(--cascivo-color-danger);
+}
+
+/* Centered content column with comfortable, screen-aware padding. */
+.content {
+  flex: 1;
+  width: 100%;
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: clamp(1rem, 4vw, 2rem) clamp(1rem, 4vw, 2rem) 4rem;
+  display: grid;
+  justify-items: center;
+  gap: 1.5rem;
+}
+
+@media (max-width: 32rem) {
+  .brandTag {
+    display: none;
+  }
 }
 
 .booting {
@@ -14,10 +97,6 @@
   letter-spacing: 0.08em;
   color: var(--cascivo-color-primary);
   text-shadow: var(--cascivo-glow-cyan);
-}
-
-.header {
-  text-align: center;
 }
 
 .muted {
@@ -42,8 +121,53 @@
   font: inherit;
 }
 
-.files {
-  width: min(32rem, 90vw);
+/* A label styled as a primary button that opens the native file picker, so
+   adding files works without a drag (touch, mobile, accessibility). */
+.addButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--cascivo-radius, 0.5rem);
+  background: var(--cascivo-color-primary, #4f46e5);
+  color: var(--cascivo-color-primary-foreground, #ffffff);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.addButton:hover {
+  filter: brightness(1.05);
+}
+
+.hiddenInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.revealRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: color-mix(in srgb, var(--cascivo-color-foreground, #18181b) 60%, transparent);
+}
+
+.notice {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: #b45309;
+  background: color-mix(in srgb, #b45309 12%, transparent);
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--cascivo-radius, 0.5rem);
 }
 
 .list {
@@ -52,13 +176,6 @@
   margin: 0;
   display: grid;
   gap: 0.5rem;
-}
-
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
 }
 
 .codeRow {
@@ -84,4 +201,16 @@
 .peerActions {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.qrBlock {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+}
+
+.deviceName {
+  font-weight: 600;
 }

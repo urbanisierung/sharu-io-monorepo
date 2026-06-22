@@ -1,0 +1,17 @@
+.banner {
+  width: min(44rem, 92vw);
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--cascivo-radius, 0.5rem);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.ok {
+  background: color-mix(in srgb, #15803d 14%, transparent);
+  color: #15803d;
+}
+
+.risk {
+  background: color-mix(in srgb, #b45309 16%, transparent);
+  color: #b45309;
+}

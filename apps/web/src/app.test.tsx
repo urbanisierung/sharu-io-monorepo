@@ -3,8 +3,11 @@ import type { FileView } from '@safu/sdk';
 import { cleanup, fireEvent, render, screen } from '@testing-library/preact';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './app.js';
+import { resetDevicesView } from './devices.js';
+import { resetFileTableView } from './file-table.js';
 import { IngestController } from './ingest-controller.js';
 import type { PeerInfo } from './runtime.js';
+import { resetUnlockGate } from './unlock-gate.js';
 
 function renderApp(props: Partial<Parameters<typeof App>[0]> = {}) {
   const controller = new IngestController(async () => {});
@@ -17,25 +20,52 @@ function renderApp(props: Partial<Parameters<typeof App>[0]> = {}) {
   return { controller, files, peers, syncStatus };
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  resetFileTableView();
+  resetUnlockGate();
+  resetDevicesView();
+});
 
 describe('App shell (plan §2.4)', () => {
-  it('starts at the first-run passphrase gate and unlocks into the drop zone', () => {
-    renderApp();
-    expect(screen.getByText('Enter a passphrase to derive your encryption key')).toBeTruthy();
+  it('shows a calm, plain-language sync status in the top bar', async () => {
+    const { syncStatus } = renderApp();
+    expect(screen.getByText('Up to date')).toBeTruthy();
+    syncStatus.value = 'syncing';
+    expect(await screen.findByText('Syncing…')).toBeTruthy();
+  });
 
-    fireEvent.input(screen.getByLabelText('Passphrase'), { target: { value: 'hunter2' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Unlock' }));
+  it('starts at the create-password gate and unlocks into the drop zone', async () => {
+    renderApp();
+    expect(screen.getByText('Create your password')).toBeTruthy();
+
+    fireEvent.input(screen.getByLabelText('Password'), { target: { value: 'hunter2pass' } });
+    fireEvent.input(screen.getByLabelText('Repeat password'), { target: { value: 'hunter2pass' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Create password' }));
 
     // Signal-driven: unlocking re-renders into the drop surface, no useState.
-    expect(screen.getByLabelText('Drop files here to back them up')).toBeTruthy();
+    expect(await screen.findByLabelText('Drop files here to back them up')).toBeTruthy();
+  });
+
+  it('greets a returning user instead of asking to create a password', () => {
+    renderApp({ returning: true });
+    expect(screen.getByText('Welcome back')).toBeTruthy();
+    expect(screen.queryByLabelText('Repeat password')).toBeNull();
   });
 
   it('shows the zero-peer hint and the empty-files state once unlocked', async () => {
     const { controller } = renderApp();
     controller.unlock('p');
-    expect(await screen.findByText(/No paired devices yet/)).toBeTruthy();
-    expect(screen.getByText('Nothing backed up yet')).toBeTruthy();
+    expect(await screen.findByText(/No other devices yet/)).toBeTruthy();
+    expect(screen.getByText(/Nothing here yet/)).toBeTruthy();
+  });
+
+  it('offers an Add files control so backing up needs no drag (touch-friendly)', async () => {
+    const { controller } = renderApp();
+    controller.unlock('p');
+    const input = (await screen.findByLabelText('Add files')) as HTMLInputElement;
+    expect(input.type).toBe('file');
+    expect(input.multiple).toBe(true);
   });
 
   it('renders synced files from the SDK signal', async () => {
@@ -53,7 +83,7 @@ describe('App shell (plan §2.4)', () => {
     files.value = [{ path: 'secret.bin', size: 1, modified: 1, blocks: ['m'] }];
 
     fireEvent.click(await screen.findByRole('button', { name: 'Download' }));
-    expect(await screen.findByText(/same passphrase/)).toBeTruthy();
+    expect(await screen.findByText(/same password/)).toBeTruthy();
   });
 
   it('shows a paired peer with its SAS and confirms it (plan §2.2)', async () => {
@@ -83,6 +113,6 @@ describe('App shell (plan §2.4)', () => {
     });
     controller.unlock('p');
     peers.value = [{ id: 'PEER1', sas: '123456', status: 'rejected' }];
-    expect(await screen.findByText(/writes blocked/)).toBeTruthy();
+    expect(await screen.findByText(/no longer make changes/)).toBeTruthy();
   });
 });

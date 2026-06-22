@@ -12,7 +12,11 @@ export default defineConfig({
           name: 'node',
           // App integration tests that drive the real crypto WASM run here (plain
           // Node, file:// URLs) rather than in the vite-based `web` project.
-          include: ['packages/*/src/**/*.test.ts', 'apps/web/src/**/*.integration.test.ts'],
+          include: [
+            'packages/*/src/**/*.test.ts',
+            'apps/web/src/**/*.integration.test.ts',
+            'apps/peer/src/**/*.test.ts',
+          ],
           exclude: [...exclude, '**/*.browser.test.ts'],
           environment: 'node',
         },
