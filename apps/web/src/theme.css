@@ -63,3 +63,28 @@ body {
   background: var(--cascivo-color-accent);
   color: #fff;
 }
+
+/* Cyberpunk wordmark flicker — a faulty neon sign that randomly dims and
+   re-strikes its glow. Cascivo's cyberpunk theme aesthetic, expressed with the
+   `--cascivo-*` tokens. Defined globally so CSS Modules reference it by name. */
+@keyframes safu-flicker {
+  0%,
+  19%,
+  21%,
+  23%,
+  55%,
+  57%,
+  100% {
+    opacity: 1;
+    text-shadow:
+      0 0 0.4rem rgba(0, 234, 255, 0.75),
+      0 0 1.2rem rgba(0, 234, 255, 0.45),
+      0 0 2.4rem rgba(177, 92, 255, 0.35);
+  }
+  20%,
+  22%,
+  56% {
+    opacity: 0.45;
+    text-shadow: none;
+  }
+}

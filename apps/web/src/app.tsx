@@ -74,6 +74,7 @@ export function App({
     <div class={styles.app}>
       <header class={styles.topbar}>
         <div class={styles.brand}>
+          <img class={styles.brandLogo} src="/logo.png" alt={t(messages.logoAlt)} />
           <h1 class={styles.brandName}>{t(messages.title)}</h1>
           <span class={styles.brandTag}>{t(messages.tagline)}</span>
         </div>

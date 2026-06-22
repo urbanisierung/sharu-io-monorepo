@@ -9,8 +9,9 @@ import styles from './app.module.css';
 import { Landing } from './landing.js';
 import { messages } from './messages.js';
 import { createRuntime, type Runtime } from './runtime.js';
+import { Whitepaper } from './whitepaper.js';
 
-const view = signal<'landing' | 'app'>('landing');
+const view = signal<'landing' | 'whitepaper' | 'app'>('landing');
 const runtime = signal<Runtime | null>(null);
 let started = false;
 
@@ -38,7 +39,13 @@ async function download(path: string): Promise<void> {
 }
 
 export function Root() {
-  if (view.value === 'landing') return <Landing onLaunch={launch} />;
+  if (view.value === 'landing') {
+    return <Landing onLaunch={launch} onWhitepaper={() => (view.value = 'whitepaper')} />;
+  }
+
+  if (view.value === 'whitepaper') {
+    return <Whitepaper onBack={() => (view.value = 'landing')} onLaunch={launch} />;
+  }
 
   const ready = runtime.value;
   if (!ready) return <main class={styles.booting}>{t(messages.booting)}</main>;
