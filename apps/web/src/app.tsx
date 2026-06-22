@@ -2,6 +2,12 @@
 // state (the synced file list, peer list, sync status) arrives as signals and is
 // read directly; user intents go back through the IngestController. No store, no
 // bridge, no useState/useEffect. All copy via @cascivo/i18n.
+//
+// The shell is split into focused views — Files (the main use case: browsing and
+// adding backed-up files), Devices (pairing), and Settings (wallet + watched
+// folders) — selected from one navigation bar. That bar is a row of tabs on the
+// desktop and a fixed bottom bar on a phone, so every view is one tap away while
+// the file list stays the centre of attention.
 import { cn } from '@cascivo/core';
 import { t } from '@cascivo/i18n';
 import { type ReadonlySignal, signal } from '@preact/signals';
@@ -16,6 +22,8 @@ import type { PeerInfo } from './runtime.js';
 import { StatusBanner } from './status-banner.js';
 import { Button } from './ui/button.js';
 import { DropZone } from './ui/drop-zone.js';
+
+type AppView = 'files' | 'devices' | 'settings';
 
 export interface AppProps {
   controller: IngestController;
@@ -42,6 +50,13 @@ export interface AppProps {
 }
 
 const draftWatchPath = signal('');
+const activeView = signal<AppView>('files');
+
+/** Reset the module-level view state — for deterministic tests. */
+export function resetAppView(): void {
+  activeView.value = 'files';
+  draftWatchPath.value = '';
+}
 
 export function App({
   controller,
@@ -71,6 +86,21 @@ export function App({
   const dotClass =
     sync === 'syncing' ? styles.dotSyncing : sync === 'error' ? styles.dotError : styles.dotIdle;
 
+  // Which views are reachable depends on the handlers this runtime supplies, so
+  // the Devices and Settings tabs only appear when there is something behind
+  // them (e.g. the web build has no folder watching). Files is always present.
+  const hasSettings = Boolean(onWatch || onBackup || onSwitchWallet);
+  const tabs: readonly { id: AppView; icon: string; label: string }[] = [
+    { id: 'files', icon: '📁', label: t(messages.navFiles) },
+    ...(onPair ? [{ id: 'devices' as const, icon: '🔗', label: t(messages.navDevices) }] : []),
+    ...(hasSettings
+      ? [{ id: 'settings' as const, icon: '⚙️', label: t(messages.navSettings) }]
+      : []),
+  ];
+  const view: AppView = tabs.some((tab) => tab.id === activeView.value)
+    ? activeView.value
+    : 'files';
+
   return (
     <div class={styles.app}>
       <header class={styles.topbar}>
@@ -89,44 +119,69 @@ export function App({
         </span>
       </header>
 
+      {tabs.length > 1 && (
+        <nav class={styles.nav} aria-label={t(messages.primaryNav)}>
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              class={cn(styles.navItem, view === tab.id && styles.navItemActive)}
+              aria-current={view === tab.id ? 'page' : undefined}
+              onClick={() => {
+                activeView.value = tab.id;
+              }}
+            >
+              <span class={styles.navIcon} aria-hidden="true">
+                {tab.icon}
+              </span>
+              <span class={styles.navLabel}>{tab.label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
+
       <main class={styles.content}>
-        <StatusBanner files={files} peers={peers} />
-        <DropZone
-          phase={phase}
-          onDragValidity={(valid) => controller.dragOver(valid)}
-          onLeave={() => controller.dragLeave()}
-          onFiles={(dropped) => void controller.drop(dropped)}
-        />
-        <label class={styles.addButton}>
-          <span aria-hidden="true">{t(messages.addFiles)}</span>
-          <input
-            type="file"
-            multiple
-            aria-label={t(messages.addFiles)}
-            class={styles.hiddenInput}
-            onChange={(event) => {
-              const input = event.target as HTMLInputElement;
-              const picked = Array.from(input.files ?? []);
-              input.value = '';
-              if (picked.length > 0) void controller.drop(picked);
-            }}
-          />
-        </label>
-        <IngestProgress progress={controller.progress} />
-        {(phase.kind === 'success' || phase.kind === 'error') && (
-          <Button intent="neutral" onClick={() => controller.reset()}>
-            {phase.kind === 'success' ? t(messages.addMore) : t(messages.retry)}
-          </Button>
+        {view === 'files' && (
+          <>
+            <StatusBanner files={files} peers={peers} />
+            <DropZone
+              phase={phase}
+              onDragValidity={(valid) => controller.dragOver(valid)}
+              onLeave={() => controller.dragLeave()}
+              onFiles={(dropped) => void controller.drop(dropped)}
+            />
+            <label class={styles.addButton}>
+              <span aria-hidden="true">{t(messages.addFiles)}</span>
+              <input
+                type="file"
+                multiple
+                aria-label={t(messages.addFiles)}
+                class={styles.hiddenInput}
+                onChange={(event) => {
+                  const input = event.target as HTMLInputElement;
+                  const picked = Array.from(input.files ?? []);
+                  input.value = '';
+                  if (picked.length > 0) void controller.drop(picked);
+                }}
+              />
+            </label>
+            <IngestProgress progress={controller.progress} />
+            {(phase.kind === 'success' || phase.kind === 'error') && (
+              <Button intent="neutral" onClick={() => controller.reset()}>
+                {phase.kind === 'success' ? t(messages.addMore) : t(messages.retry)}
+              </Button>
+            )}
+            <p class={cn(styles.muted, peers.value.length === 0 && styles.warn)}>
+              {peers.value.length === 0
+                ? t(messages.noPeers)
+                : t(messages.peersOnline, { count: peers.value.length })}
+            </p>
+
+            <FileTable files={files} onRestore={onRestore} onDelete={onDelete} />
+          </>
         )}
-        <p class={cn(styles.muted, peers.value.length === 0 && styles.warn)}>
-          {peers.value.length === 0
-            ? t(messages.noPeers)
-            : t(messages.peersOnline, { count: peers.value.length })}
-        </p>
 
-        <FileTable files={files} onRestore={onRestore} onDelete={onDelete} />
-
-        {onPair && (
+        {view === 'devices' && onPair && (
           <Devices
             connectionCode={connectionCode}
             peers={peers}
@@ -137,41 +192,45 @@ export function App({
           />
         )}
 
-        {onWatch && (
-          <section class={styles.gate}>
-            <h2>{t(messages.watchHeading)}</h2>
-            <input
-              class={styles.input}
-              aria-label={t(messages.watchPlaceholder)}
-              placeholder={t(messages.watchPlaceholder)}
-              value={draftWatchPath.value}
-              onInput={(event) => {
-                draftWatchPath.value = (event.target as HTMLInputElement).value;
-              }}
-            />
-            <Button intent="neutral" onClick={() => void onWatch(draftWatchPath.value)}>
-              {t(messages.watch)}
-            </Button>
-          </section>
-        )}
-
-        {(onBackup || onSwitchWallet) && (
-          <section class={styles.gate}>
-            <h2>{t(messages.walletHeading)}</h2>
-            {onBackup && (
-              <>
-                <p class={styles.muted}>{t(messages.backupHint)}</p>
-                <Button intent="neutral" onClick={onBackup}>
-                  {t(messages.backupWallet)}
+        {view === 'settings' && (
+          <>
+            {onWatch && (
+              <section class={styles.gate}>
+                <h2>{t(messages.watchHeading)}</h2>
+                <input
+                  class={styles.input}
+                  aria-label={t(messages.watchPlaceholder)}
+                  placeholder={t(messages.watchPlaceholder)}
+                  value={draftWatchPath.value}
+                  onInput={(event) => {
+                    draftWatchPath.value = (event.target as HTMLInputElement).value;
+                  }}
+                />
+                <Button intent="neutral" onClick={() => void onWatch(draftWatchPath.value)}>
+                  {t(messages.watch)}
                 </Button>
-              </>
+              </section>
             )}
-            {onSwitchWallet && (
-              <Button intent="neutral" onClick={onSwitchWallet}>
-                {t(messages.switchWallet)}
-              </Button>
+
+            {(onBackup || onSwitchWallet) && (
+              <section class={styles.gate}>
+                <h2>{t(messages.walletHeading)}</h2>
+                {onBackup && (
+                  <>
+                    <p class={styles.muted}>{t(messages.backupHint)}</p>
+                    <Button intent="neutral" onClick={onBackup}>
+                      {t(messages.backupWallet)}
+                    </Button>
+                  </>
+                )}
+                {onSwitchWallet && (
+                  <Button intent="neutral" onClick={onSwitchWallet}>
+                    {t(messages.switchWallet)}
+                  </Button>
+                )}
+              </section>
             )}
-          </section>
+          </>
         )}
       </main>
     </div>

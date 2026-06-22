@@ -99,3 +99,24 @@
   justify-content: flex-end;
   white-space: nowrap;
 }
+
+/* Phone: keep the table readable by dropping the secondary columns (Modified,
+   Chunks) so name, size and the row actions always fit without sideways scroll.
+   The data stays available on a wider screen. */
+@media (max-width: 32rem) {
+  .toolbar {
+    flex-wrap: wrap;
+  }
+
+  .table th:nth-child(4),
+  .table td:nth-child(4),
+  .table th:nth-child(5),
+  .table td:nth-child(5) {
+    display: none;
+  }
+
+  .table th,
+  .table td {
+    padding: 0.5rem 0.4rem;
+  }
+}
