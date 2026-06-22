@@ -18,11 +18,12 @@ import {
 } from '@safu/sdk';
 import type { Transport } from '@safu/transport';
 import { loadDeviceNames, saveDeviceName } from './device-names.js';
-import { hasStoredIdentity, unlockIdentity } from './identity.js';
 import { IngestController } from './ingest-controller.js';
 import { decodePairingCode, encodePairingCode } from './pairing.js';
 import { ingestFile, restoreFile } from './pipeline.js';
 import { deriveSas } from './sas.js';
+import { LEGACY_WALLET_ID, unlockWallet, type Wallet } from './wallet.js';
+import type { WalletBackup } from './wallet-backup.js';
 
 /** A paired peer as the UI shows it: its signing id, an optional friendly name,
  *  the out-of-band SAS to compare, and the verification verdict. `rejected`
@@ -59,9 +60,13 @@ export interface Runtime {
   /** Desktop only: watch a folder and auto-ingest its files. Undefined in the
    *  browser (no filesystem access). */
   watchFolder?: (path: string) => Promise<void>;
-  /** True if a password was already set on this device (a returning user), so
-   *  the unlock screen greets instead of asking to create a password. */
-  returning: boolean;
+  /** The active wallet's friendly name, for the app header. */
+  walletName: string;
+  /** A portable backup of the unlocked wallet (name + passphrase + salt), for
+   *  the user to download at any time. Only valid after `unlock`. */
+  backup: () => WalletBackup;
+  /** Tear down the transport so a different wallet can be unlocked cleanly. */
+  close: () => Promise<void>;
 }
 
 /** True when running inside the Tauri desktop shell rather than a browser tab. */
@@ -82,19 +87,28 @@ async function selectTransport(protocols: string[]): Promise<Transport> {
 }
 
 /** Pick the block store: the native filesystem-backed store under Tauri (plan
- *  §1.3 native impl), OPFS in the browser. Same `BlockStore` interface. */
-async function selectBlockStore(): Promise<BlockStore> {
+ *  §1.3 native impl), OPFS in the browser. Same `BlockStore` interface. Each
+ *  wallet gets its own block directory so switching wallets never mixes data;
+ *  the migrated legacy wallet keeps the original un-namespaced path. */
+async function selectBlockStore(walletId: string): Promise<BlockStore> {
   if (isTauri()) {
     const { createTauriBlockStore } = await import('./tauri-store.js');
     return createTauriBlockStore();
   }
-  return new OpfsBlockStore();
+  return new OpfsBlockStore(walletId === LEGACY_WALLET_ID ? 'blocks' : `blocks-${walletId}`);
 }
 
-export async function createRuntime(): Promise<Runtime> {
+/** The per-wallet document store (the file allocation table). Namespaced by
+ *  wallet id; the legacy wallet keeps the original `state/doc.json`. */
+function selectDocStore(walletId: string): OpfsDocStore {
+  return walletId === LEGACY_WALLET_ID
+    ? new OpfsDocStore()
+    : new OpfsDocStore(`${walletId}.json`, 'state');
+}
+
+export async function createRuntime(wallet: Wallet): Promise<Runtime> {
   const transport = await selectTransport([SYNC_PROTOCOL, BLOCK_PROTOCOL]);
-  const store = await selectBlockStore();
-  const returning = await hasStoredIdentity();
+  const store = await selectBlockStore(wallet.id);
 
   const syncStatus = signal<'idle' | 'syncing' | 'error'>('idle');
   const files = signal<readonly FileView[]>([]);
@@ -118,10 +132,10 @@ export async function createRuntime(): Promise<Runtime> {
     // Verify the password against the id recorded on this device *before* doing
     // anything else, so a returning user's typo is caught immediately (throws
     // WrongPasswordError) rather than silently producing a divergent identity.
-    const id: Signer = await unlockIdentity(pass);
+    const id: Signer = await unlockWallet(wallet, pass);
     passphrase = pass;
     connectionCode.value = encodePairingCode({ addr: transport.addr(), signId: id.id });
-    const ready = await SyncDoc.open(id.id, new OpfsDocStore(), id);
+    const ready = await SyncDoc.open(id.id, selectDocStore(wallet.id), id);
     doc = ready;
     const docSync = new DocSync(transport, ready, store);
     docSync.serve();
@@ -233,6 +247,16 @@ export async function createRuntime(): Promise<Runtime> {
     controller.unlock(pass);
   };
 
+  const backup = (): WalletBackup => ({
+    name: wallet.name,
+    password: passphrase,
+    salt: wallet.salt,
+  });
+
+  const close = async (): Promise<void> => {
+    await transport.close();
+  };
+
   return {
     controller,
     unlock,
@@ -247,6 +271,8 @@ export async function createRuntime(): Promise<Runtime> {
     renameDevice,
     connectionCode,
     watchFolder,
-    returning,
+    walletName: wallet.name,
+    backup,
+    close,
   };
 }
