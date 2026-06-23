@@ -1,5 +1,5 @@
 .app {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -110,10 +110,18 @@
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  transition: color var(--dur-micro) var(--ease-out);
 }
 
-.navItem:hover {
-  color: var(--cascivo-color-foreground);
+@media (hover: hover) {
+  .navItem:hover {
+    color: var(--cascivo-color-foreground);
+  }
+}
+
+.navItem:focus-visible {
+  outline: 2px solid var(--cascivo-color-primary);
+  outline-offset: 2px;
 }
 
 .navItemActive {
@@ -189,7 +197,7 @@
 .booting {
   display: grid;
   place-items: center;
-  min-height: 100vh;
+  min-height: 100dvh;
   font-family: var(--safu-font-mono);
   letter-spacing: 0.08em;
   color: var(--cascivo-color-primary);

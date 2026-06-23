@@ -1,7 +1,7 @@
 /* The authentication surface: a centered, professional card for unlocking,
    creating, and restoring wallets. Cyberpunk theme via --cascivo-* tokens. */
 .screen {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   padding: clamp(1rem, 5vw, 3rem) 1rem;
@@ -90,8 +90,8 @@
   font: inherit;
   font-size: 0.95rem;
   transition:
-    border-color 120ms ease,
-    box-shadow 120ms ease;
+    border-color var(--dur-micro) var(--ease-out),
+    box-shadow var(--dur-micro) var(--ease-out);
 }
 
 .input:focus {
@@ -152,15 +152,22 @@
   text-align: left;
   cursor: pointer;
   transition:
-    border-color 120ms ease,
-    box-shadow 120ms ease,
-    transform 120ms ease;
+    border-color var(--dur-micro) var(--ease-out),
+    box-shadow var(--dur-micro) var(--ease-out),
+    transform var(--dur-micro) var(--ease-out);
 }
 
-.walletButton:hover {
-  border-color: var(--cascivo-color-primary);
-  box-shadow: var(--cascivo-glow-cyan);
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .walletButton:hover {
+    border-color: var(--cascivo-color-primary);
+    box-shadow: var(--cascivo-glow-cyan);
+    transform: translateY(-1px);
+  }
+}
+
+.walletButton:focus-visible {
+  outline: 2px solid var(--cascivo-color-primary);
+  outline-offset: 2px;
 }
 
 .walletButton::after {
@@ -199,6 +206,12 @@
 
 .link:hover {
   text-decoration: underline;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--cascivo-color-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .hiddenFile {

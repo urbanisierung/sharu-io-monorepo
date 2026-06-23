@@ -7,7 +7,8 @@ afterEach(cleanup);
 describe('Landing', () => {
   it('explains what Sharu is, the problem, and how it works', () => {
     render(<Landing onLaunch={() => {}} onWhitepaper={() => {}} />);
-    expect(screen.getByText('Your data. Your devices. Nobody else.')).toBeTruthy();
+    expect(screen.getByText('Your data.')).toBeTruthy();
+    expect(screen.getByText('Nobody else.')).toBeTruthy();
     expect(screen.getByText('The problem')).toBeTruthy();
     expect(screen.getByText('How it works')).toBeTruthy();
     expect(screen.getByText(/Encrypt on device/)).toBeTruthy();

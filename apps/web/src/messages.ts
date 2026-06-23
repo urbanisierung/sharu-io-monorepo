@@ -8,7 +8,9 @@ export const landing = defineMessages('safu.landing', {
   logoAlt: 'Sharu wolf logo',
   whitepaper: 'Read the whitepaper',
   badge: 'zero-knowledge · local-first · peer-to-peer',
-  heroTitle: 'Your data. Your devices. Nobody else.',
+  heroLine1: 'Your data.',
+  heroLine2: 'Your devices.',
+  heroLine3: 'Nobody else.',
   heroSubtitle:
     'Sharu is a decentralized, zero-knowledge, local-first backup and sync platform. Files are encrypted on your device and synced peer-to-peer across your own machines — no servers, no accounts, and no one who can read them but you.',
   launch: 'Launch the app',
@@ -28,16 +30,16 @@ export const landing = defineMessages('safu.landing', {
 
   howKicker: 'How it works',
   howTitle: 'Encrypt locally. Sync directly. Restore anywhere.',
-  step1Title: '01 — Encrypt on device',
+  step1Title: 'Encrypt on device',
   step1Body:
     'Your passphrase derives a key with Argon2id. Files are split into content-defined chunks and sealed with AES-256-GCM. The key never leaves your device.',
-  step2Title: '02 — Address by hash',
+  step2Title: 'Address by hash',
   step2Body:
     'Every encrypted block is addressed by its BLAKE3 hash — content-addressed, tamper-evident storage where only ciphertext is ever written.',
-  step3Title: '03 — Sync peer-to-peer',
+  step3Title: 'Sync peer-to-peer',
   step3Body:
     'Your devices find each other over Iroh (QUIC) and exchange encrypted blocks directly — relay-only in the browser, direct hole-punching on desktop. The relay only ever sees ciphertext.',
-  step4Title: '04 — Restore with proof',
+  step4Title: 'Restore with proof',
   step4Body:
     'A conflict-free replicated table tracks every file across devices. Restore reverses the pipeline and verifies each block against its hash.',
 

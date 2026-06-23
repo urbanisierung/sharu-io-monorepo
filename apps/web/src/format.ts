@@ -66,24 +66,10 @@ const KIND_BY_EXT: Record<string, FileKind> = {
   go: 'code',
 };
 
-/** Classify a path by its extension — the basis for the row's type icon. */
+/** Classify a path by its extension — the basis for the row's type icon
+ *  (rendered by the `Icon` component, keyed on this kind). */
 export function fileKind(path: string): FileKind {
   const dot = path.lastIndexOf('.');
   if (dot < 0 || dot === path.length - 1) return 'file';
   return KIND_BY_EXT[path.slice(dot + 1).toLowerCase()] ?? 'file';
-}
-
-const ICON_BY_KIND: Record<FileKind, string> = {
-  image: '🖼️',
-  video: '🎞️',
-  audio: '🎵',
-  document: '📄',
-  archive: '🗜️',
-  code: '🧩',
-  file: '📦',
-};
-
-/** A decorative glyph for a path's type (rendered aria-hidden). */
-export function fileIcon(path: string): string {
-  return ICON_BY_KIND[fileKind(path)];
 }

@@ -37,7 +37,8 @@
 .emptyIcon {
   font-size: 2.75rem;
   line-height: 1;
-  filter: grayscale(0.2);
+  color: var(--cascivo-color-primary);
+  filter: drop-shadow(0 0 0.8rem rgba(0, 234, 255, 0.35));
 }
 
 .emptyTitle {
@@ -101,6 +102,8 @@
 .icon {
   width: 1.5rem;
   text-align: center;
+  font-size: 1.1rem;
+  color: var(--cascivo-color-muted);
 }
 
 .name {
@@ -121,8 +124,19 @@
   cursor: pointer;
 }
 
-.sortButton:hover {
-  color: var(--cascivo-color-primary);
+.sortButton {
+  transition: color var(--dur-micro) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .sortButton:hover {
+    color: var(--cascivo-color-primary);
+  }
+}
+
+.sortButton:focus-visible {
+  outline: 2px solid var(--cascivo-color-primary);
+  outline-offset: 2px;
 }
 
 .arrow {

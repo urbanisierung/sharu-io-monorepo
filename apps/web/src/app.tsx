@@ -22,6 +22,7 @@ import type { PeerInfo } from './runtime.js';
 import { StatusBanner } from './status-banner.js';
 import { Button } from './ui/button.js';
 import { DropZone } from './ui/drop-zone.js';
+import { Icon, type IconName } from './ui/icon.js';
 
 type AppView = 'files' | 'devices' | 'settings';
 
@@ -90,11 +91,13 @@ export function App({
   // the Devices and Settings tabs only appear when there is something behind
   // them (e.g. the web build has no folder watching). Files is always present.
   const hasSettings = Boolean(onWatch || onBackup || onSwitchWallet);
-  const tabs: readonly { id: AppView; icon: string; label: string }[] = [
-    { id: 'files', icon: '📁', label: t(messages.navFiles) },
-    ...(onPair ? [{ id: 'devices' as const, icon: '🔗', label: t(messages.navDevices) }] : []),
+  const tabs: readonly { id: AppView; icon: IconName; label: string }[] = [
+    { id: 'files', icon: 'files', label: t(messages.navFiles) },
+    ...(onPair
+      ? [{ id: 'devices' as const, icon: 'devices' as const, label: t(messages.navDevices) }]
+      : []),
     ...(hasSettings
-      ? [{ id: 'settings' as const, icon: '⚙️', label: t(messages.navSettings) }]
+      ? [{ id: 'settings' as const, icon: 'settings' as const, label: t(messages.navSettings) }]
       : []),
   ];
   const view: AppView = tabs.some((tab) => tab.id === activeView.value)
@@ -131,9 +134,7 @@ export function App({
                 activeView.value = tab.id;
               }}
             >
-              <span class={styles.navIcon} aria-hidden="true">
-                {tab.icon}
-              </span>
+              <Icon name={tab.icon} class={styles.navIcon} />
               <span class={styles.navLabel}>{tab.label}</span>
             </button>
           ))}
