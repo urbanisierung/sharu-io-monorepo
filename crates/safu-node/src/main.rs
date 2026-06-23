@@ -66,6 +66,10 @@ async fn run() -> Result<(), String> {
         "unlink" => cmd_unlink(&args),
         "list" => cmd_list(&args),
         "serve" | "run" => cmd_serve(&args).await,
+        "version" | "--version" | "-V" => {
+            println!("safu-node {}", env!("CARGO_PKG_VERSION"));
+            Ok(())
+        }
         "help" | "--help" | "-h" => {
             print_usage();
             Ok(())
@@ -276,6 +280,7 @@ COMMANDS:\n\
   unlink <signing-id>  Revoke a device's write access and stop backing it up\n\
   list                 List linked devices\n\
   serve                Run the always-on backup node (Ctrl-C to stop)\n\
+  version              Print the version\n\
 \n\
 OPTIONS / ENVIRONMENT:\n\
   --data-dir <path>    Directory this node owns        [env SAFU_NODE_DATA_DIR]\n\

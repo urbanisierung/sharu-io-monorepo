@@ -31,10 +31,47 @@ The node never authors file entries; it is a pure sink that merges devices'
 signed entries and auto-pulls every block the synced allocation table references
 but it lacks.
 
+## Install
+
+Prebuilt binaries for Linux, macOS, and Windows are published to GitHub Releases
+by the `Release safu-node` workflow. Install the latest with one line:
+
+**Linux / macOS**
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/urbanisierung/sharu-io-monorepo/main/crates/safu-node/install.sh | sh
+```
+
+**Windows (PowerShell)**
+
+```powershell
+irm https://raw.githubusercontent.com/urbanisierung/sharu-io-monorepo/main/crates/safu-node/install.ps1 | iex
+```
+
+The scripts detect your OS/arch, download the matching archive from the latest
+release, verify its SHA-256, and install `safu-node` to `~/.local/bin`
+(`%LOCALAPPDATA%\safu-node\bin` on Windows). Pin a version with
+`SAFU_NODE_VERSION=0.1.0`, or change the location with `SAFU_NODE_INSTALL_DIR`.
+
+Supported targets: `x86_64`/`aarch64` Linux (gnu), `x86_64`/`aarch64` macOS,
+`x86_64` Windows (msvc).
+
+### Cutting a release
+
+Push a tag of the form `safu-node-v<version>` (matching the crate version in
+`Cargo.toml`); the workflow builds every target and publishes the release:
+
+```sh
+git tag safu-node-v0.1.0 && git push origin safu-node-v0.1.0
+```
+
+It can also be run manually from the Actions tab (`workflow_dispatch`) with the
+tag as input.
+
 ## Usage
 
 ```sh
-cargo build --release -p safu-node      # binary at target/release/safu-node
+cargo build --release -p safu-node      # or build from source: target/release/safu-node
 
 export SAFU_NODE_PASSPHRASE="…"          # derives this node's signing identity
 export SAFU_NODE_DATA_DIR="/srv/safu"    # the directory this node owns

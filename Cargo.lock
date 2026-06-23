@@ -2719,7 +2719,7 @@ dependencies = [
 
 [[package]]
 name = "safu-node"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "argon2",
  "data-encoding",
