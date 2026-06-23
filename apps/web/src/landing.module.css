@@ -1,223 +1,445 @@
+/* Hallmark · genre: atmospheric · macrostructure: Narrative Workflow · theme: cyberpunk (kept) · enrichment: none · nav: N9 edge-aligned · footer: Ft5 statement
+ * F4 step knobs: numbering=01/02/03 · layout=vertical · connector=glowing rail
+ * tone: technical/cyberpunk · anchor hue: cyan (~190) primary + magenta (~330) secondary
+ * pre-emit critique: P5 H5 E5 S5 R4 V5 */
+
 .page {
-  max-width: 72rem;
+  max-width: 64rem;
   margin: 0 auto;
-  padding: 0 1.25rem 4rem;
+  padding-inline: clamp(1rem, 4vw, 2rem);
+  padding-bottom: var(--space-4xl);
 }
 
-/* ---- Hero ---------------------------------------------------------------- */
+/* One page-load orchestration: sections fade up, staggered by DOM index. */
+.reveal {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: landing-reveal var(--dur-long) var(--ease-out) forwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+@keyframes landing-reveal {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- Nav · N9 edge-aligned: wordmark hard-left, one CTA hard-right --------- */
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-block: var(--space-lg);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.brandLogo {
+  height: 1.9rem;
+  width: auto;
+  filter: drop-shadow(0 0 0.5rem rgba(0, 234, 255, 0.45));
+}
+
+.wordmark {
+  margin: 0;
+  font-family: var(--safu-font-mono);
+  font-size: var(--text-md);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: var(--cascivo-color-primary);
+  text-shadow: var(--cascivo-glow-cyan);
+  /* Faulty-neon flicker (keyframes in theme.css) — the brand's signature. */
+  animation: safu-flicker 6s linear infinite;
+}
+
+/* ---- Hero · H1 marquee, left-bias ----------------------------------------- */
 
 .hero {
   display: grid;
-  justify-items: center;
-  text-align: center;
-  gap: 1.1rem;
-  padding: 5.5rem 0 4rem;
-}
-
-.logo {
-  height: clamp(4.5rem, 12vw, 7rem);
-  width: auto;
-  filter: drop-shadow(0 0 1.2rem rgba(0, 234, 255, 0.4));
+  justify-items: start;
+  gap: var(--space-lg);
+  max-width: 52rem;
+  padding-block: clamp(3rem, 8vw, 6rem) var(--space-3xl);
 }
 
 .badge {
   font-family: var(--safu-font-mono);
-  font-size: 0.78rem;
-  letter-spacing: 0.18em;
+  font-size: var(--text-sm);
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--cascivo-color-primary);
   border: 1px solid var(--cascivo-color-border);
   border-radius: 999px;
-  padding: 0.35rem 0.9rem;
+  padding: 0.35rem 0.85rem;
   background: rgba(0, 234, 255, 0.05);
-  box-shadow: var(--cascivo-glow-cyan);
 }
 
-.brand {
-  font-family: var(--safu-font-mono);
-  font-size: clamp(3.5rem, 12vw, 7rem);
-  line-height: 0.9;
+.heroTitle {
   margin: 0;
-  letter-spacing: 0.06em;
+  font-size: var(--text-display);
+  line-height: 1.04;
+  letter-spacing: -0.025em;
   font-weight: 800;
-  background: linear-gradient(
-    92deg,
-    var(--cascivo-color-primary),
-    var(--cascivo-color-accent-2) 55%,
-    var(--cascivo-color-accent)
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 0 2.4rem rgba(177, 92, 255, 0.35);
-}
-
-.title {
-  font-size: clamp(1.5rem, 3.6vw, 2.4rem);
-  font-weight: 700;
-  margin: 0;
-  max-width: 24ch;
   color: var(--cascivo-color-foreground);
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
-.subtitle {
+/* Three declaratives, one per line — a deliberate staccato, never a lucky wrap. */
+.heroLine {
+  display: block;
+}
+
+/* The payoff line lands in neon cyan (emphasis via colour, not gradient). */
+.heroLineAccent {
+  color: var(--cascivo-color-primary);
+  text-shadow: 0 0 1.4rem rgba(0, 234, 255, 0.35);
+}
+
+.heroLede {
   margin: 0;
-  max-width: 60ch;
-  font-size: 1.05rem;
-  line-height: 1.65;
+  max-width: 58ch;
+  font-size: var(--text-md);
+  line-height: 1.6;
   color: var(--cascivo-color-muted);
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.9rem;
-  justify-content: center;
-  margin-top: 0.6rem;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-2xs);
 }
 
+/* Outlined chip (secondary action). */
 .ghost {
   display: inline-flex;
   align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
   padding: 0.5rem 1rem;
   font: inherit;
   font-weight: 600;
   text-decoration: none;
+  white-space: nowrap;
   color: var(--cascivo-color-primary);
   background: transparent;
-  cursor: pointer;
   border: 1px solid var(--cascivo-color-border);
   border-radius: var(--cascivo-radius);
+  cursor: pointer;
   transition:
-    border-color 120ms ease,
-    box-shadow 120ms ease;
+    border-color var(--dur-micro) var(--ease-out),
+    color var(--dur-micro) var(--ease-out);
 }
 
-.ghost:hover {
-  border-color: var(--cascivo-color-primary);
-  box-shadow: var(--cascivo-glow-cyan);
+@media (hover: hover) {
+  .ghost:hover {
+    border-color: var(--cascivo-color-primary);
+  }
 }
 
-/* ---- Sections ------------------------------------------------------------ */
+.ghost:focus-visible {
+  outline: 2px solid var(--cascivo-color-primary);
+  outline-offset: 2px;
+}
+
+/* Typographic link (tertiary action). */
+.textLink {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.25rem;
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--cascivo-color-foreground);
+  background: none;
+  border: 0;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.textLink::after {
+  content: "";
+  position: absolute;
+  left: 0.25rem;
+  right: 0.25rem;
+  bottom: 0.55rem;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.4;
+  transition: opacity var(--dur-micro) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .textLink:hover::after {
+    opacity: 1;
+  }
+}
+
+.textLink:focus-visible {
+  outline: 2px solid var(--cascivo-color-primary);
+  outline-offset: 2px;
+}
+
+/* ---- Section scaffolding --------------------------------------------------- */
 
 .section {
-  padding: 3rem 0;
-  border-top: 1px solid var(--cascivo-color-border);
+  padding-block: var(--space-3xl) 0;
 }
 
 .kicker {
+  margin: 0 0 var(--space-sm);
   font-family: var(--safu-font-mono);
   text-transform: uppercase;
-  letter-spacing: 0.22em;
-  font-size: 0.74rem;
+  letter-spacing: 0.2em;
+  font-size: var(--text-sm);
   color: var(--cascivo-color-accent);
-  margin: 0 0 0.5rem;
 }
 
-.h2 {
-  font-size: clamp(1.5rem, 3.4vw, 2.1rem);
-  margin: 0 0 2rem;
-  max-width: 26ch;
+.sectionTitle {
+  margin: 0 0 var(--space-xl);
+  max-width: 24ch;
+  font-size: var(--text-2xl);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  font-weight: 700;
+  color: var(--cascivo-color-foreground);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+/* ---- The problem · stacked list, magenta diamond markers (no cards) -------- */
+
+.problems {
+  display: grid;
+  gap: var(--space-lg);
+  max-width: 58rem;
+}
+
+.problem {
+  display: grid;
+  gap: var(--space-2xs);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--cascivo-color-border);
+  min-width: 0;
+}
+
+.problemTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  margin: 0;
+  font-size: var(--text-md);
+  font-weight: 700;
   color: var(--cascivo-color-foreground);
 }
 
-.grid3 {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-  gap: 1rem;
-}
-
-.card {
-  background: var(--cascivo-color-surface);
-  border: 1px solid var(--cascivo-color-border);
-  border-radius: var(--cascivo-radius);
-  padding: 1.4rem;
-  transition:
-    transform 140ms ease,
-    border-color 140ms ease,
-    box-shadow 140ms ease;
-}
-
-.card:hover {
-  transform: translateY(-3px);
-  border-color: var(--cascivo-color-primary);
-  box-shadow: var(--cascivo-glow-cyan);
-}
-
-.principle:hover {
-  border-color: var(--cascivo-color-accent);
+.problemTitle::before {
+  content: "";
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  transform: rotate(45deg) translateY(-0.1rem);
+  background: var(--cascivo-color-accent);
   box-shadow: var(--cascivo-glow-magenta);
 }
 
-.cardTitle {
-  font-size: 1.1rem;
-  margin: 0 0 0.5rem;
-  color: var(--cascivo-color-foreground);
-}
-
-.cardBody {
+.problemBody {
   margin: 0;
+  max-width: 64ch;
   line-height: 1.6;
   color: var(--cascivo-color-muted);
 }
 
-/* ---- How-it-works steps -------------------------------------------------- */
+/* ---- The pipeline · F4 step sequence on a glowing cyan→magenta rail -------- */
 
-.steps {
+.pipeline {
+  position: relative;
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-  gap: 1rem;
-  counter-reset: step;
+  gap: var(--space-2xl);
 }
 
-.step {
+/* The data flowing through the encrypted pipeline: a vertical rail behind the
+   stage nodes, lit cyan at the top, magenta at the foot. */
+.pipeline::before {
+  content: "";
+  position: absolute;
+  left: 1.5rem;
+  margin-left: -1px;
+  top: var(--space-lg);
+  bottom: var(--space-2xl);
+  width: 2px;
+  background: linear-gradient(180deg, var(--cascivo-color-primary), var(--cascivo-color-accent));
+  opacity: 0.4;
+}
+
+.stage {
   position: relative;
-  background: linear-gradient(180deg, var(--cascivo-color-surface-2), var(--cascivo-color-surface));
-  border: 1px solid var(--cascivo-color-border);
-  border-left: 2px solid var(--cascivo-color-primary);
-  border-radius: var(--cascivo-radius);
-  padding: 1.4rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-lg);
+  align-items: start;
 }
 
-.stepTitle {
+.stageNum {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
   font-family: var(--safu-font-mono);
-  font-size: 1rem;
+  font-size: var(--text-md);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--cascivo-color-primary);
+  background: var(--cascivo-color-surface);
+  border: 1px solid var(--cascivo-color-primary);
+  border-radius: var(--cascivo-radius);
+  box-shadow: var(--cascivo-glow-cyan);
+}
+
+.stageBody {
+  display: grid;
+  gap: var(--space-xs);
+  padding-top: var(--space-2xs);
+  min-width: 0;
+}
+
+.stageTitle {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--cascivo-color-foreground);
+}
+
+.stageText {
+  margin: 0;
+  max-width: 58ch;
+  line-height: 1.6;
+  color: var(--cascivo-color-muted);
+  overflow-wrap: anywhere;
+}
+
+/* ---- Guarantees · F3 tabular spec sheet ----------------------------------- */
+
+.guarantees {
+  display: grid;
+  margin: 0;
+  max-width: 58rem;
+}
+
+.guarantee {
+  display: grid;
+  grid-template-columns: 13rem 1fr;
+  gap: var(--space-lg);
+  padding-block: var(--space-lg);
+  border-top: 1px solid var(--cascivo-color-border);
+  align-items: baseline;
+}
+
+.guarantee:last-child {
+  border-bottom: 1px solid var(--cascivo-color-border);
+}
+
+.guaranteeTerm {
+  margin: 0;
+  font-family: var(--safu-font-mono);
+  font-weight: 700;
   letter-spacing: 0.02em;
-  margin: 0 0 0.55rem;
   color: var(--cascivo-color-primary);
 }
 
-/* ---- CTA + footer -------------------------------------------------------- */
+.guaranteeDef {
+  margin: 0;
+  max-width: 60ch;
+  line-height: 1.6;
+  color: var(--cascivo-color-muted);
+  min-width: 0;
+}
+
+/* ---- Closing statement · Ft5 + final CTA ---------------------------------- */
 
 .cta {
   display: grid;
-  justify-items: center;
-  text-align: center;
-  gap: 1rem;
-  border: 1px solid var(--cascivo-color-border);
-  border-radius: var(--cascivo-radius);
-  margin-top: 3rem;
-  background:
-    radial-gradient(600px 200px at 50% 0%, rgba(255, 43, 214, 0.12), transparent 70%),
-    var(--cascivo-color-surface);
+  justify-items: start;
+  gap: var(--space-lg);
+  max-width: 40rem;
+  padding-block: var(--space-4xl) var(--space-2xl);
 }
 
 .ctaTitle {
-  font-size: clamp(1.8rem, 4vw, 2.6rem);
   margin: 0;
-  background: linear-gradient(92deg, var(--cascivo-color-primary), var(--cascivo-color-accent));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  max-width: 14ch;
+  font-size: var(--text-display-s);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+  color: var(--cascivo-color-foreground);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.ctaBody {
+  margin: 0;
+  max-width: 50ch;
+  line-height: 1.6;
+  color: var(--cascivo-color-muted);
 }
 
 .footer {
-  text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-top: var(--space-2xl);
+  border-top: 1px solid var(--cascivo-color-border);
   font-family: var(--safu-font-mono);
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   color: var(--cascivo-color-muted);
-  padding-top: 3rem;
+}
+
+.footerWord {
+  letter-spacing: 0.16em;
+  color: var(--cascivo-color-foreground);
+}
+
+/* ---- Mobile: collapse the spec sheet, shrink the rail --------------------- */
+
+@media (max-width: 40rem) {
+  .guarantee {
+    grid-template-columns: 1fr;
+    gap: var(--space-2xs);
+  }
+
+  .stageNum {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .pipeline::before {
+    left: 1.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    animation: landing-reveal 150ms linear forwards;
+  }
+
+  .wordmark {
+    animation: none;
+  }
 }

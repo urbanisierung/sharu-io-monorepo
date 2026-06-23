@@ -10,8 +10,8 @@
   background: var(--cascivo-color-surface, #f4f4f5);
   color: var(--cascivo-color-foreground, #18181b);
   transition:
-    border-color 120ms ease,
-    background-color 120ms ease;
+    border-color var(--dur-micro) var(--ease-out),
+    background-color var(--dur-micro) var(--ease-out);
 }
 
 /* Overlay variant: fill the positioned file surface so a drag anywhere over the

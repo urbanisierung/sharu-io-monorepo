@@ -10,7 +10,23 @@
   font: inherit;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 120ms ease;
+  transition:
+    background-color var(--dur-micro, 120ms) var(--ease-out, ease),
+    transform var(--dur-micro, 120ms) var(--ease-out, ease);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--cascivo-color-primary, #4f46e5);
+  outline-offset: 2px;
+}
+
+.button:active {
+  transform: translateY(1px);
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .primary {

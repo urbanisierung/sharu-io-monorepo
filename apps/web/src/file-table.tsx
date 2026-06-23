@@ -9,10 +9,11 @@ import { t } from '@cascivo/i18n';
 import { type ReadonlySignal, signal } from '@preact/signals';
 import type { FileView } from '@safu/sdk';
 import styles from './file-table.module.css';
-import { fileIcon, formatBytes, formatDate } from './format.js';
+import { fileKind, formatBytes, formatDate } from './format.js';
 import { messages } from './messages.js';
 import { AddFilesButton } from './ui/add-files-button.js';
 import { Button } from './ui/button.js';
+import { Icon } from './ui/icon.js';
 
 type SortKey = 'name' | 'size' | 'modified';
 
@@ -77,9 +78,7 @@ export function FileTable({ files, onRestore, onDelete, onAddFiles }: FileTableP
 
       {all.length === 0 ? (
         <div class={styles.empty}>
-          <span class={styles.emptyIcon} aria-hidden="true">
-            📂
-          </span>
+          <Icon name="inbox" class={styles.emptyIcon} />
           <h3 class={styles.emptyTitle}>{t(messages.emptyTitle)}</h3>
           <p class={styles.emptyBody}>{t(messages.emptyBody)}</p>
           {onAddFiles && <AddFilesButton onFiles={onAddFiles} />}
@@ -120,7 +119,7 @@ export function FileTable({ files, onRestore, onDelete, onAddFiles }: FileTableP
                 {rows.map((file) => (
                   <tr key={file.path} class={styles.row}>
                     <td class={styles.icon} aria-hidden="true">
-                      {fileIcon(file.path)}
+                      <Icon name={fileKind(file.path)} />
                     </td>
                     <td class={styles.name}>{file.path}</td>
                     <td class={styles.numeric}>{formatBytes(file.size)}</td>

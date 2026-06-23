@@ -4,10 +4,11 @@
 // copy via @cascivo/i18n.
 import { t } from '@cascivo/i18n';
 import type { ReadonlySignal } from '@preact/signals';
-import { fileIcon, formatBytes } from './format.js';
+import { fileKind, formatBytes } from './format.js';
 import type { FileProgress } from './ingest-controller.js';
 import styles from './ingest-progress.module.css';
 import { messages } from './messages.js';
+import { Icon } from './ui/icon.js';
 
 const STATUS_LABEL = {
   queued: messages.fileQueued,
@@ -33,7 +34,7 @@ export function IngestProgress({ progress }: IngestProgressProps) {
         {items.map((item) => (
           <li key={item.name} class={styles.row}>
             <span class={styles.icon} aria-hidden="true">
-              {fileIcon(item.name)}
+              <Icon name={fileKind(item.name)} />
             </span>
             <span class={styles.name}>{item.name}</span>
             <span class={styles.size}>{formatBytes(item.size)}</span>

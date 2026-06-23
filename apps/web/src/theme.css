@@ -29,10 +29,39 @@
     ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", "JetBrains Mono", "Roboto Mono",
     monospace;
   --safu-font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Design-system scales (Hallmark redesign · Narrative Workflow). Motion,
+     spacing and type tokens the landing references by name — no raw values. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+  --space-4xl: 9rem;
+
+  --text-sm: 0.8rem;
+  --text-base: 1rem;
+  --text-md: 1.25rem;
+  --text-lg: 1.5625rem;
+  --text-xl: 1.9531rem;
+  --text-2xl: 2.4414rem;
+  --text-display-s: clamp(2.25rem, 4vw + 1rem, 3.5rem);
+  --text-display: clamp(2.5rem, 5vw + 1rem, 4.5rem);
 }
 
 html {
   color-scheme: dark;
+  overflow-x: clip;
 }
 
 body {
@@ -52,7 +81,8 @@ body {
     44px 44px,
     44px 44px;
   background-attachment: fixed;
-  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: clip;
 }
 
 * {

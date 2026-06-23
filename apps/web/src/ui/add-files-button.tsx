@@ -8,6 +8,7 @@ import { t } from '@cascivo/i18n';
 import { messages } from '../messages.js';
 import styles from './add-files-button.module.css';
 import buttonStyles from './button.module.css';
+import { Icon } from './icon.js';
 
 export interface AddFilesButtonProps {
   onFiles: (files: readonly File[]) => void;
@@ -17,7 +18,7 @@ export interface AddFilesButtonProps {
 export function AddFilesButton({ onFiles, intent = 'primary' }: AddFilesButtonProps) {
   return (
     <label class={cn(buttonStyles.button, buttonStyles[intent])}>
-      <span aria-hidden="true">＋</span>
+      <Icon name="plus" />
       {t(messages.addFiles)}
       <input
         type="file"

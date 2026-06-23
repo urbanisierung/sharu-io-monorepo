@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fileIcon, fileKind, formatBytes, formatDate } from './format.js';
+import { fileKind, formatBytes, formatDate } from './format.js';
 
 describe('formatBytes', () => {
   it('keeps small values in bytes', () => {
@@ -23,7 +23,7 @@ describe('formatDate', () => {
   });
 });
 
-describe('fileKind / fileIcon', () => {
+describe('fileKind', () => {
   it('classifies by extension, falling back to a generic file', () => {
     expect(fileKind('photo.JPG')).toBe('image');
     expect(fileKind('clip.mp4')).toBe('video');
@@ -32,10 +32,5 @@ describe('fileKind / fileIcon', () => {
     expect(fileKind('main.rs')).toBe('code');
     expect(fileKind('noext')).toBe('file');
     expect(fileKind('trailingdot.')).toBe('file');
-  });
-
-  it('returns a glyph for every path', () => {
-    expect(fileIcon('a.png')).toBe('🖼️');
-    expect(fileIcon('a.unknown')).toBe('📦');
   });
 });
