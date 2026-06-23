@@ -143,41 +143,56 @@ export function App({
       <main class={styles.content}>
         {view === 'files' && (
           <>
-            <StatusBanner files={files} peers={peers} />
-            <DropZone
-              phase={phase}
-              onDragValidity={(valid) => controller.dragOver(valid)}
-              onLeave={() => controller.dragLeave()}
-              onFiles={(dropped) => void controller.drop(dropped)}
-            />
-            <label class={styles.addButton}>
-              <span aria-hidden="true">{t(messages.addFiles)}</span>
-              <input
-                type="file"
-                multiple
-                aria-label={t(messages.addFiles)}
-                class={styles.hiddenInput}
-                onChange={(event) => {
-                  const input = event.target as HTMLInputElement;
-                  const picked = Array.from(input.files ?? []);
-                  input.value = '';
-                  if (picked.length > 0) void controller.drop(picked);
-                }}
+            {/* The file list leads — it is the whole point of the app. A drag
+                anywhere over this surface reveals the drop overlay; the rest of
+                the time the space belongs to the files, with "Add files" always
+                at hand in the table toolbar / empty state. */}
+            <section
+              class={styles.fileSurface}
+              aria-label={t(messages.filesHeading)}
+              onDragOver={(event) => {
+                // dragover fires continuously (including on entry), so this alone
+                // both reveals and tracks the overlay — no separate dragenter.
+                event.preventDefault();
+                controller.dragOver((event.dataTransfer?.types ?? []).includes('Files'));
+              }}
+              onDragLeave={(event) => {
+                const next = event.relatedTarget as Node | null;
+                if (!next || !(event.currentTarget as HTMLElement).contains(next)) {
+                  controller.dragLeave();
+                }
+              }}
+            >
+              <FileTable
+                files={files}
+                onRestore={onRestore}
+                onDelete={onDelete}
+                onAddFiles={(picked) => void controller.drop(picked)}
               />
-            </label>
+              {phase.kind === 'drag' && (
+                <DropZone
+                  phase={phase}
+                  overlay
+                  onDragValidity={(valid) => controller.dragOver(valid)}
+                  onLeave={() => controller.dragLeave()}
+                  onFiles={(dropped) => void controller.drop(dropped)}
+                />
+              )}
+            </section>
+
             <IngestProgress progress={controller.progress} />
             {(phase.kind === 'success' || phase.kind === 'error') && (
               <Button intent="neutral" onClick={() => controller.reset()}>
                 {phase.kind === 'success' ? t(messages.addMore) : t(messages.retry)}
               </Button>
             )}
+
+            <StatusBanner files={files} peers={peers} />
             <p class={cn(styles.muted, peers.value.length === 0 && styles.warn)}>
               {peers.value.length === 0
                 ? t(messages.noPeers)
                 : t(messages.peersOnline, { count: peers.value.length })}
             </p>
-
-            <FileTable files={files} onRestore={onRestore} onDelete={onDelete} />
           </>
         )}
 

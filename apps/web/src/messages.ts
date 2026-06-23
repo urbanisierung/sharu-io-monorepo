@@ -214,7 +214,9 @@ export const messages = defineMessages('safu', {
   peersOnline: '{count} device(s) syncing',
   syncStatus: 'Sync: {status}',
   filesHeading: 'Your files',
-  empty: 'Nothing here yet — drop files above or tap “Add files” to protect your first one.',
+  emptyTitle: 'Nothing here yet',
+  emptyBody:
+    'Drag files anywhere onto this panel, or use Add files. Everything is encrypted on this device before it syncs.',
   download: 'Download',
   restoreFailed: 'We couldn’t open this file. Make sure every device uses the same password.',
   searchFiles: 'Search files',

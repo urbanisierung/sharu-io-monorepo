@@ -221,36 +221,11 @@
   line-height: 1.2;
 }
 
-/* A label styled as a primary button that opens the native file picker, so
-   adding files works without a drag (touch, mobile, accessibility). */
-.addButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.75rem;
-  padding: 0.5rem 1.25rem;
-  border-radius: var(--cascivo-radius, 0.5rem);
-  background: var(--cascivo-color-primary, #4f46e5);
-  color: var(--cascivo-color-primary-foreground, #ffffff);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.addButton:hover {
-  filter: brightness(1.05);
-}
-
-.hiddenInput {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
+/* The file list's surface: a positioned wrapper so the drag-only drop overlay
+   can fill exactly the file area. */
+.fileSurface {
+  position: relative;
+  width: min(44rem, 92vw);
 }
 
 .revealRow {

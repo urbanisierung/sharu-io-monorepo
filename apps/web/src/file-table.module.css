@@ -4,13 +4,51 @@
 
 .toolbar {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
 }
 
+.toolbarMeta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .heading {
   margin: 0;
+}
+
+/* Empty state: a calm, centred panel that explains what to do and offers the
+   primary action, instead of a single line of muted text. */
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  padding: 2.5rem 1.5rem;
+  margin-top: 1rem;
+  text-align: center;
+  border: 1px dashed var(--cascivo-color-border, #d4d4d8);
+  border-radius: var(--cascivo-radius, 0.5rem);
+  background: color-mix(in srgb, var(--cascivo-color-surface, #f4f4f5) 50%, transparent);
+}
+
+.emptyIcon {
+  font-size: 2.75rem;
+  line-height: 1;
+  filter: grayscale(0.2);
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.emptyBody {
+  margin: 0 0 0.4rem;
+  max-width: 28rem;
+  color: color-mix(in srgb, var(--cascivo-color-foreground, #18181b) 60%, transparent);
 }
 
 .summary {

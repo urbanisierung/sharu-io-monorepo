@@ -1,6 +1,6 @@
 import { signal } from '@preact/signals';
 import type { FileView } from '@safu/sdk';
-import { cleanup, fireEvent, render, screen } from '@testing-library/preact';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/preact';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App, resetAppView } from './app.js';
 import { resetDevicesView } from './devices.js';
@@ -36,10 +36,19 @@ describe('App shell (plan §2.4)', () => {
     expect(await screen.findByText('Syncing…')).toBeTruthy();
   });
 
-  it('reveals the drop surface once the controller is unlocked', async () => {
+  it('reveals the drop surface only while a file is dragged over the list', async () => {
     const { controller } = renderApp();
     controller.unlock('hunter2pass');
+    // Nothing covers the file list until a drag begins...
+    expect(screen.queryByLabelText('Drop files here to back them up')).toBeNull();
+    // ...a drag over the surface reveals the drop overlay...
+    controller.dragOver(true);
     expect(await screen.findByLabelText('Drop files here to back them up')).toBeTruthy();
+    // ...and leaving the surface hides it again.
+    controller.dragLeave();
+    await waitFor(() =>
+      expect(screen.queryByLabelText('Drop files here to back them up')).toBeNull(),
+    );
   });
 
   it('shows the active wallet name and backup/switch controls in Settings', () => {
