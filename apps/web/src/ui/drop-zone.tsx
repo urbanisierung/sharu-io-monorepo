@@ -10,6 +10,9 @@ import styles from './drop-zone.module.css';
 
 export interface DropZoneProps {
   phase: Phase;
+  /** Render as an absolute overlay that fills its positioned parent (shown only
+   *  while a drag is in progress) rather than a standalone block. */
+  overlay?: boolean;
   onDragValidity: (valid: boolean) => void;
   onLeave: () => void;
   onFiles: (files: readonly File[]) => void;
@@ -30,12 +33,19 @@ function label(phase: Phase): string {
   }
 }
 
-export function DropZone({ phase, onDragValidity, onLeave, onFiles }: DropZoneProps) {
+export function DropZone({
+  phase,
+  overlay = false,
+  onDragValidity,
+  onLeave,
+  onFiles,
+}: DropZoneProps) {
   const dragging = phase.kind === 'drag';
   return (
     <section
       class={cn(
         styles.zone,
+        overlay && styles.overlay,
         dragging && phase.valid && styles.valid,
         dragging && !phase.valid && styles.invalid,
         phase.kind === 'error' && styles.error,

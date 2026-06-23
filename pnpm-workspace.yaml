@@ -5,3 +5,7 @@ packages:
   # needs the system webview), not via `pnpm -r`. Excluded so recursive build/
   # typecheck/test stay green in the headless CI sandbox. See apps/desktop/README.md.
   - "!apps/desktop"
+allowBuilds:
+  esbuild: true
+  sharp: true
+  workerd: true

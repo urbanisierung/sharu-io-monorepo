@@ -11,6 +11,7 @@ import type { FileView } from '@safu/sdk';
 import styles from './file-table.module.css';
 import { fileIcon, formatBytes, formatDate } from './format.js';
 import { messages } from './messages.js';
+import { AddFilesButton } from './ui/add-files-button.js';
 import { Button } from './ui/button.js';
 
 type SortKey = 'name' | 'size' | 'modified';
@@ -47,9 +48,11 @@ export interface FileTableProps {
   files: ReadonlySignal<readonly FileView[]>;
   onRestore?: (path: string) => Promise<void>;
   onDelete?: (path: string) => void;
+  /** Add files through the native picker — shown in the toolbar and the empty state. */
+  onAddFiles?: (files: readonly File[]) => void;
 }
 
-export function FileTable({ files, onRestore, onDelete }: FileTableProps) {
+export function FileTable({ files, onRestore, onDelete, onAddFiles }: FileTableProps) {
   const all = files.value;
   const totalBytes = all.reduce((sum, file) => sum + file.size, 0);
 
@@ -61,16 +64,26 @@ export function FileTable({ files, onRestore, onDelete }: FileTableProps) {
   return (
     <section class={styles.files}>
       <div class={styles.toolbar}>
-        <h2 class={styles.heading}>{t(messages.filesHeading)}</h2>
-        {all.length > 0 && (
-          <span class={styles.summary}>
-            {t(messages.storageSummary, { count: all.length, size: formatBytes(totalBytes) })}
-          </span>
-        )}
+        <div class={styles.toolbarMeta}>
+          <h2 class={styles.heading}>{t(messages.filesHeading)}</h2>
+          {all.length > 0 && (
+            <span class={styles.summary}>
+              {t(messages.storageSummary, { count: all.length, size: formatBytes(totalBytes) })}
+            </span>
+          )}
+        </div>
+        {all.length > 0 && onAddFiles && <AddFilesButton onFiles={onAddFiles} />}
       </div>
 
       {all.length === 0 ? (
-        <p class={styles.muted}>{t(messages.empty)}</p>
+        <div class={styles.empty}>
+          <span class={styles.emptyIcon} aria-hidden="true">
+            📂
+          </span>
+          <h3 class={styles.emptyTitle}>{t(messages.emptyTitle)}</h3>
+          <p class={styles.emptyBody}>{t(messages.emptyBody)}</p>
+          {onAddFiles && <AddFilesButton onFiles={onAddFiles} />}
+        </div>
       ) : (
         <>
           <input

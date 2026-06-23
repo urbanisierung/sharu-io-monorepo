@@ -14,6 +14,19 @@
     background-color 120ms ease;
 }
 
+/* Overlay variant: fill the positioned file surface so a drag anywhere over the
+   list reveals it, instead of taking up permanent space. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  width: auto;
+  min-height: 0;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--cascivo-color-surface, #f4f4f5) 78%, transparent);
+  backdrop-filter: blur(3px);
+}
+
 .valid {
   border-color: var(--cascivo-color-primary, #4f46e5);
   background: color-mix(in srgb, var(--cascivo-color-primary, #4f46e5) 12%, transparent);
