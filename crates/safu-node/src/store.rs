@@ -1,0 +1,94 @@
+//! Filesystem persistence: the content-addressed block store and the JSON
+//! document snapshot — the Rust analogues of the headless peer's `FsBlockStore`
+//! and `FsDocStore`. Only opaque ciphertext is ever written (zero-knowledge
+//! invariant); blocks are files named by their lowercase-hex BLAKE3 hash.
+
+use std::fs;
+use std::path::{Path, PathBuf};
+
+use crate::doc::DocSnapshot;
+
+/// A content-addressed block store rooted at `dir`. Blocks are keyed by their
+/// lowercase-hex hash; any non-hex key is rejected so a hash decoded off the
+/// wire can never escape `dir` via a crafted filename (path traversal).
+pub struct FsBlockStore {
+    dir: PathBuf,
+}
+
+impl FsBlockStore {
+    pub fn new(dir: PathBuf) -> Self {
+        Self { dir }
+    }
+
+    pub fn has(&self, hash: &str) -> bool {
+        match self.path(hash) {
+            Some(path) => path.exists(),
+            None => false,
+        }
+    }
+
+    pub fn get(&self, hash: &str) -> Option<Vec<u8>> {
+        fs::read(self.path(hash)?).ok()
+    }
+
+    pub fn put(&self, hash: &str, block: &[u8]) -> Result<(), String> {
+        let Some(path) = self.path(hash) else {
+            return Err(format!("invalid block hash: {hash}"));
+        };
+        fs::create_dir_all(&self.dir).map_err(|e| format!("create {}: {e}", self.dir.display()))?;
+        fs::write(&path, block).map_err(|e| format!("write block {hash}: {e}"))
+    }
+
+    /// The count of blocks currently held, for status output.
+    pub fn count(&self) -> usize {
+        fs::read_dir(&self.dir)
+            .map(|entries| entries.flatten().count())
+            .unwrap_or(0)
+    }
+
+    fn path(&self, hash: &str) -> Option<PathBuf> {
+        if hash.is_empty()
+            || !hash
+                .bytes()
+                .all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())
+        {
+            return None;
+        }
+        Some(self.dir.join(hash))
+    }
+}
+
+/// Load the document snapshot from `path`, or `None` if absent.
+pub fn load_doc(path: &Path) -> Result<Option<DocSnapshot>, String> {
+    match fs::read_to_string(path) {
+        Ok(text) if text.is_empty() => Ok(None),
+        Ok(text) => serde_json::from_str(&text)
+            .map(Some)
+            .map_err(|e| format!("parse {}: {e}", path.display())),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(format!("read {}: {e}", path.display())),
+    }
+}
+
+/// Persist the document snapshot to `path` (creating parent dirs).
+pub fn save_doc(path: &Path, snapshot: &DocSnapshot) -> Result<(), String> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("create {}: {e}", parent.display()))?;
+    }
+    let text = serde_json::to_string(snapshot).map_err(|e| format!("serialize doc: {e}"))?;
+    fs::write(path, text).map_err(|e| format!("write {}: {e}", path.display()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rejects_non_hex_hashes() {
+        let store = FsBlockStore::new(PathBuf::from("/tmp/safu-test-blocks"));
+        assert!(store.path("../escape").is_none());
+        assert!(store.path("ABCDEF").is_none()); // uppercase rejected
+        assert!(store.path("deadbeef").is_some());
+        assert!(!store.has("../escape"));
+    }
+}
