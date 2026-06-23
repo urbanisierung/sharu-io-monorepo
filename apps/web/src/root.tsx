@@ -8,6 +8,7 @@ import { t } from '@cascivo/i18n';
 import { signal } from '@preact/signals';
 import { App } from './app.js';
 import styles from './app.module.css';
+import { FlowPage } from './flow.js';
 import { Landing } from './landing.js';
 import { messages } from './messages.js';
 import { readPairingFromHash } from './pairing.js';
@@ -238,10 +239,19 @@ function AppScreen() {
 export function Root() {
   const view = route.value;
   if (view === 'landing') {
-    return <Landing onLaunch={launch} onWhitepaper={() => navigate('whitepaper')} />;
+    return (
+      <Landing
+        onLaunch={launch}
+        onWhitepaper={() => navigate('whitepaper')}
+        onFlow={() => navigate('flow')}
+      />
+    );
   }
   if (view === 'whitepaper') {
     return <Whitepaper onBack={() => navigate('landing')} onLaunch={launch} />;
+  }
+  if (view === 'flow') {
+    return <FlowPage onBack={() => navigate('landing')} onLaunch={launch} />;
   }
   return <AppScreen />;
 }

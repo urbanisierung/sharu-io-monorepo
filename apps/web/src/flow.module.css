@@ -1,0 +1,185 @@
+.page {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.meta {
+  font-family: var(--safu-font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--cascivo-color-muted);
+}
+
+.head {
+  display: grid;
+  gap: 0.6rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--cascivo-color-border);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--safu-font-mono);
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  font-weight: 800;
+  background: linear-gradient(
+    92deg,
+    var(--cascivo-color-primary),
+    var(--cascivo-color-accent-2) 55%,
+    var(--cascivo-color-accent)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 2.4rem rgba(177, 92, 255, 0.3);
+}
+
+.subtitle {
+  margin: 0;
+  max-width: 60ch;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--cascivo-color-muted);
+}
+
+.section {
+  padding: 2.5rem 0;
+  border-top: 1px solid var(--cascivo-color-border);
+}
+
+.section:first-of-type {
+  border-top: 0;
+}
+
+.kicker {
+  font-family: var(--safu-font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 0.74rem;
+  color: var(--cascivo-color-accent);
+  margin: 0 0 0.5rem;
+}
+
+.h2 {
+  font-size: clamp(1.35rem, 3vw, 1.9rem);
+  margin: 0 0 1.5rem;
+  max-width: 30ch;
+  color: var(--cascivo-color-foreground);
+}
+
+.caption {
+  margin: 1.25rem 0 0;
+  max-width: 70ch;
+  line-height: 1.6;
+  color: var(--cascivo-color-muted);
+}
+
+/* ---- Tech stack · tabular spec sheet (matches the landing guarantees) ------ */
+
+.stack {
+  display: grid;
+  margin: 0;
+  max-width: 58rem;
+}
+
+.stackItem {
+  display: grid;
+  grid-template-columns: 13rem 1fr;
+  gap: 1.5rem;
+  padding-block: 1.25rem;
+  border-top: 1px solid var(--cascivo-color-border);
+  align-items: baseline;
+}
+
+.stackItem:last-child {
+  border-bottom: 1px solid var(--cascivo-color-border);
+}
+
+.stackTerm {
+  margin: 0;
+  font-family: var(--safu-font-mono);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* External link to each technology's canonical home. Carries the term's neon
+   hue; an underline appears on hover/focus rather than sitting there always. */
+.stackLink {
+  color: var(--cascivo-color-primary);
+  text-decoration: none;
+  text-underline-offset: 0.2em;
+  border-radius: 2px;
+  transition: color var(--dur-micro, 120ms) var(--ease-out, ease);
+}
+
+@media (hover: hover) {
+  .stackLink:hover {
+    color: var(--cascivo-color-primary-hover);
+    text-decoration: underline;
+  }
+}
+
+.stackLink:focus-visible {
+  outline: 2px solid var(--cascivo-color-primary);
+  outline-offset: 2px;
+}
+
+.stackDef {
+  margin: 0;
+  max-width: 60ch;
+  line-height: 1.6;
+  color: var(--cascivo-color-muted);
+  min-width: 0;
+}
+
+.cta {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+  padding: 3rem 0 1rem;
+}
+
+.ctaTitle {
+  margin: 0;
+  max-width: 18ch;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  font-weight: 800;
+  color: var(--cascivo-color-foreground);
+}
+
+.ctaBody {
+  margin: 0;
+  max-width: 50ch;
+  line-height: 1.6;
+  color: var(--cascivo-color-muted);
+}
+
+.footer {
+  text-align: center;
+  font-family: var(--safu-font-mono);
+  font-size: 0.82rem;
+  color: var(--cascivo-color-muted);
+  padding-top: 2rem;
+  border-top: 1px solid var(--cascivo-color-border);
+}
+
+@media (max-width: 36rem) {
+  .stackItem {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}

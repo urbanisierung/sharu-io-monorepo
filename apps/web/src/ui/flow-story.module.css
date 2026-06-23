@@ -1,0 +1,285 @@
+/* FlowStory — Cascivo-derived, owned in-repo. Cyberpunk surface for an animated
+   node/edge walk: an SVG wire layer under positioned HTML nodes, plus a caption
+   that fades a new line in per step. Tokens only; no raw colours. */
+
+.flow {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: calc(var(--cascivo-radius) * 2);
+  background:
+    radial-gradient(120% 120% at 50% -20%, rgba(0, 234, 255, 0.08), transparent 60%),
+    var(--cascivo-color-surface);
+  overflow: hidden;
+}
+
+/* ---- Wires (SVG edge layer) ------------------------------------------------ */
+
+.wires {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.wire {
+  stroke: var(--cascivo-color-border);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.wireActive {
+  stroke: var(--cascivo-color-primary);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 0.4rem rgba(0, 234, 255, 0.6));
+  stroke-dasharray: 6 8;
+  animation: flow-dash 0.9s linear infinite;
+}
+
+@keyframes flow-dash {
+  to {
+    stroke-dashoffset: -14;
+  }
+}
+
+.beam,
+.beamPaused {
+  fill: var(--cascivo-color-primary);
+  filter: drop-shadow(0 0 0.5rem rgba(0, 234, 255, 0.85));
+}
+
+.beamPaused {
+  opacity: 0.85;
+}
+
+.beam {
+  animation: flow-beam var(--beam-dur, 2200ms) var(--ease-out) infinite;
+}
+
+@keyframes flow-beam {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy));
+    opacity: 0;
+  }
+}
+
+/* ---- Nodes (positioned HTML over the wires) -------------------------------- */
+
+.nodes {
+  position: absolute;
+  inset: 0;
+}
+
+.node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: grid;
+  gap: 0.15rem;
+  justify-items: center;
+  text-align: center;
+  min-width: 6.5rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius);
+  background: var(--cascivo-color-surface-2);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+  transition:
+    border-color var(--dur-short) var(--ease-out),
+    box-shadow var(--dur-short) var(--ease-out),
+    transform var(--dur-short) var(--ease-out);
+}
+
+.nodeLabel {
+  font-family: var(--safu-font-mono);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  letter-spacing: 0.04em;
+  color: var(--cascivo-color-foreground);
+  white-space: nowrap;
+}
+
+.nodeRole {
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  color: var(--cascivo-color-muted);
+  white-space: nowrap;
+}
+
+/* Role accents */
+.device {
+  border-color: rgba(0, 234, 255, 0.5);
+}
+
+.relay {
+  border-color: rgba(255, 43, 214, 0.5);
+}
+
+.store {
+  border-color: rgba(177, 92, 255, 0.5);
+}
+
+/* The two participants in the current step light up. */
+.nodeActive {
+  transform: translate(-50%, -50%) scale(1.05);
+  border-color: var(--cascivo-color-primary);
+  box-shadow: var(--cascivo-glow-cyan);
+}
+
+.relay.nodeActive {
+  border-color: var(--cascivo-color-accent);
+  box-shadow: var(--cascivo-glow-magenta);
+}
+
+.store.nodeActive {
+  border-color: var(--cascivo-color-accent-2);
+  box-shadow: 0 0 0.7rem rgba(177, 92, 255, 0.55);
+}
+
+/* ---- Caption + controls ---------------------------------------------------- */
+
+.caption {
+  display: grid;
+  gap: var(--space-sm);
+  min-height: 6.5rem;
+}
+
+.captionHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.control {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: none;
+  font-size: 1.1rem;
+  color: var(--cascivo-color-primary);
+  background: var(--cascivo-color-surface);
+  border: 1px solid var(--cascivo-color-primary);
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: var(--cascivo-glow-cyan);
+  transition: background var(--dur-micro) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .control:hover {
+    background: var(--cascivo-color-surface-2);
+  }
+}
+
+.control:focus-visible {
+  outline: 2px solid var(--cascivo-color-primary);
+  outline-offset: 2px;
+}
+
+.counter {
+  font-family: var(--safu-font-mono);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--cascivo-color-primary);
+}
+
+.counterSlash {
+  color: var(--cascivo-color-muted);
+}
+
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--cascivo-color-border);
+  transition:
+    background var(--dur-short) var(--ease-out),
+    box-shadow var(--dur-short) var(--ease-out);
+}
+
+.dotActive {
+  background: var(--cascivo-color-primary);
+  box-shadow: var(--cascivo-glow-cyan);
+}
+
+.captionText {
+  margin: 0;
+  max-width: 64ch;
+  line-height: 1.6;
+  color: var(--cascivo-color-foreground);
+  animation: flow-fade var(--dur-long) var(--ease-out);
+}
+
+@keyframes flow-fade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- Reduced-motion fallback: the whole script, statically ----------------- */
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.staticStep {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-sm);
+  align-items: baseline;
+  line-height: 1.55;
+  color: var(--cascivo-color-foreground);
+}
+
+.staticNum {
+  font-family: var(--safu-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--cascivo-color-primary);
+}
+
+@media (max-width: 36rem) {
+  .node {
+    min-width: 0;
+    padding: 0.4rem 0.5rem;
+  }
+
+  .nodeLabel {
+    font-size: 0.72rem;
+  }
+
+  .nodeRole {
+    display: none;
+  }
+}
