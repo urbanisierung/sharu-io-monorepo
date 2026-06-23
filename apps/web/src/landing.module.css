@@ -369,6 +369,49 @@
   min-width: 0;
 }
 
+/* ---- Backup node · one-line install commands ------------------------------ */
+
+.cliLede {
+  margin: 0 0 var(--space-xl);
+  max-width: 64ch;
+  line-height: 1.6;
+  color: var(--cascivo-color-muted);
+}
+
+.cliCommands {
+  display: grid;
+  gap: var(--space-lg);
+  max-width: 58rem;
+}
+
+.cliCommand {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.cliLabel {
+  font-family: var(--safu-font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: var(--text-sm);
+  color: var(--cascivo-color-accent);
+}
+
+.cliCode {
+  display: block;
+  padding: var(--space-md) var(--space-lg);
+  font-family: var(--safu-font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--cascivo-color-foreground);
+  background: var(--cascivo-color-surface);
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius);
+  overflow-x: auto;
+  white-space: pre;
+}
+
 /* ---- Closing statement · Ft5 + final CTA ---------------------------------- */
 
 .cta {

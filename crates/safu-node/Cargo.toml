@@ -1,0 +1,44 @@
+[package]
+name = "safu-node"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "safu-node"
+path = "src/main.rs"
+
+[dependencies]
+# The native Iroh core already built for the desktop runtime (plan §3.2): direct
+# UDP hole-punching with relay fallback. The node reuses it unchanged — no Tauri
+# command bridge, no browser globals — exactly the "Native binding" wiring the
+# headless-peer README recommends for an always-on node.
+safu-transport = { path = "../safu-transport" }
+
+# Iroh is already async; tokio is in the tree transitively. The node needs the
+# multi-thread runtime, the attribute macro, Unix signal handling for a clean
+# flush-on-shutdown, timers for reconnect backoff, and an async-friendly mutex.
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal", "time", "sync"] }
+
+# The replicated document and every wire frame are JSON, byte-identical to what
+# the TypeScript SDK produces (`JSON.stringify`), so signatures verify across
+# runtimes.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Authorship is bound to an Ed25519 key whose public key IS the author id
+# (SDK `signing.ts`, `@noble/curves`). dalek's RFC 8032 Ed25519 interoperates
+# with the browser's signatures.
+ed25519-dalek = "3.0.0-rc.0"
+
+# The node's signing seed is Argon2id(passphrase, salt) — the same KDF and
+# parameters as `safu-crypto`/`@safu/crypto.deriveKey`, so the same passphrase +
+# data dir yields the same identity across restarts and across runtimes.
+argon2 = "0.5"
+
+hex = "0.4"
+# URL-safe base64 (no padding) for the copy-paste pairing code — the exact
+# encoding the web app's `pairing.ts` uses (`btoa` + url-safe + strip `=`).
+data-encoding = "2"
+# A single 16-byte identity salt is the only randomness the node needs.
+getrandom = "0.4"

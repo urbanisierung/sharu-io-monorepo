@@ -45,6 +45,11 @@ restart.
 On start it logs its own signing id and transport address; pair a device against
 those (and authorize the device's id here) and the node begins replicating.
 
+> **Already shipped natively:** `crates/safu-node` is a self-contained Rust CLI
+> that realizes the "Native binding (recommended)" wiring below — an always-on,
+> wire-compatible backup node over `safu_transport::native`, with no Node or
+> browser. If you want a headless node today, use it.
+
 ## The one remaining seam: a headless transport
 
 Everything above is complete and tested. The only unimplemented piece is a

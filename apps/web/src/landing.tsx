@@ -30,6 +30,14 @@ const guarantees = [
   { term: landing.p6Title, def: landing.p6Body },
 ];
 
+const installs = [
+  { label: landing.cliUnixLabel, command: landing.cliUnixCmd },
+  { label: landing.cliWindowsLabel, command: landing.cliWindowsCmd },
+];
+
+const CLI_DOCS_URL =
+  'https://github.com/urbanisierung/sharu-io-monorepo/tree/main/crates/safu-node';
+
 export interface LandingProps {
   onLaunch: () => void;
   onWhitepaper: () => void;
@@ -113,7 +121,24 @@ export function Landing({ onLaunch, onWhitepaper }: LandingProps) {
         </dl>
       </section>
 
-      <section class={cn(styles.cta, styles.reveal)} style={{ '--i': '4' }}>
+      <section class={cn(styles.section, styles.reveal)} style={{ '--i': '4' }}>
+        <p class={styles.kicker}>{t(landing.cliKicker)}</p>
+        <h2 class={styles.sectionTitle}>{t(landing.cliTitle)}</h2>
+        <p class={styles.cliLede}>{t(landing.cliBody)}</p>
+        <div class={styles.cliCommands}>
+          {installs.map((item) => (
+            <div class={styles.cliCommand} key={item.label.key}>
+              <span class={styles.cliLabel}>{t(item.label)}</span>
+              <code class={styles.cliCode}>{t(item.command)}</code>
+            </div>
+          ))}
+        </div>
+        <a class={styles.ghost} href={CLI_DOCS_URL} target="_blank" rel="noreferrer">
+          {t(landing.cliLink)}
+        </a>
+      </section>
+
+      <section class={cn(styles.cta, styles.reveal)} style={{ '--i': '5' }}>
         <h2 class={styles.ctaTitle}>{t(landing.ctaTitle)}</h2>
         <p class={styles.ctaBody}>{t(landing.ctaBody)}</p>
         <Button intent="primary" onClick={onLaunch}>
