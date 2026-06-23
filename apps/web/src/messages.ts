@@ -15,6 +15,7 @@ export const landing = defineMessages('safu.landing', {
     'Sharu is a decentralized, zero-knowledge, local-first backup and sync platform. Files are encrypted on your device and synced peer-to-peer across your own machines — no servers, no accounts, and no one who can read them but you.',
   launch: 'Launch the app',
   learnMore: 'See how it works',
+  watchFlow: 'Watch the data flow',
 
   problemKicker: 'The problem',
   problemTitle: 'Cloud backup asks you to trust someone else with everything.',
@@ -152,6 +153,82 @@ export const whitepaper = defineMessages('safu.whitepaper', {
   guarantee6:
     'Conflict-free — a CRDT allocation table converges deterministically and never drops a write.',
 
+  footer: 'Sharu — zero-knowledge, local-first backup & sync',
+});
+
+/** "Interaction" page copy: a Cascivo Flow that walks, step by step, through how
+ *  participants — your devices, the relay, and a backup node — actually talk,
+ *  plus the technology stack that makes each step possible. */
+export const flow = defineMessages('safu.flow', {
+  back: 'Back',
+  launch: 'Launch the app',
+  meta: 'Live walkthrough · zero-knowledge by construction',
+
+  title: 'Watch your devices talk.',
+  subtitle:
+    'A backup is a conversation between participants you control — your devices, an untrusted relay, and an optional always-on node. Here is exactly what crosses the wire, step by step. Only ciphertext ever does.',
+
+  diagramKicker: 'The interaction',
+  diagramTitle: 'One file, four participants, zero trust required.',
+  diagramCaption:
+    'Each step replays a single exchange. The relay and the network only ever carry authenticated ciphertext — never your keys, filenames, or plaintext.',
+  diagramAlt:
+    'A flow diagram of a laptop and phone syncing an encrypted file through an Iroh relay, with an always-on backup node.',
+  play: 'Play the walkthrough',
+  pause: 'Pause the walkthrough',
+
+  // Participants (nodes)
+  nodeLaptop: 'Laptop',
+  nodeLaptopRole: 'Your device',
+  nodePhone: 'Phone',
+  nodePhoneRole: 'Your device',
+  nodeRelay: 'Iroh relay',
+  nodeRelayRole: 'Untrusted transport',
+  nodeBackup: 'Backup node',
+  nodeBackupRole: 'safu-node replica',
+
+  // Script (the walk) — one caption per exchange
+  step1:
+    'Your laptop seals each file chunk with AES-256-GCM and announces the BLAKE3 hashes of the blocks it holds.',
+  step2:
+    'The announcement travels over Iroh. The relay forwards bytes it cannot read — no keys, no filenames, only ciphertext.',
+  step3: 'Your phone compares hashes and asks for exactly the blocks it is missing, by address.',
+  step4:
+    'The sealed blocks stream back. Your phone verifies every block against its hash before it trusts a single byte.',
+  step5:
+    'To pair, both devices show a short authentication string. You confirm they match — defeating any machine in the middle.',
+  step6:
+    'An always-on backup node keeps a full ciphertext replica, so a copy stays reachable even when every device is offline.',
+
+  stackKicker: 'Tech stack',
+  stackTitle: 'What powers each step.',
+  stackIrohTerm: 'Iroh (QUIC)',
+  stackIrohDef:
+    'The peer-to-peer transport. Rust compiled to WASM in the browser, run natively on desktop, behind one interface.',
+  stackBlake3Term: 'BLAKE3',
+  stackBlake3Def:
+    'Content addressing: every block is named by the hash of its ciphertext, so storage is deduplicated and tamper-evident.',
+  stackArgon2Term: 'Argon2id',
+  stackArgon2Def:
+    'Memory-hard key derivation from your passphrase — performed on-device only, so the key never leaves the machine.',
+  stackAesTerm: 'AES-256-GCM',
+  stackAesDef:
+    'Authenticated encryption that seals each chunk independently and lets the reader detect tampering before decrypting.',
+  stackCrdtTerm: 'CRDT allocation table',
+  stackCrdtDef:
+    'Conflict-free replicated state that converges deterministically across devices, with no coordinator and no dropped writes.',
+  stackCascivoTerm: 'Cascivo Flow',
+  stackCascivoDef:
+    'The signal-driven, CSS-native design system — its new Flow surface renders this very walkthrough.',
+  stackPreactTerm: 'Preact + Signals',
+  stackPreactDef:
+    'The local-first UI shell: reactive state as signals everywhere, with no virtual-DOM churn and no framework lock-in.',
+  stackTauriTerm: 'Tauri 2.0',
+  stackTauriDef:
+    'The native desktop shell, where Iroh hole-punches direct device-to-device connections without any relay at all.',
+
+  ctaTitle: 'Seen enough? Start backing up.',
+  ctaBody: 'No account, no upload to anyone. Set a passphrase and your devices do the rest.',
   footer: 'Sharu — zero-knowledge, local-first backup & sync',
 });
 

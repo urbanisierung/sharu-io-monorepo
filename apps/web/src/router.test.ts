@@ -5,6 +5,7 @@ describe('router', () => {
   it('maps known paths to views', () => {
     expect(routeOf('/')).toBe('landing');
     expect(routeOf('/whitepaper')).toBe('whitepaper');
+    expect(routeOf('/flow')).toBe('flow');
     expect(routeOf('/app')).toBe('app');
     expect(routeOf('/app/anything')).toBe('app');
   });
@@ -16,7 +17,9 @@ describe('router', () => {
   it('round-trips a view to its canonical path', () => {
     expect(pathOf('landing')).toBe('/');
     expect(pathOf('whitepaper')).toBe('/whitepaper');
+    expect(pathOf('flow')).toBe('/flow');
     expect(pathOf('app')).toBe('/app');
     expect(routeOf(pathOf('app'))).toBe('app');
+    expect(routeOf(pathOf('flow'))).toBe('flow');
   });
 });
