@@ -15,6 +15,14 @@ describe('Landing', () => {
     expect(screen.getByText('Zero-knowledge')).toBeTruthy();
   });
 
+  it('offers the always-on backup node with a one-line install', () => {
+    render(<Landing onLaunch={() => {}} onWhitepaper={() => {}} />);
+    expect(screen.getByText('Backup node')).toBeTruthy();
+    expect(screen.getByText(/install\.sh \| sh$/)).toBeTruthy();
+    const docs = screen.getByRole('link', { name: 'Read the backup-node docs' });
+    expect(docs.getAttribute('href')).toContain('crates/safu-node');
+  });
+
   it('launches the app from the call to action', () => {
     const onLaunch = vi.fn();
     render(<Landing onLaunch={onLaunch} onWhitepaper={() => {}} />);
