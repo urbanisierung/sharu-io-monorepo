@@ -56,15 +56,32 @@ function buildScript(): StoryStep[] {
   ];
 }
 
+// Each technology links to its canonical home so readers can dig deeper.
 const stack = [
-  { term: flow.stackIrohTerm, def: flow.stackIrohDef },
-  { term: flow.stackBlake3Term, def: flow.stackBlake3Def },
-  { term: flow.stackArgon2Term, def: flow.stackArgon2Def },
-  { term: flow.stackAesTerm, def: flow.stackAesDef },
-  { term: flow.stackCrdtTerm, def: flow.stackCrdtDef },
-  { term: flow.stackCascivoTerm, def: flow.stackCascivoDef },
-  { term: flow.stackPreactTerm, def: flow.stackPreactDef },
-  { term: flow.stackTauriTerm, def: flow.stackTauriDef },
+  { term: flow.stackIrohTerm, def: flow.stackIrohDef, href: 'https://www.iroh.computer' },
+  {
+    term: flow.stackBlake3Term,
+    def: flow.stackBlake3Def,
+    href: 'https://github.com/BLAKE3-team/BLAKE3',
+  },
+  {
+    term: flow.stackArgon2Term,
+    def: flow.stackArgon2Def,
+    href: 'https://github.com/P-H-C/phc-winner-argon2',
+  },
+  {
+    term: flow.stackAesTerm,
+    def: flow.stackAesDef,
+    href: 'https://csrc.nist.gov/pubs/sp/800/38/d/final',
+  },
+  { term: flow.stackCrdtTerm, def: flow.stackCrdtDef, href: 'https://crdt.tech' },
+  { term: flow.stackCascivoTerm, def: flow.stackCascivoDef, href: 'https://docs.cascivo.com/flow' },
+  {
+    term: flow.stackPreactTerm,
+    def: flow.stackPreactDef,
+    href: 'https://preactjs.com/guide/v10/signals/',
+  },
+  { term: flow.stackTauriTerm, def: flow.stackTauriDef, href: 'https://tauri.app' },
 ];
 
 export interface FlowPageProps {
@@ -109,7 +126,11 @@ export function FlowPage({ onBack, onLaunch }: FlowPageProps) {
         <dl class={styles.stack}>
           {stack.map((item) => (
             <div class={styles.stackItem} key={item.term.key}>
-              <dt class={styles.stackTerm}>{t(item.term)}</dt>
+              <dt class={styles.stackTerm}>
+                <a class={styles.stackLink} href={item.href} target="_blank" rel="noreferrer">
+                  {t(item.term)}
+                </a>
+              </dt>
               <dd class={styles.stackDef}>{t(item.def)}</dd>
             </div>
           ))}
