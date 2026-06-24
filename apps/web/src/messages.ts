@@ -1,6 +1,7 @@
 // All user-facing strings flow through @cascivo/i18n (plan §2.4) — no hardcoded
 // English in components. The lint guard in this app's test suite enforces it.
 import { defineMessages } from '@cascivo/i18n';
+import { SITE_URL } from '@safu/config';
 
 /** Landing page copy: what Sharu is, the problem it solves, and how. */
 export const landing = defineMessages('safu.landing', {
@@ -66,9 +67,9 @@ export const landing = defineMessages('safu.landing', {
   cliBody:
     'Run safu-node on a server, NAS, or Raspberry Pi to keep a full ciphertext replica of everything your devices back up — an always-reachable copy, zero-knowledge and over Iroh. One command installs it; link a device with its connection code and it starts replicating.',
   cliUnixLabel: 'Linux & macOS',
-  cliUnixCmd: 'curl -fsSL https://sharu.io/install.sh | sh',
+  cliUnixCmd: `curl -fsSL ${SITE_URL}/install.sh | sh`,
   cliWindowsLabel: 'Windows · PowerShell',
-  cliWindowsCmd: 'irm https://sharu.io/install.ps1 | iex',
+  cliWindowsCmd: `irm ${SITE_URL}/install.ps1 | iex`,
   cliLink: 'Read the backup-node docs',
 
   ctaTitle: 'Take your backups back.',

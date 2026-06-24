@@ -1,7 +1,7 @@
 #!/bin/sh
 # Install the safu-node CLI on Linux or macOS.
 #
-#   curl -fsSL https://sharu.io/install.sh | sh
+#   curl -fsSL https://new.sharu.io/install.sh | sh
 #
 # Environment overrides:
 #   SAFU_NODE_VERSION   release version without the tag prefix (e.g. 0.1.0).

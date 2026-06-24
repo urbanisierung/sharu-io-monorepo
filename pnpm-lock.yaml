@@ -69,6 +69,9 @@ importers:
       '@preact/signals':
         specifier: 2.9.2
         version: 2.9.2(preact@10.29.2)
+      '@safu/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       '@safu/crypto':
         specifier: workspace:*
         version: link:../../packages/crypto
@@ -100,6 +103,12 @@ importers:
       wrangler:
         specifier: 4.103.0
         version: 4.103.0
+
+  packages/config:
+    devDependencies:
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
 
   packages/crypto:
     devDependencies:

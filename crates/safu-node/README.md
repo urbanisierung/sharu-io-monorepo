@@ -39,13 +39,13 @@ by the `Release safu-node` workflow. Install the latest with one line:
 **Linux / macOS**
 
 ```sh
-curl -fsSL https://sharu.io/install.sh | sh
+curl -fsSL https://new.sharu.io/install.sh | sh
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-irm https://sharu.io/install.ps1 | iex
+irm https://new.sharu.io/install.ps1 | iex
 ```
 
 The install scripts are served by the website (source: `apps/web/public/`); the
