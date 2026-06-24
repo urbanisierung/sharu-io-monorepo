@@ -15,6 +15,7 @@ import { messages } from './messages.js';
 import { readPairingFromHash } from './pairing.js';
 import { navigate, route } from './router.js';
 import { createRuntime, type Runtime } from './runtime.js';
+import { ShareViewer } from './share-page.js';
 import { UnlockGate } from './unlock-gate.js';
 import type { Wallet, WalletMeta } from './wallet.js';
 import { createWallet, getWallet, importWallet, listWallets, removeWallet } from './wallet.js';
@@ -190,6 +191,12 @@ function AppScreen() {
         onSwitchWallet={() => void switchWallet()}
         onRestore={(path) => download(path)}
         onDelete={(path) => ready.remove(path)}
+        onShare={(path) => ready.publishShare(path)}
+        onPublishSite={(files) => ready.publishSiteShare(files)}
+        publishedShares={ready.publishedShares}
+        onUnpublish={(root) => ready.unpublishShare(root)}
+        shareHostId={ready.shareHostId}
+        onSetShareHost={(id) => ready.setShareHost(id)}
         onPair={(code) => ready.pairWithCode(code)}
         onVerify={(id) => ready.verifyPeer(id)}
         onReject={(id) => ready.rejectPeer(id)}
@@ -257,6 +264,11 @@ export function Root() {
   }
   if (view === 'how-it-works') {
     return <FlowPage onBack={() => navigate('landing')} onLaunch={launch} />;
+  }
+  // The keyless share viewer renders with no wallet/unlock — the runtime is
+  // never created here, so opening a public link stays instant and anonymous.
+  if (view === 'share') {
+    return <ShareViewer />;
   }
   return <AppScreen />;
 }

@@ -483,6 +483,20 @@ export const flowMachine = defineMessages('safu.flow.machine', {
   ctaBody: 'No account, no upload to third parties. Set passphrase → peers replicate.',
 });
 
+export const shareView = defineMessages('safu.share', {
+  loading: 'Opening the shared file…',
+  loadingHint: 'Fetching it from the network and decrypting it in your browser.',
+  missingTitle: 'No share in this link',
+  missingBody: 'This page opens a public share. The link you followed has no share data in it.',
+  failedTitle: 'Couldn’t open this share',
+  failedBody: 'The link may be wrong, or the file is no longer hosted. Nothing was decrypted.',
+  siteTitle: 'Opening the shared site…',
+  siteBody: 'Decrypting its files in your browser, then loading it.',
+  siteFrame: 'Shared site',
+  download: 'Download',
+  zeroKnowledge: 'Decrypted in your browser. The host only ever served ciphertext.',
+});
+
 export const messages = defineMessages('safu', {
   title: 'Sharu',
   logoAlt: 'Sharu wolf logo',
@@ -572,6 +586,22 @@ export const messages = defineMessages('safu', {
   deleteConfirm: 'Delete it?',
   deleteYes: 'Remove',
   deleteCancel: 'Keep',
+  share: 'Share',
+  sharePublishing: 'Publishing…',
+  shareCopy: 'Copy link',
+  shareCopied: 'Copied',
+  shareUnpublish: 'Unshare',
+  shareNoHost: 'Pair your always-on node first, then publish a public link.',
+  shareFailed: 'Couldn’t publish this file. Please try again.',
+  publishSite: 'Share a folder as a site',
+  publishSitePublishing: 'Publishing site…',
+  publishSiteHint: 'Publish a static website (HTML/CSS/JS) as one zero-knowledge link.',
+  publishedHeading: 'Your public shares',
+  publishedEmpty: 'Nothing published yet.',
+  unshare: 'Revoke',
+  unsharing: 'Revoking…',
+  hostShares: 'Host shares here',
+  hostingShares: 'Hosts public shares',
   devicesHeading: 'Devices',
   yourCode: 'Your link code (share it with your other device)',
   scanPrompt: 'Scan this with your other device’s camera, or share the link.',

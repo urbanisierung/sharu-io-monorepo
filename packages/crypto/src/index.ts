@@ -19,6 +19,7 @@ const DEFAULT_CHUNKING: ChunkingParams = {
 
 const SALT_LEN = 16;
 const NONCE_LEN = 12;
+const KEY_LEN = 32;
 
 /** An encrypted block. `hash` is the BLAKE3 of the *plaintext* chunk — an
  *  integrity fingerprint verified on egress. Storage keys blocks by the BLAKE3
@@ -55,6 +56,22 @@ function randomBytes(n: number): Uint8Array {
 }
 
 /**
+ * Ingest `input` under a caller-supplied 32-byte `key` — no passphrase, no
+ * Argon2id. Used by public shares, where the key is random and travels in the
+ * share link's fragment rather than being derived from a passphrase. Returns a
+ * lazy async iterable; nothing is read from the source until it is consumed.
+ */
+export async function createIngestStreamWithKey(
+  input: ReadableStream<Uint8Array>,
+  key: Uint8Array,
+  options: IngestOptions = {},
+): Promise<AsyncIterable<EncryptedBlock>> {
+  await ready();
+  if (key.length !== KEY_LEN) throw new Error(`key must be ${KEY_LEN} bytes, got ${key.length}`);
+  return ingest(input, key, options.chunking ?? DEFAULT_CHUNKING);
+}
+
+/**
  * Ingest `input`, deriving a key from `passphrase` + a fresh salt. Returns the
  * salt and a lazy async iterable of encrypted blocks. Nothing is read from the
  * source until the iterable is consumed.
@@ -67,8 +84,7 @@ export async function createIngestStream(
   await ready();
   const salt = randomBytes(SALT_LEN);
   const key = derive_key(new TextEncoder().encode(passphrase), salt);
-  const chunking = options.chunking ?? DEFAULT_CHUNKING;
-  return { salt, blocks: ingest(input, key, chunking) };
+  return { salt, blocks: await createIngestStreamWithKey(input, key, options) };
 }
 
 async function* ingest(
@@ -108,17 +124,17 @@ function* emit(
 }
 
 /**
- * Reassemble plaintext from `blocks` in order, deriving the key from
- * `passphrase` + `salt`. Each block is authenticated by AES-GCM and verified
- * against its BLAKE3 content address; a mismatch errors the stream.
+ * Reassemble plaintext from `blocks` in order using a caller-supplied 32-byte
+ * `key` — the egress counterpart to `createIngestStreamWithKey`. Each block is
+ * authenticated by AES-GCM and verified against its BLAKE3 content address; a
+ * mismatch (tamper, or the wrong key) errors the stream.
  */
-export async function createEgressStream(
+export async function createEgressStreamWithKey(
   blocks: AsyncIterable<EncryptedBlock>,
-  passphrase: string,
-  salt: Uint8Array,
+  key: Uint8Array,
 ): Promise<ReadableStream<Uint8Array>> {
   await ready();
-  const key = derive_key(new TextEncoder().encode(passphrase), salt);
+  if (key.length !== KEY_LEN) throw new Error(`key must be ${KEY_LEN} bytes, got ${key.length}`);
   const iterator = blocks[Symbol.asyncIterator]();
   return new ReadableStream<Uint8Array>({
     async pull(controller) {
@@ -138,6 +154,21 @@ export async function createEgressStream(
   });
 }
 
+/**
+ * Reassemble plaintext from `blocks` in order, deriving the key from
+ * `passphrase` + `salt`. Each block is authenticated by AES-GCM and verified
+ * against its BLAKE3 content address; a mismatch errors the stream.
+ */
+export async function createEgressStream(
+  blocks: AsyncIterable<EncryptedBlock>,
+  passphrase: string,
+  salt: Uint8Array,
+): Promise<ReadableStream<Uint8Array>> {
+  await ready();
+  const key = derive_key(new TextEncoder().encode(passphrase), salt);
+  return createEgressStreamWithKey(blocks, key);
+}
+
 export { ready } from './wasm.js';
 
 /** BLAKE3 content address (hex) of `data`. Awaits WASM init. */
@@ -152,4 +183,34 @@ export async function blake3(data: Uint8Array): Promise<string> {
 export async function deriveKey(passphrase: string, salt: Uint8Array): Promise<Uint8Array> {
   await ready();
   return derive_key(new TextEncoder().encode(passphrase), salt);
+}
+
+/** A single AES-256-GCM sealed blob: ciphertext (16-byte tag appended) plus the
+ *  random nonce needed to open it. */
+export interface SealedBytes {
+  nonce: Uint8Array;
+  ciphertext: Uint8Array;
+}
+
+/** Seal one small blob under a 32-byte `key` with a fresh random nonce. For the
+ *  public-share manifest, which is sealed under the share key and stored as one
+ *  content-addressed block — not a stream. AES-GCM authenticates it, so opening
+ *  with the wrong key or tampered bytes throws. */
+export async function sealBytes(key: Uint8Array, plaintext: Uint8Array): Promise<SealedBytes> {
+  await ready();
+  if (key.length !== KEY_LEN) throw new Error(`key must be ${KEY_LEN} bytes, got ${key.length}`);
+  const nonce = randomBytes(NONCE_LEN);
+  return { nonce, ciphertext: seal(key, nonce, plaintext) };
+}
+
+/** Open a blob sealed by `sealBytes`. Throws if authentication fails (wrong key
+ *  or tampered ciphertext). */
+export async function openBytes(
+  key: Uint8Array,
+  nonce: Uint8Array,
+  ciphertext: Uint8Array,
+): Promise<Uint8Array> {
+  await ready();
+  if (key.length !== KEY_LEN) throw new Error(`key must be ${KEY_LEN} bytes, got ${key.length}`);
+  return open(key, nonce, ciphertext);
 }

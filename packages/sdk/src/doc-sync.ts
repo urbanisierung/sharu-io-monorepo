@@ -9,12 +9,14 @@
 
 import { type ReadonlySignal, signal } from '@preact/signals-core';
 import type { Channel, PeerAddr, PeerId, Transport } from '@safu/transport';
+import { BLOCK_PROTOCOL, fetchBlock } from './block-fetch.js';
 import type { BlockStore } from './block-store.js';
 import type { Delta, SyncDoc } from './sync-doc.js';
 
-/** ALPN-style protocol tags for the two channel kinds. */
+/** ALPN-style protocol tag for the sync channel. The block tag lives with the
+ *  fetch helper that both DocSync and the share viewer share. */
 export const SYNC_PROTOCOL = 'safu/sync/1';
-export const BLOCK_PROTOCOL = 'safu/blocks/1';
+export { BLOCK_PROTOCOL };
 
 const enc = new TextEncoder();
 const dec = new TextDecoder();
@@ -61,16 +63,7 @@ export class DocSync {
   /** Pull one block from `peer` by hash and persist it. Resolves to the bytes,
    *  or undefined if the peer does not have it. */
   async requestBlock(peer: PeerAddr, hash: string): Promise<Uint8Array | undefined> {
-    const channel = await this.#transport.connect(peer, BLOCK_PROTOCOL);
-    try {
-      await channel.send(enc.encode(hash));
-      const { value } = await channel.messages().next();
-      if (!value || value.byteLength === 0) return undefined;
-      await this.#store.put(hash, value);
-      return value;
-    } finally {
-      await channel.close();
-    }
+    return fetchBlock(this.#transport, peer, hash, this.#store);
   }
 
   async close(): Promise<void> {

@@ -28,6 +28,9 @@ export default defineConfig({
           include: ['apps/web/src/**/*.test.{ts,tsx}'],
           exclude: [...exclude, '**/*.integration.test.ts', '**/*.browser.test.ts'],
           environment: 'happy-dom',
+          // The site viewer renders a sandboxed iframe; stop happy-dom fetching
+          // its src over the network (component tests assert attributes only).
+          environmentOptions: { happyDOM: { settings: { disableIframePageLoading: true } } },
         },
       },
       {

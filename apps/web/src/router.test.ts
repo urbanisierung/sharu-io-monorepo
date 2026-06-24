@@ -9,6 +9,7 @@ describe('router', () => {
     expect(routeOf('/how-it-works')).toBe('how-it-works');
     expect(routeOf('/app')).toBe('app');
     expect(routeOf('/app/anything')).toBe('app');
+    expect(routeOf('/s')).toBe('share');
   });
 
   it('keeps the old /flow path as an alias of how-it-works', () => {
@@ -25,7 +26,9 @@ describe('router', () => {
     expect(pathOf('comparison')).toBe('/comparison');
     expect(pathOf('how-it-works')).toBe('/how-it-works');
     expect(pathOf('app')).toBe('/app');
+    expect(pathOf('share')).toBe('/s');
     expect(routeOf(pathOf('app'))).toBe('app');
     expect(routeOf(pathOf('how-it-works'))).toBe('how-it-works');
+    expect(routeOf(pathOf('share'))).toBe('share');
   });
 });

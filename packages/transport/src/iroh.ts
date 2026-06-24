@@ -1,16 +1,33 @@
-// Browser transport: the `Transport` interface backed by the Iroh WASM binding
-// (plan §2.1, §2.4). Relay-only over WebSocket through the n0.computer relay
-// network. This module is loaded only in the browser/worker — there is no Node
-// build of relay-only Iroh — so it is a separate entry (`@safu/transport/iroh`)
-// and is never imported by the runtime-agnostic SDK, which depends only on the
-// `Transport` interface and receives an instance by injection.
+// Relay-only Iroh transport over the WASM binding (plan §2.1, §2.4): the
+// `Transport` interface backed by Iroh-over-WebSocket through the n0.computer
+// relay network. Runs in the browser/worker (Vite resolves the `.wasm` by URL)
+// and headless under Node (the WASM is read from disk, mirroring
+// `@safu/crypto`'s loader) — the always-on peer uses the latter. It is a
+// separate entry (`@safu/transport/iroh`) and is never imported by the
+// runtime-agnostic SDK, which depends only on the `Transport` interface and
+// receives an instance by injection.
 
 import init, { type IrohChannel, IrohEndpoint } from '../wasm/safu_transport.js';
 import { AsyncQueue } from './async-queue.js';
 import type { Channel, PeerAddr, PeerId, Transport } from './transport.js';
 
 let booted: Promise<unknown> | undefined;
-const ready = () => (booted ??= init());
+const ready = () => (booted ??= boot());
+
+/** Initialize the WASM module once. In Node the binary is read from disk and
+ *  instantiated directly; in the browser wasm-bindgen's URL + fetch is used. */
+async function boot(): Promise<void> {
+  const isNode =
+    typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
+  if (isNode) {
+    const { readFile } = await import(/* @vite-ignore */ 'node:fs/promises');
+    const { fileURLToPath } = await import(/* @vite-ignore */ 'node:url');
+    const wasmUrl = new URL('../wasm/safu_transport_bg.wasm', import.meta.url);
+    await init(await readFile(fileURLToPath(wasmUrl)));
+  } else {
+    await init();
+  }
+}
 
 /** Adapts one Iroh bi-stream into a message-oriented `Channel`. */
 class IrohChannelAdapter implements Channel {

@@ -22,6 +22,12 @@ const sortKey = signal<SortKey>('name');
 const sortAsc = signal(true);
 const pendingDelete = signal<string | null>(null);
 const restoreFailedPath = signal<string | null>(null);
+// Public-share view state: the link per published path, the row mid-publish, the
+// row whose link was just copied, and the per-row publish error (a message key).
+const shareLinks = signal<Record<string, string>>({});
+const sharingPath = signal<string | null>(null);
+const copiedPath = signal<string | null>(null);
+const shareErrors = signal<Record<string, string>>({});
 
 /** Reset the module-level view state — for deterministic tests. */
 export function resetFileTableView(): void {
@@ -30,6 +36,10 @@ export function resetFileTableView(): void {
   sortAsc.value = true;
   pendingDelete.value = null;
   restoreFailedPath.value = null;
+  shareLinks.value = {};
+  sharingPath.value = null;
+  copiedPath.value = null;
+  shareErrors.value = {};
 }
 
 function compare(a: FileView, b: FileView, key: SortKey): number {
@@ -49,11 +59,36 @@ export interface FileTableProps {
   files: ReadonlySignal<readonly FileView[]>;
   onRestore?: (path: string) => Promise<void>;
   onDelete?: (path: string) => void;
+  /** Publish a file as a public share, resolving to the openable link. Rejects
+   *  with a 'no-share-host' error when no always-on node is paired. */
+  onShare?: (path: string) => Promise<string>;
   /** Add files through the native picker — shown in the toolbar and the empty state. */
   onAddFiles?: (files: readonly File[]) => void;
 }
 
-export function FileTable({ files, onRestore, onDelete, onAddFiles }: FileTableProps) {
+/** Publish `path`, recording the link or a message-key error against the row. */
+async function publishShare(path: string, onShare: (path: string) => Promise<string>) {
+  if (sharingPath.value === path) return; // already in flight — ignore re-clicks
+  sharingPath.value = path;
+  shareErrors.value = { ...shareErrors.value, [path]: '' };
+  try {
+    const link = await onShare(path);
+    shareLinks.value = { ...shareLinks.value, [path]: link };
+  } catch (cause) {
+    const key =
+      cause instanceof Error && cause.message === 'no-share-host' ? 'shareNoHost' : 'shareFailed';
+    shareErrors.value = { ...shareErrors.value, [path]: key };
+  } finally {
+    if (sharingPath.value === path) sharingPath.value = null;
+  }
+}
+
+function copyShareLink(path: string, link: string): void {
+  void globalThis.navigator?.clipboard?.writeText(link);
+  copiedPath.value = path;
+}
+
+export function FileTable({ files, onRestore, onDelete, onShare, onAddFiles }: FileTableProps) {
   const all = files.value;
   const totalBytes = all.reduce((sum, file) => sum + file.size, 0);
 
@@ -157,6 +192,16 @@ export function FileTable({ files, onRestore, onDelete, onAddFiles }: FileTableP
                               {t(messages.download)}
                             </Button>
                           )}
+                          {onShare && (
+                            <Button
+                              intent="neutral"
+                              onClick={() => void publishShare(file.path, onShare)}
+                            >
+                              {sharingPath.value === file.path
+                                ? t(messages.sharePublishing)
+                                : t(messages.share)}
+                            </Button>
+                          )}
                           {onDelete && (
                             <Button
                               intent="neutral"
@@ -166,6 +211,34 @@ export function FileTable({ files, onRestore, onDelete, onAddFiles }: FileTableP
                             </Button>
                           )}
                         </>
+                      )}
+                      {shareErrors.value[file.path] && (
+                        <p class={styles.warn}>
+                          {t(
+                            messages[shareErrors.value[file.path] as 'shareNoHost' | 'shareFailed'],
+                          )}
+                        </p>
+                      )}
+                      {shareLinks.value[file.path] && (
+                        <div class={styles.shareLink}>
+                          <input
+                            class={styles.shareInput}
+                            type="text"
+                            readonly
+                            value={shareLinks.value[file.path]}
+                            aria-label={t(messages.share)}
+                          />
+                          <Button
+                            intent="neutral"
+                            onClick={() =>
+                              copyShareLink(file.path, shareLinks.value[file.path] as string)
+                            }
+                          >
+                            {copiedPath.value === file.path
+                              ? t(messages.shareCopied)
+                              : t(messages.shareCopy)}
+                          </Button>
+                        </div>
                       )}
                     </td>
                   </tr>

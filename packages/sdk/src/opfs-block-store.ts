@@ -38,6 +38,17 @@ export class OpfsBlockStore implements BlockStore {
     return (await this.#fileHandle(dir, hash)) !== undefined;
   }
 
+  async delete(hash: string): Promise<void> {
+    const dir = await this.#dir;
+    try {
+      await dir.removeEntry(hash);
+    } catch (error) {
+      // Already gone — deletion is idempotent.
+      if (error instanceof DOMException && error.name === 'NotFoundError') return;
+      throw error;
+    }
+  }
+
   async #fileHandle(
     dir: FileSystemDirectoryHandle,
     hash: string,

@@ -88,4 +88,26 @@ describe('FileTable', () => {
     fireEvent.click(within(row).getByRole('button', { name: 'Remove' }));
     expect(onDelete).toHaveBeenCalledWith('alpha.txt');
   });
+
+  it('publishes a share and surfaces the link for copying', async () => {
+    const link = 'https://safu.app/s#share=abc';
+    const onShare = vi.fn().mockResolvedValue(link);
+    renderTable({ onShare });
+    const row = screen.getByText('alpha.txt').closest('tr') as HTMLElement;
+    fireEvent.click(within(row).getByRole('button', { name: 'Share' }));
+    expect(onShare).toHaveBeenCalledWith('alpha.txt');
+
+    const input = (await within(
+      screen.getByText('alpha.txt').closest('tr') as HTMLElement,
+    ).findByLabelText('Share')) as HTMLInputElement;
+    expect(input.value).toBe(link);
+  });
+
+  it('shows a prompt when no always-on node is paired', async () => {
+    const onShare = vi.fn().mockRejectedValue(new Error('no-share-host'));
+    renderTable({ onShare });
+    const row = screen.getByText('alpha.txt').closest('tr') as HTMLElement;
+    fireEvent.click(within(row).getByRole('button', { name: 'Share' }));
+    expect(await screen.findByText(/Pair your always-on node first/)).toBeTruthy();
+  });
 });

@@ -8,7 +8,16 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createSigner, DocSync, MemoryBlockStore, SyncDoc } from '@safu/sdk';
+import { blake3 } from '@safu/crypto';
+import {
+  createSigner,
+  DocSync,
+  fetchBlock,
+  MemoryBlockStore,
+  pushBlock,
+  SyncDoc,
+  unpinBlock,
+} from '@safu/sdk';
 import { LoopbackNetwork } from '@safu/transport';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createPeer } from './peer.js';
@@ -88,5 +97,44 @@ describe('headless backup peer over loopback', () => {
 
     await reopened.close();
     await deviceSync.close();
+  });
+
+  it('pins a public-share block (off the allocation table) and serves it back', async () => {
+    const net = new LoopbackNetwork();
+    const deviceTransport = net.endpoint('device');
+    const deviceSigner = createSigner(new Uint8Array(32).fill(7));
+    const backupSigner = createSigner(new Uint8Array(32).fill(8));
+    const stranger = createSigner(new Uint8Array(32).fill(3));
+
+    const peer = await createPeer({
+      dataDir: dir,
+      signer: backupSigner,
+      transport: net.endpoint('backup'),
+    });
+    peer.authorize(deviceSigner.id);
+    await flush();
+
+    // A share block: opaque ciphertext, addressed by its BLAKE3 — never recorded
+    // in the allocation table, so only an explicit pin can reach the node.
+    const block = new Uint8Array([10, 20, 30, 40, 50]);
+    const hash = await blake3(block);
+
+    // An unauthorized device cannot pin.
+    expect(await pushBlock(deviceTransport, peer.addr, hash, block, stranger)).toBe(false);
+    expect(await peer.store.has(hash)).toBe(false);
+
+    // The authorized device pins it, and the node then serves it over BLOCK_PROTOCOL.
+    expect(await pushBlock(deviceTransport, peer.addr, hash, block, deviceSigner)).toBe(true);
+    const pulled = await fetchBlock(deviceTransport, peer.addr, hash, new MemoryBlockStore());
+    expect(pulled).toEqual(block);
+
+    // Revoking the share: a stranger cannot unpin, the owner can, and the block
+    // is gone from the node afterwards (the link stops resolving).
+    expect(await unpinBlock(deviceTransport, peer.addr, hash, stranger)).toBe(false);
+    expect(await peer.store.has(hash)).toBe(true);
+    expect(await unpinBlock(deviceTransport, peer.addr, hash, deviceSigner)).toBe(true);
+    expect(await peer.store.has(hash)).toBe(false);
+
+    await peer.close();
   });
 });

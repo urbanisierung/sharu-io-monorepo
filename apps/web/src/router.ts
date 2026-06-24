@@ -6,21 +6,25 @@
 // hard refresh on `/app` or `/whitepaper` resolves client-side.
 import { signal } from '@preact/signals';
 
-export type Route = 'landing' | 'whitepaper' | 'comparison' | 'how-it-works' | 'app';
+export type Route = 'landing' | 'whitepaper' | 'comparison' | 'how-it-works' | 'app' | 'share';
 
 /** Map a URL path to a known view. Unknown paths fall back to the landing page.
- *  `/flow` is kept as an alias of `/how-it-works` so older shared links resolve. */
+ *  `/flow` is kept as an alias of `/how-it-works` so older shared links resolve.
+ *  `/s` is the keyless public-share viewer; the share itself rides in the hash. */
 export function routeOf(pathname: string): Route {
   if (pathname === '/app' || pathname.startsWith('/app/')) return 'app';
   if (pathname === '/whitepaper') return 'whitepaper';
   if (pathname === '/comparison') return 'comparison';
   if (pathname === '/how-it-works' || pathname === '/flow') return 'how-it-works';
+  if (pathname === '/s') return 'share';
   return 'landing';
 }
 
 /** The canonical path for a view, for links and history. */
 export function pathOf(route: Route): string {
-  return route === 'landing' ? '/' : `/${route}`;
+  if (route === 'landing') return '/';
+  if (route === 'share') return '/s';
+  return `/${route}`;
 }
 
 const current = globalThis.location?.pathname ?? '/';

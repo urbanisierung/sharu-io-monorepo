@@ -40,6 +40,10 @@ export interface DevicesProps {
   onVerify?: (id: string) => void;
   onReject?: (id: string) => void;
   onRename?: (id: string, name: string) => void;
+  /** The signing id of the peer currently chosen to host public shares. */
+  shareHostId?: ReadonlySignal<string | undefined>;
+  /** Choose this peer to host public shares. */
+  onSetShareHost?: (id: string) => void;
 }
 
 export function Devices({
@@ -49,6 +53,8 @@ export function Devices({
   onVerify,
   onReject,
   onRename,
+  shareHostId,
+  onSetShareHost,
 }: DevicesProps) {
   const code = connectionCode?.value ?? '';
   const origin = globalThis.location?.origin ?? '';
@@ -123,6 +129,17 @@ export function Devices({
                     ? t(messages.statusRejected)
                     : t(messages.statusPending)}
               </span>
+
+              {onSetShareHost &&
+                (shareHostId?.value === peer.id ? (
+                  <span class={styles.muted}>{t(messages.hostingShares)}</span>
+                ) : (
+                  <span class={styles.peerActions}>
+                    <Button intent="neutral" onClick={() => onSetShareHost(peer.id)}>
+                      {t(messages.hostShares)}
+                    </Button>
+                  </span>
+                ))}
 
               {peer.status === 'pending' && onVerify && onReject && (
                 <span class={styles.peerActions}>

@@ -18,5 +18,8 @@ export function createTauriBlockStore(): BlockStore {
     has(hash: string): Promise<boolean> {
       return invoke<boolean>('block_has', { hash });
     },
+    async delete(hash: string): Promise<void> {
+      await invoke('block_delete', { hash });
+    },
   };
 }
