@@ -10,7 +10,8 @@ describe('Landing', () => {
     expect(screen.getByText('Your data.')).toBeTruthy();
     expect(screen.getByText('Nobody else.')).toBeTruthy();
     expect(screen.getByText('The problem')).toBeTruthy();
-    expect(screen.getByText('How it works')).toBeTruthy();
+    // "How it works" now appears twice: the section kicker and the hero link.
+    expect(screen.getAllByText('How it works').length).toBeGreaterThan(0);
     expect(screen.getByText(/Encrypt on device/)).toBeTruthy();
     expect(screen.getByText('Zero-knowledge')).toBeTruthy();
   });
@@ -40,7 +41,7 @@ describe('Landing', () => {
   it('opens the interaction walkthrough from the hero link', () => {
     const onFlow = vi.fn();
     render(<Landing onLaunch={() => {}} onWhitepaper={() => {}} onFlow={onFlow} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Watch the data flow' }));
+    fireEvent.click(screen.getByRole('button', { name: 'How it works' }));
     expect(onFlow).toHaveBeenCalledOnce();
   });
 });
