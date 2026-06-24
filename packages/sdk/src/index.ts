@@ -8,6 +8,7 @@ export {
   type StampedEntry,
 } from './allocation-table.js';
 export { BLOCK_PROTOCOL, fetchBlock } from './block-fetch.js';
+export { PIN_PROTOCOL, type PinPolicy, pushBlock, servePins } from './block-pin.js';
 export { type BlockStore, MemoryBlockStore } from './block-store.js';
 export { type DocSnapshot, type DocStore, MemoryDocStore } from './doc-store.js';
 export { DocSync, SYNC_PROTOCOL } from './doc-sync.js';
