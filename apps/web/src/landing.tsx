@@ -41,10 +41,11 @@ const CLI_DOCS_URL =
 export interface LandingProps {
   onLaunch: () => void;
   onWhitepaper: () => void;
+  onComparison: () => void;
   onFlow: () => void;
 }
 
-export function Landing({ onLaunch, onWhitepaper, onFlow }: LandingProps) {
+export function Landing({ onLaunch, onWhitepaper, onComparison, onFlow }: LandingProps) {
   return (
     <div class={styles.page}>
       <nav class={styles.nav}>
@@ -77,6 +78,9 @@ export function Landing({ onLaunch, onWhitepaper, onFlow }: LandingProps) {
           </button>
           <button class={styles.textLink} type="button" onClick={onWhitepaper}>
             {t(landing.whitepaper)}
+          </button>
+          <button class={styles.textLink} type="button" onClick={onComparison}>
+            {t(landing.comparison)}
           </button>
         </div>
       </header>

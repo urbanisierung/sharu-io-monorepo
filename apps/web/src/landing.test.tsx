@@ -6,7 +6,14 @@ afterEach(cleanup);
 
 describe('Landing', () => {
   it('explains what Sharu is, the problem, and how it works', () => {
-    render(<Landing onLaunch={() => {}} onWhitepaper={() => {}} onFlow={() => {}} />);
+    render(
+      <Landing
+        onLaunch={() => {}}
+        onWhitepaper={() => {}}
+        onComparison={() => {}}
+        onFlow={() => {}}
+      />,
+    );
     expect(screen.getByText('Your data.')).toBeTruthy();
     expect(screen.getByText('Nobody else.')).toBeTruthy();
     expect(screen.getByText('The problem')).toBeTruthy();
@@ -17,7 +24,14 @@ describe('Landing', () => {
   });
 
   it('offers the always-on backup node with a one-line install', () => {
-    render(<Landing onLaunch={() => {}} onWhitepaper={() => {}} onFlow={() => {}} />);
+    render(
+      <Landing
+        onLaunch={() => {}}
+        onWhitepaper={() => {}}
+        onComparison={() => {}}
+        onFlow={() => {}}
+      />,
+    );
     expect(screen.getByText('Backup node')).toBeTruthy();
     expect(screen.getByText(/install\.sh \| sh$/)).toBeTruthy();
     const docs = screen.getByRole('link', { name: 'Read the backup-node docs' });
@@ -26,21 +40,56 @@ describe('Landing', () => {
 
   it('launches the app from the call to action', () => {
     const onLaunch = vi.fn();
-    render(<Landing onLaunch={onLaunch} onWhitepaper={() => {}} onFlow={() => {}} />);
+    render(
+      <Landing
+        onLaunch={onLaunch}
+        onWhitepaper={() => {}}
+        onComparison={() => {}}
+        onFlow={() => {}}
+      />,
+    );
     fireEvent.click(screen.getAllByRole('button', { name: 'Launch the app' })[0] as HTMLElement);
     expect(onLaunch).toHaveBeenCalledOnce();
   });
 
   it('opens the whitepaper from the hero link', () => {
     const onWhitepaper = vi.fn();
-    render(<Landing onLaunch={() => {}} onWhitepaper={onWhitepaper} onFlow={() => {}} />);
+    render(
+      <Landing
+        onLaunch={() => {}}
+        onWhitepaper={onWhitepaper}
+        onComparison={() => {}}
+        onFlow={() => {}}
+      />,
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Read the whitepaper' }));
     expect(onWhitepaper).toHaveBeenCalledOnce();
   });
 
+  it('opens the IPFS-vs-Iroh comparison from the hero link', () => {
+    const onComparison = vi.fn();
+    render(
+      <Landing
+        onLaunch={() => {}}
+        onWhitepaper={() => {}}
+        onComparison={onComparison}
+        onFlow={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'IPFS vs. Iroh' }));
+    expect(onComparison).toHaveBeenCalledOnce();
+  });
+
   it('opens the interaction walkthrough from the hero link', () => {
     const onFlow = vi.fn();
-    render(<Landing onLaunch={() => {}} onWhitepaper={() => {}} onFlow={onFlow} />);
+    render(
+      <Landing
+        onLaunch={() => {}}
+        onWhitepaper={() => {}}
+        onComparison={() => {}}
+        onFlow={onFlow}
+      />,
+    );
     fireEvent.click(screen.getByRole('button', { name: 'How it works' }));
     expect(onFlow).toHaveBeenCalledOnce();
   });
