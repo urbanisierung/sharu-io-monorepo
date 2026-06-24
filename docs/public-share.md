@@ -199,12 +199,25 @@ node-side block removal on unpublish; see *Availability and revocation*.)**
 
 ### Phase 4 — keyless viewer route (web)
 
-- Add `'share'` to the `Route` union (`apps/web/src/router.ts`), path `/s`.
-- A viewer that needs no wallet/unlock: read the fragment, fetch the manifest +
-  blocks over Iroh, decrypt with the fragment key, render by `contentType`.
+- `'share'` route at `/s` (`apps/web/src/router.ts`); `Root()` renders it with no
+  wallet/runtime, so opening a link stays instant and anonymous. **(done)**
+- `share-viewer.ts` `openShareOverIroh(info)`: dial the node over a relay-only
+  Iroh endpoint (`BLOCK_PROTOCOL` only), `fetchManifest` → `fetchContent` →
+  drain, into a throwaway `MemoryBlockStore`. **(done)**
+- `share-page.tsx` `ShareViewer`: reads the fragment, opens the share, and renders
+  by `contentType` (image/pdf/text inline, anything else download-only) with a
+  download link; loading / no-share / failed states. The network+codec seam is
+  injectable so the page is tested without a transport. **(done)**
 
 **Exit criteria:** opening a generated link in a fresh context (no wallet)
-renders the file; integrity failures surface as errors, not silent corruption.
+renders the file (`share-roundtrip.integration.test.ts` proves the open path
+byte-for-byte; `share-page.test.tsx` proves the render); integrity failures
+surface as the failed state, not silent corruption — `createEgressStreamWithKey`
+rejects on any hash/GCM mismatch and the page catches it. **(done)**
+
+*Note:* the viewer dials relay-only Iroh (browser-first). Under Tauri the same
+relay path works; using the native direct-connect core for the viewer is a later
+optimization, not a correctness gap.
 
 ### Phase 5 — navigable websites (service worker)
 

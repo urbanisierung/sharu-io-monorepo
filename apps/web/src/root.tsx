@@ -14,6 +14,7 @@ import { messages } from './messages.js';
 import { readPairingFromHash } from './pairing.js';
 import { navigate, route } from './router.js';
 import { createRuntime, type Runtime } from './runtime.js';
+import { ShareViewer } from './share-page.js';
 import { UnlockGate } from './unlock-gate.js';
 import type { Wallet, WalletMeta } from './wallet.js';
 import { createWallet, getWallet, importWallet, listWallets, removeWallet } from './wallet.js';
@@ -253,6 +254,11 @@ export function Root() {
   }
   if (view === 'how-it-works') {
     return <FlowPage onBack={() => navigate('landing')} onLaunch={launch} />;
+  }
+  // The keyless share viewer renders with no wallet/unlock — the runtime is
+  // never created here, so opening a public link stays instant and anonymous.
+  if (view === 'share') {
+    return <ShareViewer />;
   }
   return <AppScreen />;
 }

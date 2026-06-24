@@ -4,7 +4,13 @@
 // own browser is the "gateway": no wallet, no passphrase, and the serving node
 // only ever handed over ciphertext.
 import { createEgressStreamWithKey, type EncryptedBlock, openBytes } from '@safu/crypto';
-import { parseManifest, type ShareManifest } from '@safu/sdk';
+import {
+  BLOCK_PROTOCOL,
+  fetchBlock,
+  MemoryBlockStore,
+  parseManifest,
+  type ShareManifest,
+} from '@safu/sdk';
 import { base64UrlToBytes } from './base64url.js';
 import type { ShareInfo } from './share-code.js';
 
@@ -41,4 +47,45 @@ export async function fetchContent(
     }
   }
   return createEgressStreamWithKey(blocks(), key);
+}
+
+/** A fully-opened share: its manifest metadata plus the verified plaintext. */
+export interface OpenedShare {
+  manifest: ShareManifest;
+  bytes: Uint8Array;
+}
+
+/** Drain a plaintext stream into a single buffer. */
+async function drain(stream: ReadableStream<Uint8Array>): Promise<Uint8Array> {
+  const parts: Uint8Array[] = [];
+  let total = 0;
+  for await (const part of stream as unknown as AsyncIterable<Uint8Array>) {
+    parts.push(part);
+    total += part.length;
+  }
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const part of parts) {
+    out.set(part, offset);
+    offset += part.length;
+  }
+  return out;
+}
+
+/** Open a share end-to-end in the browser: dial the serving node over a
+ *  relay-only Iroh endpoint, fetch + decrypt the manifest and every block, and
+ *  return the verified plaintext. No wallet, no passphrase, no persistence — the
+ *  in-memory store is discarded with the transport when this resolves. */
+export async function openShareOverIroh(info: ShareInfo): Promise<OpenedShare> {
+  const { createIrohTransport } = await import('@safu/transport/iroh');
+  const transport = await createIrohTransport([BLOCK_PROTOCOL]);
+  try {
+    const store = new MemoryBlockStore();
+    const fetch: FetchBlock = (addr) => fetchBlock(transport, info.peer, addr, store);
+    const manifest = await fetchManifest(info, fetch);
+    const bytes = await drain(await fetchContent(info, manifest, fetch));
+    return { manifest, bytes };
+  } finally {
+    await transport.close();
+  }
 }

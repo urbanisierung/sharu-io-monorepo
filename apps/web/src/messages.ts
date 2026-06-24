@@ -366,6 +366,17 @@ export const flowMachine = defineMessages('safu.flow.machine', {
   ctaBody: 'No account, no upload to third parties. Set passphrase → peers replicate.',
 });
 
+export const shareView = defineMessages('safu.share', {
+  loading: 'Opening the shared file…',
+  loadingHint: 'Fetching it from the network and decrypting it in your browser.',
+  missingTitle: 'No share in this link',
+  missingBody: 'This page opens a public share. The link you followed has no share data in it.',
+  failedTitle: 'Couldn’t open this share',
+  failedBody: 'The link may be wrong, or the file is no longer hosted. Nothing was decrypted.',
+  download: 'Download',
+  zeroKnowledge: 'Decrypted in your browser. The host only ever served ciphertext.',
+});
+
 export const messages = defineMessages('safu', {
   title: 'Sharu',
   logoAlt: 'Sharu wolf logo',
