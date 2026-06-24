@@ -93,24 +93,43 @@ function shareLink(info: ShareInfo, origin: string): string;
 
 The viewer route is `/s`; everything after `#` is invisible to servers.
 
-## Transport: nothing new
+## Transport: fetch is free, pinning is one small protocol
 
-`DocSync.requestBlock` (`packages/sdk/src/doc-sync.ts`) already does exactly
-"dial peer over `BLOCK_PROTOCOL`, send a hash, receive ciphertext, persist." The
-serving side (`#serveBlocks`) answers any block in its store by hash with no
-authentication — which is precisely what a public share wants. We extract the
-fetch core into a free function so the keyless viewer can use it without a
-`SyncDoc`/wallet. **The `Transport` contract does not change.**
+**Reading** needs nothing new: `DocSync.requestBlock` already does "dial peer
+over `BLOCK_PROTOCOL`, send a hash, receive ciphertext, persist," and the serving
+side answers any block in its store by hash. That fetch core is extracted into
+the free `fetchBlock` (`packages/sdk/src/block-fetch.ts`) so the keyless viewer
+can use it without a `SyncDoc`/wallet. **The `Transport` contract does not change.**
+
+**Writing** does need one addition. A share's blocks are re-ingested under a
+random key, so they are *not* in the wallet's allocation table and DocSync's
+auto-pull never carries them to the node. So `safu/pin/1`
+(`packages/sdk/src/block-pin.ts`) is an explicit upload path: `pushBlock` sends a
+signed request (`{hash, signId, sig}`) + the bytes; the node's `servePins`
+accepts it only if the signer is an authorized writer and the bytes hash to the
+claimed address, then stores it — after which the node serves it via the same
+`BLOCK_PROTOCOL`. Authorization reuses the document's by-author model, not the
+transport carrier (`sync-doc.ts`).
 
 ## Availability and revocation (operational reality)
 
 - **Who serves the blocks?** The publishing browser is neither always-on nor
-  dial-in-able. So `publish()` must **pin `root` + every `ref.addr` to an
-  always-on Iroh node** — the `safu-node` ciphertext replica. The `peer` in the
-  link is that node, not the laptop.
-- **Revocation = unpin.** Removing a share deletes its blocks from the pinning
-  node, so future fetches fail. Copies already downloaded cannot be recalled —
-  the UI must say so when a link is generated.
+  dial-in-able. So publishing **pins `root` + every block to an always-on Iroh
+  node** — the `safu-node` ciphertext replica — via `safu/pin/1`. The `peer` in
+  the link is that node, not the laptop.
+- **Which node? (MVP)** The runtime pins to, and embeds, the first paired peer
+  (`peer-addrs.ts` remembers paired addresses across reloads). A device/node
+  distinction and an explicit "share host" choice are a follow-up.
+- **Revocation = unpin (partial).** "Unpublish" currently drops the share from
+  this device's local list (`shares-store.ts`); removing the pinned blocks from
+  the node still needs a `BlockStore.delete` (the interface has none yet) plus an
+  unpin message. Copies already downloaded can never be recalled — the UI says
+  so. **Follow-up:** `BlockStore.delete` across Memory/Opfs/Fs stores + a
+  `safu/unpin/1` (or a tombstone in `safu/pin/1`).
+- **Production transport seam.** End-to-end pinning over real Iroh waits on
+  `apps/peer/src/transport.ts` (`createPeerTransport`, still a stub); when wired,
+  the node endpoint must advertise `PIN_PROTOCOL` alongside sync/block ALPNs. All
+  pin logic is proven today over the loopback transport.
 
 ## Phases
 
@@ -146,10 +165,15 @@ dependency). So sealing the manifest under `K_share` lives with the publisher
 - `fetchBlock` free function + the `BLOCK_PROTOCOL` tag extracted into
   `packages/sdk/src/block-fetch.ts`; `DocSync.requestBlock` delegates to it, so
   the keyless viewer can fetch blocks without a `SyncDoc`.
+- `safu/pin/1` (`packages/sdk/src/block-pin.ts`): `pushBlock` + `servePins` —
+  the authenticated upload path for off-table share blocks (see *Transport*
+  above). The node (`apps/peer`) wires `servePins` against its writer set.
 
 **Exit criteria:** manifest serialize/parse round-trips and rejects malformed
-input; `fetchBlock` pulls a block over a loopback transport; `DocSync` behavior
-unchanged (existing sync tests green).
+input; `fetchBlock` pulls a block over a loopback transport; pins are accepted
+only when authorized + hash-valid, and the node serves a pinned off-table block
+back over `BLOCK_PROTOCOL`; `DocSync` behavior unchanged (existing tests green).
+**(done)**
 
 ### Phase 3 — share code + publisher (web)
 
@@ -160,12 +184,18 @@ unchanged (existing sync tests green).
   content-addressed block. **(done)**
 - `apps/web/src/share-publisher.ts`: re-ingest a file under a random key
   (`createIngestStreamWithKey`), seal its manifest (`sealBytes`), persist blocks
-  + manifest to the `BlockStore`, pin to the node, return a link.
-- A "Publish" / "Unpublish" affordance in the wallet UI, with a published-shares
-  list for revocation.
+  + manifest to the `BlockStore`, return the link + the addresses to pin. **(done)**
+- Runtime (`runtime.ts`): `publishShare(path)` restores the plaintext, calls the
+  publisher, `pushBlock`s every block to the paired node, and records the share;
+  `unpublishShare(root)` + a `publishedShares` signal. Paired node addresses are
+  remembered in `peer-addrs.ts`. **(done)**
+- Wallet UI: a per-file **Share** button in `file-table.tsx` that publishes and
+  reveals a copyable link (and prompts to pair a node when none exists). **(done)**
 
 **Exit criteria:** publish → decode produces a manifest that egresses to the
-original bytes; revoke removes the pinned blocks; codec round-trip tests pass.
+original bytes (`share-roundtrip.integration.test.ts`); the Share button calls
+through and surfaces the link; codec + shares-store tests pass. **(done — except
+node-side block removal on unpublish; see *Availability and revocation*.)**
 
 ### Phase 4 — keyless viewer route (web)
 

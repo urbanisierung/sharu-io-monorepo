@@ -189,6 +189,7 @@ function AppScreen() {
         onSwitchWallet={() => void switchWallet()}
         onRestore={(path) => download(path)}
         onDelete={(path) => ready.remove(path)}
+        onShare={(path) => ready.publishShare(path)}
         onPair={(code) => ready.pairWithCode(code)}
         onVerify={(id) => ready.verifyPeer(id)}
         onReject={(id) => ready.rejectPeer(id)}

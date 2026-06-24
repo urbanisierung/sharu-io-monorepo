@@ -12,18 +12,31 @@ import {
   type FileView,
   OpfsBlockStore,
   OpfsDocStore,
+  pushBlock,
   type Signer,
   SYNC_PROTOCOL,
   SyncDoc,
 } from '@safu/sdk';
-import type { Transport } from '@safu/transport';
+import type { PeerAddr, Transport } from '@safu/transport';
 import { loadDeviceNames, saveDeviceName } from './device-names.js';
 import { IngestController } from './ingest-controller.js';
 import { decodePairingCode, encodePairingCode } from './pairing.js';
+import { loadPeerAddrs, savePeerAddr } from './peer-addrs.js';
 import { ingestFile, restoreFile } from './pipeline.js';
 import { deriveSas } from './sas.js';
+import { publishFile } from './share-publisher.js';
+import { addShare, loadShares, type PublishedShare, removeShare } from './shares-store.js';
 import { LEGACY_WALLET_ID, unlockWallet, type Wallet } from './wallet.js';
 import type { WalletBackup } from './wallet-backup.js';
+
+/** Thrown by `publishShare` when no always-on node is paired to host the share.
+ *  The message is matched in the UI to prompt the user to pair their node. */
+export class NoShareHostError extends Error {
+  constructor() {
+    super('no-share-host');
+    this.name = 'NoShareHostError';
+  }
+}
 
 /** A paired peer as the UI shows it: its signing id, an optional friendly name,
  *  the out-of-band SAS to compare, and the verification verdict. `rejected`
@@ -47,6 +60,15 @@ export interface Runtime {
   restore: (path: string) => Promise<Uint8Array>;
   /** Remove a file from the backup set (a CRDT tombstone that syncs to peers). */
   remove: (path: string) => void;
+  /** Publish a backed-up file as a public share: re-ingest it under a fresh
+   *  random key, pin its blocks to the always-on node, and return an openable
+   *  link. Rejects with {@link NoShareHostError} if no node is paired. */
+  publishShare: (path: string) => Promise<string>;
+  /** Stop listing a published share locally (see docs/public-share.md on the
+   *  pending node-side block removal). */
+  unpublishShare: (root: string) => void;
+  /** The files this device has published as public shares, newest first. */
+  publishedShares: ReadonlySignal<readonly PublishedShare[]>;
   /** Pair with a peer from the connection code they shared out-of-band. */
   pairWithCode: (code: string) => Promise<void>;
   /** Mark a peer's SAS as matching (trusted). */
@@ -72,6 +94,17 @@ export interface Runtime {
 /** True when running inside the Tauri desktop shell rather than a browser tab. */
 function isTauri(): boolean {
   return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+}
+
+/** A one-shot ReadableStream over `bytes`, for feeding restored plaintext back
+ *  into the streaming ingest pipeline when publishing a share. */
+function streamOf(bytes: Uint8Array): ReadableStream<Uint8Array> {
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(bytes);
+      controller.close();
+    },
+  });
 }
 
 /** Pick the transport for the host runtime: the native Iroh core under Tauri
@@ -114,6 +147,7 @@ export async function createRuntime(wallet: Wallet): Promise<Runtime> {
   const files = signal<readonly FileView[]>([]);
   const peers = signal<readonly PeerInfo[]>([]);
   const connectionCode = signal('');
+  const publishedShares = signal<readonly PublishedShare[]>(loadShares(wallet.id));
   // Friendly local device labels (peer id → name); drives PeerInfo.name.
   const deviceNames = signal<Record<string, string>>(loadDeviceNames());
   // The user's per-peer "SAS matched" verdict — session UI state, distinct from
@@ -126,6 +160,7 @@ export async function createRuntime(wallet: Wallet): Promise<Runtime> {
   // op is signed (status #7).
   let doc: SyncDoc | undefined;
   let sync: DocSync | undefined;
+  let signer: Signer | undefined;
   let passphrase = '';
 
   const setup = async (pass: string): Promise<void> => {
@@ -133,6 +168,7 @@ export async function createRuntime(wallet: Wallet): Promise<Runtime> {
     // anything else, so a returning user's typo is caught immediately (throws
     // WrongPasswordError) rather than silently producing a divergent identity.
     const id: Signer = await unlockWallet(wallet, pass);
+    signer = id;
     passphrase = pass;
     connectionCode.value = encodePairingCode({ addr: transport.addr(), signId: id.id });
     const ready = await SyncDoc.open(id.id, selectDocStore(wallet.id), id);
@@ -215,7 +251,57 @@ export async function createRuntime(wallet: Wallet): Promise<Runtime> {
     // The peer authorizes us symmetrically when it pairs back; DocSync then
     // auto-pulls any referenced blocks we lack.
     doc.addWriter(signId);
+    // Remember the address so we can pin public-share blocks to this peer later
+    // (e.g. an always-on node) without re-pairing after a reload.
+    savePeerAddr(wallet.id, signId, addr);
     await sync.connect(addr);
+  };
+
+  const publishShare = async (path: string): Promise<string> => {
+    if (!doc || !signer) throw new Error('runtime not unlocked');
+    const file = doc.files.value.find((f) => f.path === path);
+    const manifestAddr = file?.blocks[0];
+    if (!manifestAddr) throw new Error(`unknown file: ${path}`);
+    // MVP host selection: the first paired peer (typically the user's node). A
+    // device/node distinction and explicit host choice are a follow-up.
+    const host = Object.values(loadPeerAddrs(wallet.id))[0] as PeerAddr | undefined;
+    if (!host) throw new NoShareHostError();
+
+    // Re-ingest the plaintext under a fresh random key (publishFile), then pin
+    // every resulting block to the node so the link resolves while this device
+    // is offline. The node only ever receives ciphertext.
+    const plaintext = await restoreFile(manifestAddr, passphrase, store);
+    const origin = globalThis.location?.origin ?? '';
+    const result = await publishFile(
+      {
+        name: path,
+        contentType: 'application/octet-stream',
+        size: plaintext.length,
+        content: streamOf(plaintext),
+      },
+      store,
+      host,
+      origin,
+    );
+    for (const addr of result.pin) {
+      const bytes = await store.get(addr);
+      if (bytes) await pushBlock(transport, host, addr, bytes, signer);
+    }
+    publishedShares.value = addShare(wallet.id, {
+      root: result.info.root,
+      path,
+      link: result.link,
+      pin: result.pin,
+      created: Date.now(),
+    });
+    return result.link;
+  };
+
+  const unpublishShare = (root: string): void => {
+    // Drops the share from this device's list. Removing the pinned blocks from
+    // the node needs a BlockStore.delete + an unpin message (BlockStore has no
+    // delete yet) — tracked as a follow-up in docs/public-share.md.
+    publishedShares.value = removeShare(wallet.id, root);
   };
 
   const verifyPeer = (id: string): void => {
@@ -265,6 +351,9 @@ export async function createRuntime(wallet: Wallet): Promise<Runtime> {
     syncStatus,
     restore,
     remove,
+    publishShare,
+    unpublishShare,
+    publishedShares,
     pairWithCode,
     verifyPeer,
     rejectPeer,

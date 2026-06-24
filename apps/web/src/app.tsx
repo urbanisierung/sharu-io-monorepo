@@ -41,6 +41,8 @@ export interface AppProps {
   onSwitchWallet?: () => void;
   onRestore?: (path: string) => Promise<void>;
   onDelete?: (path: string) => void;
+  /** Publish a file as a public share, resolving to the openable link. */
+  onShare?: (path: string) => Promise<string>;
   onPair?: (code: string) => Promise<void>;
   onVerify?: (id: string) => void;
   onReject?: (id: string) => void;
@@ -70,6 +72,7 @@ export function App({
   onSwitchWallet,
   onRestore,
   onDelete,
+  onShare,
   onPair,
   onVerify,
   onReject,
@@ -168,6 +171,7 @@ export function App({
                 files={files}
                 onRestore={onRestore}
                 onDelete={onDelete}
+                onShare={onShare}
                 onAddFiles={(picked) => void controller.drop(picked)}
               />
               {phase.kind === 'drag' && (

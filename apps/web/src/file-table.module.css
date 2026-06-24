@@ -149,7 +149,29 @@
   gap: 0.4rem;
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
   white-space: nowrap;
+}
+
+/* The published-share link + copy button, wrapping onto its own line below the
+   row actions. */
+.shareLink {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  width: 100%;
+  margin-top: 0.4rem;
+}
+
+.shareInput {
+  flex: 1;
+  min-width: 0;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.85em;
+  color: inherit;
+  background: var(--cascivo-surface, #fff);
+  border: 1px solid var(--cascivo-border, #ccc);
+  border-radius: 0.3rem;
 }
 
 /* Phone: keep the table readable by dropping the secondary columns (Modified,
