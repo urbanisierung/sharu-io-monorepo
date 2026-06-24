@@ -31,6 +31,29 @@ describe('FlowPage', () => {
     expect(cascivo.getAttribute('href')).toBe('https://docs.cascivo.com/flow');
   });
 
+  it('explains how everything ties back to a wallet', () => {
+    render(<FlowPage onBack={() => {}} onLaunch={() => {}} />);
+    expect(screen.getByText('Around the wallet')).toBeTruthy();
+    expect(screen.getByText('A wallet is your vault')).toBeTruthy();
+  });
+
+  it('retells the same structure at different depths via the reading-mode toggle', () => {
+    render(<FlowPage onBack={() => {}} onLaunch={() => {}} />);
+    // Regular is the default.
+    expect(screen.getByText('Watch your devices talk.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'ELI5' }));
+    expect(screen.getByText('How it works, the easy way.')).toBeTruthy();
+    expect(screen.getByText('A box for your stuff')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Machine' }));
+    expect(screen.getByText('peers=4 · trust=0 · payload=ciphertext')).toBeTruthy();
+
+    // Restore the default so the shared mode signal does not leak into later tests.
+    fireEvent.click(screen.getByRole('button', { name: 'Regular' }));
+    expect(screen.getByText('Watch your devices talk.')).toBeTruthy();
+  });
+
   it('returns to the landing page from the back control', () => {
     const onBack = vi.fn();
     render(<FlowPage onBack={onBack} onLaunch={() => {}} />);

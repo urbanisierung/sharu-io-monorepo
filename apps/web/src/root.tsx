@@ -243,14 +243,14 @@ export function Root() {
       <Landing
         onLaunch={launch}
         onWhitepaper={() => navigate('whitepaper')}
-        onFlow={() => navigate('flow')}
+        onFlow={() => navigate('how-it-works')}
       />
     );
   }
   if (view === 'whitepaper') {
     return <Whitepaper onBack={() => navigate('landing')} onLaunch={launch} />;
   }
-  if (view === 'flow') {
+  if (view === 'how-it-works') {
     return <FlowPage onBack={() => navigate('landing')} onLaunch={launch} />;
   }
   return <AppScreen />;

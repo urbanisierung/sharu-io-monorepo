@@ -1,7 +1,7 @@
 #!/bin/sh
 # Install the safu-node CLI on Linux or macOS.
 #
-#   curl -fsSL https://raw.githubusercontent.com/urbanisierung/sharu-io-monorepo/main/crates/safu-node/install.sh | sh
+#   curl -fsSL https://new.sharu.io/install.sh | sh
 #
 # Environment overrides:
 #   SAFU_NODE_VERSION   release version without the tag prefix (e.g. 0.1.0).
@@ -33,8 +33,8 @@ case "$os" in
     ;;
   Darwin)
     case "$arch" in
-      x86_64 | amd64) target="x86_64-apple-darwin" ;;
       arm64 | aarch64) target="aarch64-apple-darwin" ;;
+      x86_64 | amd64) err "Intel macOS (x86_64) is no longer pre-built; build from source with 'cargo build --release -p safu-node'" ;;
       *) err "unsupported macOS architecture: $arch" ;;
     esac
     ;;

@@ -1,6 +1,6 @@
 # Install the safu-node CLI on Windows (PowerShell).
 #
-#   irm https://raw.githubusercontent.com/urbanisierung/sharu-io-monorepo/main/crates/safu-node/install.ps1 | iex
+#   irm https://new.sharu.io/install.ps1 | iex
 #
 # Environment overrides:
 #   SAFU_NODE_VERSION      release version without the tag prefix (e.g. 0.1.0).

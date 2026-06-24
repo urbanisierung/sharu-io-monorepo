@@ -5,9 +5,13 @@ describe('router', () => {
   it('maps known paths to views', () => {
     expect(routeOf('/')).toBe('landing');
     expect(routeOf('/whitepaper')).toBe('whitepaper');
-    expect(routeOf('/flow')).toBe('flow');
+    expect(routeOf('/how-it-works')).toBe('how-it-works');
     expect(routeOf('/app')).toBe('app');
     expect(routeOf('/app/anything')).toBe('app');
+  });
+
+  it('keeps the old /flow path as an alias of how-it-works', () => {
+    expect(routeOf('/flow')).toBe('how-it-works');
   });
 
   it('falls back to the landing page for unknown paths', () => {
@@ -17,9 +21,9 @@ describe('router', () => {
   it('round-trips a view to its canonical path', () => {
     expect(pathOf('landing')).toBe('/');
     expect(pathOf('whitepaper')).toBe('/whitepaper');
-    expect(pathOf('flow')).toBe('/flow');
+    expect(pathOf('how-it-works')).toBe('/how-it-works');
     expect(pathOf('app')).toBe('/app');
     expect(routeOf(pathOf('app'))).toBe('app');
-    expect(routeOf(pathOf('flow'))).toBe('flow');
+    expect(routeOf(pathOf('how-it-works'))).toBe('how-it-works');
   });
 });

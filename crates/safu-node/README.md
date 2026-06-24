@@ -39,21 +39,23 @@ by the `Release safu-node` workflow. Install the latest with one line:
 **Linux / macOS**
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/urbanisierung/sharu-io-monorepo/main/crates/safu-node/install.sh | sh
+curl -fsSL https://new.sharu.io/install.sh | sh
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-irm https://raw.githubusercontent.com/urbanisierung/sharu-io-monorepo/main/crates/safu-node/install.ps1 | iex
+irm https://new.sharu.io/install.ps1 | iex
 ```
 
-The scripts detect your OS/arch, download the matching archive from the latest
-release, verify its SHA-256, and install `safu-node` to `~/.local/bin`
+The install scripts are served by the website (source: `apps/web/public/`); the
+release binaries they fetch live on GitHub Releases. The scripts detect your
+OS/arch, download the matching archive from the latest release, verify its
+SHA-256, and install `safu-node` to `~/.local/bin`
 (`%LOCALAPPDATA%\safu-node\bin` on Windows). Pin a version with
 `SAFU_NODE_VERSION=0.1.0`, or change the location with `SAFU_NODE_INSTALL_DIR`.
 
-Supported targets: `x86_64`/`aarch64` Linux (gnu), `x86_64`/`aarch64` macOS,
+Supported targets: `x86_64`/`aarch64` Linux (gnu), `aarch64` macOS,
 `x86_64` Windows (msvc).
 
 ### Cutting a release

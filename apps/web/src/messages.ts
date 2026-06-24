@@ -1,6 +1,7 @@
 // All user-facing strings flow through @cascivo/i18n (plan §2.4) — no hardcoded
 // English in components. The lint guard in this app's test suite enforces it.
 import { defineMessages } from '@cascivo/i18n';
+import { SITE_URL } from '@safu/config';
 
 /** Landing page copy: what Sharu is, the problem it solves, and how. */
 export const landing = defineMessages('safu.landing', {
@@ -14,8 +15,8 @@ export const landing = defineMessages('safu.landing', {
   heroSubtitle:
     'Sharu is a decentralized, zero-knowledge, local-first backup and sync platform. Files are encrypted on your device and synced peer-to-peer across your own machines — no servers, no accounts, and no one who can read them but you.',
   launch: 'Launch the app',
-  learnMore: 'See how it works',
-  watchFlow: 'Watch the data flow',
+  learnMore: 'See the pipeline',
+  watchFlow: 'How it works',
 
   problemKicker: 'The problem',
   problemTitle: 'Cloud backup asks you to trust someone else with everything.',
@@ -66,11 +67,9 @@ export const landing = defineMessages('safu.landing', {
   cliBody:
     'Run safu-node on a server, NAS, or Raspberry Pi to keep a full ciphertext replica of everything your devices back up — an always-reachable copy, zero-knowledge and over Iroh. One command installs it; link a device with its connection code and it starts replicating.',
   cliUnixLabel: 'Linux & macOS',
-  cliUnixCmd:
-    'curl -fsSL https://raw.githubusercontent.com/urbanisierung/sharu-io-monorepo/main/crates/safu-node/install.sh | sh',
+  cliUnixCmd: `curl -fsSL ${SITE_URL}/install.sh | sh`,
   cliWindowsLabel: 'Windows · PowerShell',
-  cliWindowsCmd:
-    'irm https://raw.githubusercontent.com/urbanisierung/sharu-io-monorepo/main/crates/safu-node/install.ps1 | iex',
+  cliWindowsCmd: `irm ${SITE_URL}/install.ps1 | iex`,
   cliLink: 'Read the backup-node docs',
 
   ctaTitle: 'Take your backups back.',
@@ -164,6 +163,12 @@ export const flow = defineMessages('safu.flow', {
   launch: 'Launch the app',
   meta: 'Live walkthrough · zero-knowledge by construction',
 
+  // Reading-mode toggle: one page, three depths of explanation.
+  modeLabel: 'Reading mode',
+  modeRegular: 'Regular',
+  modeEli5: 'ELI5',
+  modeMachine: 'Machine',
+
   title: 'Watch your devices talk.',
   subtitle:
     'A backup is a conversation between participants you control — your devices, an untrusted relay, and an optional always-on node. Here is exactly what crosses the wire, step by step. Only ciphertext ever does.',
@@ -200,6 +205,22 @@ export const flow = defineMessages('safu.flow', {
   step6:
     'An always-on backup node keeps a full ciphertext replica, so a copy stays reachable even when every device is offline.',
 
+  // Around the wallet: how the pieces above add up to the thing you actually use.
+  walletKicker: 'Around the wallet',
+  walletTitle: 'Everything ties back to one wallet.',
+  wallet1Title: 'A wallet is your vault',
+  wallet1Body:
+    'A wallet is a named, encrypted space for your files. You create one with a name and a password, and everything you back up lives inside it.',
+  wallet2Title: 'Your password is the only key',
+  wallet2Body:
+    'Argon2id derives the encryption key from your password, on your device. The key is never uploaded and never stored in plaintext — forget the password and there is no reset.',
+  wallet3Title: 'Link devices to the same wallet',
+  wallet3Body:
+    'Linking is a deliberate step: share one device’s connection code (or scan its QR) with the other so they can find each other. Enter the same password on both, confirm the short safety number shown on each screen, and only then do they sync the wallet’s files directly over Iroh.',
+  wallet4Title: 'Back up and restore the wallet',
+  wallet4Body:
+    'Save a recovery sheet to re-open the wallet anywhere, and run an always-on backup node to keep a full ciphertext replica reachable even when every device is offline.',
+
   stackKicker: 'Tech stack',
   stackTitle: 'What powers each step.',
   stackIrohTerm: 'Iroh (QUIC)',
@@ -230,6 +251,119 @@ export const flow = defineMessages('safu.flow', {
   ctaTitle: 'Seen enough? Start backing up.',
   ctaBody: 'No account, no upload to anyone. Set a passphrase and your devices do the rest.',
   footer: 'Sharu — zero-knowledge, local-first backup & sync',
+});
+
+/** ELI5 copy: the same page structure as `flow`, retold so a five-year-old gets
+ *  it. Files are toys, a wallet is a magic box, the relay is a helper who carries
+ *  boxes it can't open. Only the prose changes — the keys mirror `flow`. */
+export const flowEli5 = defineMessages('safu.flow.eli5', {
+  title: 'How it works, the easy way.',
+  subtitle:
+    'Think of your files like toys. Sharu locks them in a magic box that only you can open, then quietly copies the box to your other gadgets so you never lose anything. Nobody else can peek inside.',
+
+  diagramKicker: 'The story',
+  diagramTitle: 'Two gadgets sharing a secret box.',
+  diagramCaption:
+    'Watch the boxes travel from one gadget to another. They stay locked the whole way, so the helpers carrying them can never see what is inside.',
+
+  nodeLaptopRole: 'Your gadget',
+  nodePhoneRole: 'Your gadget',
+  nodeRelayRole: 'A helper who carries boxes',
+  nodeBackupRole: 'A toy box that never sleeps',
+
+  step1:
+    'Your laptop puts each piece of a file into a locked box and calls out a sticker name for it.',
+  step2: 'A helper passes the boxes along. The helper can carry them but can never open them.',
+  step3: 'Your phone reads the sticker names and asks only for the boxes it does not have yet.',
+  step4:
+    'The locked boxes arrive. Your phone checks every sticker to make sure nothing was swapped.',
+  step5:
+    'To become friends, both gadgets show the same secret word. If the words match, they trust each other.',
+  step6:
+    'A toy box that never sleeps keeps a spare copy, so your files are safe even when your gadgets are off.',
+
+  walletKicker: 'Your magic box',
+  walletTitle: 'It all starts with one box.',
+  wallet1Title: 'A box for your stuff',
+  wallet1Body:
+    'A wallet is your own magic box. You give it a name and a secret word, and everything you keep goes inside.',
+  wallet2Title: 'Your secret word is the key',
+  wallet2Body:
+    'Only your secret word can open the box. It never leaves your gadget, and nobody can make a new one — so do not forget it!',
+  wallet3Title: 'Link your other gadget to the box',
+  wallet3Body:
+    'First show the link (or the little square code) from one gadget to the other so they can find each other. Then type the same secret word on both, check that they show the same safety word, and now they share the very same box.',
+  wallet4Title: 'Keep a spare and never lose it',
+  wallet4Body:
+    'Write your secret word on a recovery sheet, and let an always-awake toy box hold a spare copy for you.',
+
+  stackKicker: 'The helpers',
+  stackTitle: 'The clever bits that make it work.',
+  stackIrohDef: 'The mail carrier that lets your gadgets pass boxes straight to each other.',
+  stackBlake3Def: 'A sticker name for every box, so you always know you got the right one.',
+  stackArgon2Def: 'Turns your secret word into a strong key, right on your gadget.',
+  stackAesDef: 'The lock on every box. It also tells you if someone tried to peek.',
+  stackCrdtDef: 'A shared list so all your gadgets agree on what is where, with no arguing.',
+  stackCascivoDef: 'The little drawing you are watching that shows the boxes moving.',
+  stackPreactDef: 'The bits that make this page light up the moment something changes.',
+  stackTauriDef: 'The app on your computer that lets gadgets talk straight to each other.',
+
+  ctaTitle: 'Ready to lock up your stuff?',
+  ctaBody: 'No sign-up, no handing your toys to a stranger. Pick a secret word and you are done.',
+});
+
+/** Machine copy: the same structure stripped to a terse, near-protocol notation —
+ *  the page reduced to the minimum a reader who just wants the mechanics needs.
+ *  Keys mirror `flow`. */
+export const flowMachine = defineMessages('safu.flow.machine', {
+  title: 'Spec: zero-knowledge backup & sync.',
+  subtitle:
+    'Local-first replication of content-addressed ciphertext across user-owned peers. Plaintext and keys never leave the device; transport is untrusted; state converges via CRDT.',
+
+  diagramKicker: 'protocol',
+  diagramTitle: 'peers=4 · trust=0 · payload=ciphertext',
+  diagramCaption:
+    'Per-step message trace. The wire carries authenticated ciphertext blocks only — no keys, no filenames, no plaintext.',
+
+  nodeLaptopRole: 'peer:device',
+  nodePhoneRole: 'peer:device',
+  nodeRelayRole: 'transport:untrusted',
+  nodeBackupRole: 'peer:replica(always-on)',
+
+  step1: 'laptop: chunk(file) → AES-256-GCM seal → emit HAVE[blake3(block)…].',
+  step2: 'relay: forward(bytes) over Iroh/QUIC; payload opaque; no key/name access.',
+  step3: 'phone: diff(local, HAVE) → request WANT[hash…] by address.',
+  step4: 'laptop→phone: stream blocks; phone asserts blake3(block)==addr before accept.',
+  step5: 'pair: both emit SAS; user asserts equality → machine-in-the-middle rejected.',
+  step6: 'replica: persist full ciphertext set; availability decoupled from device liveness.',
+
+  walletKicker: 'wallet',
+  walletTitle: 'unit of state := wallet',
+  wallet1Title: 'wallet := [name, encrypted_store]',
+  wallet1Body: 'Container scoping all backed-up content. Constructed from (name, password).',
+  wallet2Title: 'key := Argon2id(password)',
+  wallet2Body:
+    'KDF runs on-device. Key non-exportable, never persisted in plaintext. No reset, no escrow.',
+  wallet3Title: 'link := connection_code + password + SAS',
+  wallet3Body:
+    'Pairing is explicit: peer A emits a connection code (addr + signing id); peer B imports it, derives the same key from the shared password, both confirm the SAS, then direct sync over Iroh.',
+  wallet4Title: 'durability := recovery_sheet + replica',
+  wallet4Body:
+    'Recovery sheet restores wallet on any peer. safu-node holds an always-on ciphertext replica.',
+
+  stackKicker: 'stack',
+  stackTitle: 'components.',
+  stackIrohDef: 'P2P QUIC transport. Rust→WASM (web) / native (desktop) behind one interface.',
+  stackBlake3Def: 'Content address = hash(ciphertext). Yields dedup + tamper-evidence.',
+  stackArgon2Def: 'Memory-hard KDF. password→key, on-device only.',
+  stackAesDef: 'AEAD per chunk. Auth tag = integrity check before decrypt.',
+  stackCrdtDef: 'Replicated state. Deterministic convergence, no coordinator, no dropped writes.',
+  stackCascivoDef: 'Signal-driven render layer for this trace.',
+  stackPreactDef: 'Reactive UI shell. Signals as state; no virtual-DOM churn.',
+  stackTauriDef: 'Native shell. Iroh hole-punch → direct peer links, relay-free.',
+
+  ctaTitle: 'init backup.',
+  ctaBody: 'No account, no upload to third parties. Set passphrase → peers replicate.',
 });
 
 export const messages = defineMessages('safu', {
