@@ -66,11 +66,9 @@ export const landing = defineMessages('safu.landing', {
   cliBody:
     'Run safu-node on a server, NAS, or Raspberry Pi to keep a full ciphertext replica of everything your devices back up — an always-reachable copy, zero-knowledge and over Iroh. One command installs it; link a device with its connection code and it starts replicating.',
   cliUnixLabel: 'Linux & macOS',
-  cliUnixCmd:
-    'curl -fsSL https://raw.githubusercontent.com/urbanisierung/sharu-io-monorepo/main/crates/safu-node/install.sh | sh',
+  cliUnixCmd: 'curl -fsSL https://sharu.io/install.sh | sh',
   cliWindowsLabel: 'Windows · PowerShell',
-  cliWindowsCmd:
-    'irm https://raw.githubusercontent.com/urbanisierung/sharu-io-monorepo/main/crates/safu-node/install.ps1 | iex',
+  cliWindowsCmd: 'irm https://sharu.io/install.ps1 | iex',
   cliLink: 'Read the backup-node docs',
 
   ctaTitle: 'Take your backups back.',
