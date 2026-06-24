@@ -375,6 +375,7 @@ export const shareView = defineMessages('safu.share', {
   failedBody: 'The link may be wrong, or the file is no longer hosted. Nothing was decrypted.',
   siteTitle: 'Opening the shared site…',
   siteBody: 'Decrypting its files in your browser, then loading it.',
+  siteFrame: 'Shared site',
   download: 'Download',
   zeroKnowledge: 'Decrypted in your browser. The host only ever served ciphertext.',
 });

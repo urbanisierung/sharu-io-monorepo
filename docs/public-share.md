@@ -233,24 +233,31 @@ origin paths so the browser resolves and loads them. Built as:
   key into a v:2 manifest; `web/runtime.ts` `publishSiteShare` pins it all to the
   node and records it. `web/site-share.tsx` is the folder-picker UI
   (`webkitdirectory`); `web/mime.ts` types each file by extension. **(done)**
-- `web/share-viewer.ts` `openShare`: returns a tagged file-or-site result;
-  a site decrypts every file into a path→bytes map. **(done)**
-- `web/site-mount.ts` + `public/sw.js`: the decrypted files are written to the
-  Cache API under `/s/<id>/<path>` and a keyless service worker (scope `/s/`)
-  serves them, so relative subresources and links resolve like a normal site.
-  `web/share-page.tsx` mounts a site (cache + SW + navigate). **(done)**
+- `web/share-viewer.ts` `openShare`: returns a tagged file-or-site result. A
+  site is **lazy** — only its manifest is decrypted up front; `getFile(path)`
+  decrypts one file on demand, keeping the Iroh transport open until `close`. **(done)**
+- `web/site-mount.ts` + `public/sw.js`: the keyless service worker (scope `/s/`)
+  serves `/s/<id>/<path>` from the Cache API; on a miss it asks the viewer page —
+  over a `MessageChannel` handed to it at mount — to decrypt that one file, then
+  caches and serves it. `web/share-page.tsx` mounts the site and renders it in a
+  **sandboxed** iframe (opaque origin) so untrusted site script can render and
+  navigate but cannot reach this origin's storage. **(done)**
 
 **Exit criteria:** a static site with relative subresources loads and navigates
 entirely from decrypted blocks, with the host serving only ciphertext — proven
-by the site round-trip (publish → open every file byte-for-byte under one key)
-and the `cacheSite` layout test; the SW itself is browser-verified. **(done)**
+by the site round-trip (publish → open + `getFile` each file byte-for-byte under
+one key) and the `resolveSitePath` test; the SW + MessageChannel wiring is
+browser-verified. **(done)**
 
-*Tradeoffs / notes:* whole-site **prefetch** — every file is decrypted up front
-so the SW stays trivial (no Iroh/crypto in the worker); lazy per-request fetch is
-a later optimization for very large sites. The site id is the manifest root, so a
-deep `/s/<id>/…` URL only resolves while the SW + cache are present (the canonical
-link is always `/s#share=…`, which repopulates them). `SITE_CACHE` is duplicated
-between `site-mount.ts` and `public/sw.js` — keep the two in sync.
+*Tradeoffs / notes:* **lazy** per-request fetch — only the files the viewer
+actually visits are fetched + decrypted, so a large site is cheap. The page holds
+the key + transport and answers the SW's requests, so it stays open (the site is
+an iframe within it) and tears the transport down on close. The site id is the
+manifest root, so a deep `/s/<id>/…` URL only resolves while the SW + page are
+present (the canonical link is always `/s#share=…`). If the SW is evicted
+mid-session its in-memory port map is lost — cached files still serve, but a fresh
+file needs the page to re-mount. `SITE_CACHE` is duplicated between
+`site-mount.ts` and `public/sw.js` — keep the two in sync.
 
 ## Invariants preserved
 

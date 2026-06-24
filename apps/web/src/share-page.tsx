@@ -17,23 +17,27 @@ import { mountSite } from './site-mount.js';
  *  opens it over Iroh; tests inject a fake to bypass the network + the codec. */
 type Opener = (code: string) => Promise<OpenedFile | OpenedSite>;
 const defaultOpen: Opener = (code) => openShareOverIroh(decodeShareCode(code));
-/** Mount a site share (cache its files + register the SW + navigate into it).
- *  Injectable so tests can assert mounting without a service worker. */
-type Mounter = (site: OpenedSite) => Promise<void>;
+/** Mount a site share (register the SW + wire lazy fetch), returning the URL to
+ *  load it at. Injectable so tests can assert mounting without a service worker. */
+type Mounter = (site: OpenedSite) => Promise<string>;
 
 type State =
   | { kind: 'loading' }
   | { kind: 'ready'; opened: OpenedFile; url: string }
-  | { kind: 'site' }
+  | { kind: 'site'; url?: string }
   | { kind: 'missing' }
   | { kind: 'failed' };
 
 const state = signal<State>({ kind: 'loading' });
 let started = false;
+// The live site (its transport serves lazy fetches); released on reset.
+let activeSite: OpenedSite | undefined;
 
 /** Reset the module-level view state — for deterministic tests. */
 export function resetShareViewer(): void {
   if (state.value.kind === 'ready') URL.revokeObjectURL(state.value.url);
+  void activeSite?.close().catch(() => {});
+  activeSite = undefined;
   state.value = { kind: 'loading' };
   started = false;
 }
@@ -46,16 +50,19 @@ async function load(code: string | undefined, open: Opener, mount: Mounter): Pro
   try {
     const opened = await open(code);
     if (opened.kind === 'site') {
-      // Hand off to the service worker, which serves the navigable site; this
-      // page then navigates away into /s/<id>/<index>.
+      // Hand off to the service worker, which serves the site lazily; render it
+      // in a sandboxed iframe while this page stays alive to decrypt on demand.
       state.value = { kind: 'site' };
-      await mount(opened);
+      activeSite = opened;
+      state.value = { kind: 'site', url: await mount(opened) };
       return;
     }
     const type = opened.manifest.contentType || 'application/octet-stream';
     const url = URL.createObjectURL(new Blob([opened.bytes as BlobPart], { type }));
     state.value = { kind: 'ready', opened, url };
   } catch {
+    void activeSite?.close().catch(() => {});
+    activeSite = undefined;
     state.value = { kind: 'failed' };
   }
 }
@@ -85,12 +92,23 @@ export function ShareViewer({ code, open = defaultOpen, mount = mountSite }: Sha
         </div>
       )}
 
-      {s.kind === 'site' && (
-        <div class={styles.center}>
-          <h1 class={styles.title}>{t(shareView.siteTitle)}</h1>
-          <p class={styles.hint}>{t(shareView.siteBody)}</p>
-        </div>
-      )}
+      {s.kind === 'site' &&
+        (s.url ? (
+          // Untrusted site content: sandbox to an opaque origin (allow-scripts
+          // but not allow-same-origin) so it can render and navigate but cannot
+          // reach this origin's storage. The service worker still serves it.
+          <iframe
+            class={styles.site}
+            src={s.url}
+            title={t(shareView.siteFrame)}
+            sandbox="allow-scripts allow-forms allow-popups"
+          />
+        ) : (
+          <div class={styles.center}>
+            <h1 class={styles.title}>{t(shareView.siteTitle)}</h1>
+            <p class={styles.hint}>{t(shareView.siteBody)}</p>
+          </div>
+        ))}
 
       {s.kind === 'missing' && (
         <div class={styles.center}>

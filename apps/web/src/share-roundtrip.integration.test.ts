@@ -173,7 +173,7 @@ describe('public site round-trip', () => {
       ORIGIN,
     );
 
-  it('publishes a multi-file site and reopens every file under one key', async () => {
+  it('publishes a multi-file site and reopens each file lazily under one key', async () => {
     const store = new MemoryBlockStore();
     const result = await publish(store);
 
@@ -182,9 +182,15 @@ describe('public site round-trip', () => {
     if (opened.kind !== 'site') throw new Error('expected a site');
     expect(opened.index).toBe('index.html');
     expect(opened.id).toBe(result.info.root);
-    expect(opened.files.get('index.html')?.bytes).toEqual(html);
-    expect(opened.files.get('index.html')?.contentType).toBe('text/html');
-    expect(opened.files.get('style.css')?.bytes).toEqual(css);
+
+    // Each file is decrypted on demand, byte-for-byte, under the one share key.
+    const index = await opened.getFile('index.html');
+    expect(index?.bytes).toEqual(html);
+    expect(index?.contentType).toBe('text/html');
+    expect((await opened.getFile('style.css'))?.bytes).toEqual(css);
+    expect(await opened.getFile('missing.html')).toBeUndefined();
+    await opened.close();
+
     // Every block address (root first) is pinned for the site to resolve.
     expect(result.pin[0]).toBe(result.info.root);
     expect(result.pin.length).toBeGreaterThanOrEqual(3);

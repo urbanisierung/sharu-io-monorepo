@@ -7,6 +7,14 @@
   gap: 1rem;
 }
 
+/* A mounted site fills the viewport — it is the page. */
+.site {
+  width: 100%;
+  flex: 1;
+  min-height: 90vh;
+  border: 0;
+}
+
 .center {
   margin: auto;
   max-width: 32rem;

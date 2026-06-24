@@ -1,51 +1,46 @@
-// Mount an opened site share so the browser can navigate it (phase 5). A static
-// site needs real origin URLs for relative subresources (./style.css, images,
-// links) to resolve and load. So we write every decrypted file into the Cache
-// API under `/s/<id>/<path>` and register a service worker (public/sw.js, scope
-// `/s/`) that serves those paths from the cache. The host only ever served
-// ciphertext; decryption happened here, and the SW replays the plaintext.
+// Mount an opened site share so the browser can navigate it (phase 5), lazily.
+// A static site needs real origin URLs for its relative subresources and links
+// to resolve, and it must keep working as the user clicks around — but we only
+// want to fetch+decrypt the files actually visited. So:
 //
-// Whole-site prefetch (every file decrypted up front) keeps the SW trivial — no
-// Iroh/WASM inside the worker — at the cost of not streaming huge sites. Static
-// sites are small; lazy per-request fetch is a future optimization.
+//   1. Register a service worker (public/sw.js, scope `/s/`).
+//   2. Hand it one end of a MessageChannel; the page keeps the other end and the
+//      live `OpenedSite` (whose transport serves the lazy fetches).
+//   3. Load the site in a *sandboxed* iframe at `/s/<id>/<index>`. The SW
+//      intercepts every `/s/<id>/…` request: a cache hit is served directly; a
+//      miss is requested from this page over the port, decrypted on demand,
+//      cached, and returned.
+//
+// The host only ever served ciphertext; decryption happens here, per file. The
+// iframe is sandboxed to an opaque origin so untrusted site script cannot reach
+// this origin's storage (OPFS blocks, share links) — it can render and navigate,
+// nothing more.
 import type { OpenedSite } from './share-viewer.js';
-
-/** Cache name, shared with public/sw.js — keep the two in sync. */
-export const SITE_CACHE = 'safu-sites-v1';
 
 /** The origin-absolute URL prefix a site's files live under. */
 export function siteBase(siteId: string): string {
   return `/s/${siteId}/`;
 }
 
-/** Write every decrypted file of a site into `cacheStorage` under its
- *  `/s/<id>/<path>` URL, so the service worker can serve the navigable site. */
-export async function cacheSite(
-  siteId: string,
-  site: OpenedSite,
-  cacheStorage: CacheStorage,
-): Promise<void> {
-  const cache = await cacheStorage.open(SITE_CACHE);
-  for (const [path, file] of site.files) {
-    const response = new Response(file.bytes as BlobPart, {
-      headers: { 'content-type': file.contentType || 'application/octet-stream' },
-    });
-    await cache.put(siteBase(siteId) + path, response);
-  }
+/** Resolve a requested path within a site to a manifest file path: an empty
+ *  path or a directory ("docs/") maps to the site's index document. */
+export function resolveSitePath(path: string, index: string): string {
+  return path === '' || path.endsWith('/') ? path + index : path;
 }
 
-/** Cache the site, ensure the service worker is active, and navigate into it.
+/** Register the share service worker (scope `/s/`) and resolve its active worker.
  *  Browser-only; throws where the Cache API or service workers are unavailable. */
-export async function mountSite(site: OpenedSite): Promise<void> {
+async function registerWorker(): Promise<ServiceWorker> {
   const sw = globalThis.navigator?.serviceWorker;
   if (!globalThis.caches || !sw) throw new Error('site shares require a service worker');
-  await cacheSite(site.id, site, globalThis.caches);
   const registration = await sw.register('/sw.js', { scope: '/s/' });
   await activated(registration);
-  globalThis.location.assign(siteBase(site.id) + site.index);
+  const worker = registration.active;
+  if (!worker) throw new Error('service worker did not activate');
+  return worker;
 }
 
-/** Resolve once the registration has an active worker (it will control `/s/`). */
+/** Resolve once the registration has an active worker (it controls `/s/`). */
 function activated(registration: ServiceWorkerRegistration): Promise<void> {
   if (registration.active) return Promise.resolve();
   const worker = registration.installing ?? registration.waiting;
@@ -55,4 +50,37 @@ function activated(registration: ServiceWorkerRegistration): Promise<void> {
       if (worker.state === 'activated') resolve();
     });
   });
+}
+
+/** Mount a lazy site: register the SW, give it a port to request files from this
+ *  page over, and return the URL to load the (sandboxed) site at. The page keeps
+ *  `site` alive — its transport serves the lazy fetches — until it tears down. */
+export async function mountSite(site: OpenedSite): Promise<string> {
+  const worker = await registerWorker();
+  const channel = new MessageChannel();
+  channel.port1.onmessage = (event: MessageEvent) => {
+    void answer(site, channel.port1, event.data);
+  };
+  worker.postMessage({ type: 'register-site', siteId: site.id }, [channel.port2]);
+  return siteBase(site.id) + site.index;
+}
+
+/** Answer a service-worker file request by decrypting that path on demand. */
+async function answer(site: OpenedSite, port: MessagePort, request: unknown): Promise<void> {
+  const req = request as { type?: string; id?: number; path?: string };
+  if (req?.type !== 'fetch' || typeof req.id !== 'number' || typeof req.path !== 'string') return;
+  try {
+    const file = await site.getFile(resolveSitePath(req.path, site.index));
+    if (!file) {
+      port.postMessage({ type: 'file', id: req.id, ok: false });
+      return;
+    }
+    // Copy into a right-sized buffer and transfer it (zero-copy across threads).
+    const body = file.bytes.slice().buffer;
+    port.postMessage({ type: 'file', id: req.id, ok: true, body, contentType: file.contentType }, [
+      body,
+    ]);
+  } catch {
+    port.postMessage({ type: 'file', id: req.id, ok: false });
+  }
 }

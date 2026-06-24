@@ -4,6 +4,9 @@
 // own browser is the "gateway": no wallet, no passphrase, and the serving node
 // only ever handed over ciphertext. A share is either a single file (v:1) or a
 // navigable multi-file site (v:2, phase 5) — `openShare` returns both, tagged.
+// A site is opened *lazily*: only its manifest is decrypted up front, and each
+// file is fetched + decrypted on demand (the service worker requests them as the
+// site navigates), so a large site costs only what the viewer actually visits.
 import { createEgressStreamWithKey, type EncryptedBlock, openBytes } from '@safu/crypto';
 import {
   BLOCK_PROTOCOL,
@@ -11,8 +14,10 @@ import {
   MemoryBlockStore,
   parseAnyManifest,
   parseManifest,
+  parseSiteManifest,
   type ShareBlockRef,
   type ShareManifest,
+  type SiteManifest,
 } from '@safu/sdk';
 import { base64UrlToBytes } from './base64url.js';
 import type { ShareInfo } from './share-code.js';
@@ -41,6 +46,31 @@ export async function fetchContent(
   fetchBlock: FetchBlock,
 ): Promise<ReadableStream<Uint8Array>> {
   return streamRefs(manifest.blocks, base64UrlToBytes(info.key), fetchBlock);
+}
+
+/** Fetch and decrypt the (v:2) site manifest only — the index of files. */
+export async function fetchSiteManifest(
+  info: ShareInfo,
+  fetchBlock: FetchBlock,
+): Promise<SiteManifest> {
+  const sealed = await fetchBlock(info.root);
+  if (!sealed) throw new Error('share: manifest unavailable');
+  const key = base64UrlToBytes(info.key);
+  return parseSiteManifest(await openBytes(key, base64UrlToBytes(info.rootNonce), sealed));
+}
+
+/** Fetch and decrypt one file of a site by path, or undefined if the manifest
+ *  has no such path. Only this file's blocks are fetched (lazy). */
+export async function fetchSiteFile(
+  manifest: SiteManifest,
+  path: string,
+  key: Uint8Array,
+  fetchBlock: FetchBlock,
+): Promise<SiteFile | undefined> {
+  const entry = manifest.files[path];
+  if (!entry) return undefined;
+  const bytes = await drain(await streamRefs(entry.blocks, key, fetchBlock));
+  return { contentType: entry.contentType, bytes };
 }
 
 /** Stream the plaintext of one ordered block set under `key`, verifying each
@@ -73,13 +103,16 @@ export interface OpenedFile {
   bytes: Uint8Array;
 }
 
-/** An opened site share: every file decrypted, keyed by relative path, plus the
- *  default document and the share id (its manifest root) used for the URL prefix. */
+/** An opened site share. Lazy: the manifest is decrypted, but each file is only
+ *  fetched + decrypted when `getFile` asks for it. `id` is the manifest root
+ *  (the URL prefix); `index` is the default document; `close` releases the
+ *  transport the lazy fetches run over. */
 export interface OpenedSite {
   kind: 'site';
   id: string;
   index: string;
-  files: Map<string, SiteFile>;
+  getFile(path: string): Promise<SiteFile | undefined>;
+  close(): Promise<void>;
 }
 
 export type Opened = OpenedFile | OpenedSite;
@@ -101,37 +134,47 @@ async function drain(stream: ReadableStream<Uint8Array>): Promise<Uint8Array> {
   return out;
 }
 
-/** Open a share with the given block fetcher: fetch + decrypt the manifest, then
- *  every referenced block, returning a single file or a fully-decrypted site. */
+/** Open a share with the given block fetcher: decrypt the manifest, then return
+ *  a fully-decrypted single file, or a lazy site whose `getFile` decrypts one
+ *  file at a time. `close` is a no-op here — the caller owns the fetcher's
+ *  lifetime (see `openShareOverIroh`). */
 export async function openShare(info: ShareInfo, fetchBlock: FetchBlock): Promise<Opened> {
   const sealed = await fetchBlock(info.root);
   if (!sealed) throw new Error('share: manifest unavailable');
   const key = base64UrlToBytes(info.key);
   const manifest = parseAnyManifest(await openBytes(key, base64UrlToBytes(info.rootNonce), sealed));
   if (manifest.v === 2) {
-    const files = new Map<string, SiteFile>();
-    for (const [path, entry] of Object.entries(manifest.files)) {
-      const bytes = await drain(await streamRefs(entry.blocks, key, fetchBlock));
-      files.set(path, { contentType: entry.contentType, bytes });
-    }
-    return { kind: 'site', id: info.root, index: manifest.index, files };
+    return {
+      kind: 'site',
+      id: info.root,
+      index: manifest.index,
+      getFile: (path) => fetchSiteFile(manifest, path, key, fetchBlock),
+      close: () => Promise.resolve(),
+    };
   }
   const bytes = await drain(await streamRefs(manifest.blocks, key, fetchBlock));
   return { kind: 'file', manifest, bytes };
 }
 
 /** Open a share end-to-end in the browser: dial the serving node over a
- *  relay-only Iroh endpoint, fetch + decrypt everything, and return it. No
- *  wallet, no passphrase, no persistence — the in-memory store is discarded with
- *  the transport when this resolves. */
+ *  relay-only Iroh endpoint and decrypt under the fragment key. A single file is
+ *  fully decrypted and the transport closed; a site keeps the transport open for
+ *  lazy `getFile`, releasing it on `close`. No wallet, no passphrase, no
+ *  persistence — the in-memory store is discarded with the transport. */
 export async function openShareOverIroh(info: ShareInfo): Promise<Opened> {
   const { createIrohTransport } = await import('@safu/transport/iroh');
   const transport = await createIrohTransport([BLOCK_PROTOCOL]);
+  const store = new MemoryBlockStore();
+  const fetch: FetchBlock = (addr) => fetchBlock(transport, info.peer, addr, store);
   try {
-    const store = new MemoryBlockStore();
-    const fetch: FetchBlock = (addr) => fetchBlock(transport, info.peer, addr, store);
-    return await openShare(info, fetch);
-  } finally {
+    const opened = await openShare(info, fetch);
+    if (opened.kind === 'file') {
+      await transport.close();
+      return opened;
+    }
+    return { ...opened, close: () => transport.close() };
+  } catch (error) {
     await transport.close();
+    throw error;
   }
 }

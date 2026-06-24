@@ -15,13 +15,12 @@ const manifest = (over: Partial<ShareManifest> = {}): ShareManifest => ({
 
 beforeEach(() => {
   resetShareViewer();
-  // jsdom doesn't implement object URLs; the viewer only needs an opaque handle.
-  vi.stubGlobal('URL', { ...URL, createObjectURL: () => 'blob:fake', revokeObjectURL: () => {} });
+  // happy-dom has no object-URL support; add the two methods to the real URL
+  // (rather than replacing it, which would break the iframe's Location).
+  URL.createObjectURL = () => 'blob:fake';
+  URL.revokeObjectURL = () => {};
 });
-afterEach(() => {
-  cleanup();
-  vi.unstubAllGlobals();
-});
+afterEach(cleanup);
 
 describe('ShareViewer', () => {
   it('prompts when the link carries no share', () => {
@@ -63,17 +62,21 @@ describe('ShareViewer', () => {
     expect(img.getAttribute('src')).toBe('blob:fake');
   });
 
-  it('hands a site share off to be mounted by the service worker', async () => {
+  it('mounts a site share and renders it in a sandboxed iframe', async () => {
     const site: OpenedSite = {
       kind: 'site',
       id: 'root-hash',
       index: 'index.html',
-      files: new Map([['index.html', { contentType: 'text/html', bytes: new Uint8Array() }]]),
+      getFile: vi.fn(),
+      close: vi.fn().mockResolvedValue(undefined),
     };
-    const mount = vi.fn().mockResolvedValue(undefined);
+    const mount = vi.fn().mockResolvedValue('/s/root-hash/index.html');
     render(<ShareViewer code="ok" open={() => Promise.resolve(site)} mount={mount} />);
 
-    expect(await screen.findByText('Opening the shared site…')).toBeTruthy();
+    const frame = (await screen.findByTitle('Shared site')) as HTMLIFrameElement;
     expect(mount).toHaveBeenCalledWith(site);
+    expect(frame.getAttribute('src')).toBe('/s/root-hash/index.html');
+    // Untrusted content runs in an opaque origin (no allow-same-origin).
+    expect(frame.getAttribute('sandbox')).not.toContain('allow-same-origin');
   });
 });
