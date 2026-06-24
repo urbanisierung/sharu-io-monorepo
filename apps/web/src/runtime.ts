@@ -20,11 +20,17 @@ import {
 import type { PeerAddr, Transport } from '@safu/transport';
 import { loadDeviceNames, saveDeviceName } from './device-names.js';
 import { IngestController } from './ingest-controller.js';
+import { mimeOf } from './mime.js';
 import { decodePairingCode, encodePairingCode } from './pairing.js';
 import { loadPeerAddrs, savePeerAddr } from './peer-addrs.js';
 import { ingestFile, restoreFile } from './pipeline.js';
 import { deriveSas } from './sas.js';
-import { publishFile } from './share-publisher.js';
+import {
+  type PublishResult,
+  publishFile,
+  publishSite,
+  type SiteFileInput,
+} from './share-publisher.js';
 import { addShare, loadShares, type PublishedShare, removeShare } from './shares-store.js';
 import { LEGACY_WALLET_ID, unlockWallet, type Wallet } from './wallet.js';
 import type { WalletBackup } from './wallet-backup.js';
@@ -64,6 +70,10 @@ export interface Runtime {
    *  random key, pin its blocks to the always-on node, and return an openable
    *  link. Rejects with {@link NoShareHostError} if no node is paired. */
   publishShare: (path: string) => Promise<string>;
+  /** Publish a folder of files as one navigable public site (phase 5): re-ingest
+   *  every file under a fresh random key, pin to the node, and return the link.
+   *  Rejects with {@link NoShareHostError} if no node is paired. */
+  publishSiteShare: (files: readonly File[]) => Promise<string>;
   /** Stop listing a published share locally (see docs/public-share.md on the
    *  pending node-side block removal). */
   unpublishShare: (root: string) => void;
@@ -105,6 +115,22 @@ function streamOf(bytes: Uint8Array): ReadableStream<Uint8Array> {
       controller.close();
     },
   });
+}
+
+/** A site file's path relative to the site root: a folder picked with
+ *  `webkitdirectory` yields paths like "mysite/index.html", so drop the leading
+ *  folder segment. A plain multi-select falls back to the bare file name. */
+function sitePath(file: File): string {
+  const rel = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
+  const slash = rel.indexOf('/');
+  return slash >= 0 ? rel.slice(slash + 1) : rel;
+}
+
+/** A human label for a published site (the picked folder's name). */
+function siteLabel(files: readonly File[]): string {
+  const rel = (files[0] as File & { webkitRelativePath?: string }).webkitRelativePath ?? '';
+  const top = rel.split('/')[0];
+  return top || 'site';
 }
 
 /** Pick the transport for the host runtime: the native Iroh core under Tauri
@@ -257,19 +283,43 @@ export async function createRuntime(wallet: Wallet): Promise<Runtime> {
     await sync.connect(addr);
   };
 
+  // MVP host selection: the first paired peer (typically the user's node). A
+  // device/node distinction and explicit host choice are a follow-up.
+  const shareHost = (): PeerAddr => {
+    const host = Object.values(loadPeerAddrs(wallet.id))[0] as PeerAddr | undefined;
+    if (!host) throw new NoShareHostError();
+    return host;
+  };
+
+  // Pin every block of a published share to the node so the link resolves while
+  // this device is offline (the node only ever receives ciphertext), then record
+  // it locally. Shared by file and site publishing.
+  const pinAndRecord = async (
+    result: PublishResult,
+    host: PeerAddr,
+    path: string,
+  ): Promise<string> => {
+    for (const addr of result.pin) {
+      const bytes = await store.get(addr);
+      if (bytes && signer) await pushBlock(transport, host, addr, bytes, signer);
+    }
+    publishedShares.value = addShare(wallet.id, {
+      root: result.info.root,
+      path,
+      link: result.link,
+      pin: result.pin,
+      created: Date.now(),
+    });
+    return result.link;
+  };
+
   const publishShare = async (path: string): Promise<string> => {
     if (!doc || !signer) throw new Error('runtime not unlocked');
     const file = doc.files.value.find((f) => f.path === path);
     const manifestAddr = file?.blocks[0];
     if (!manifestAddr) throw new Error(`unknown file: ${path}`);
-    // MVP host selection: the first paired peer (typically the user's node). A
-    // device/node distinction and explicit host choice are a follow-up.
-    const host = Object.values(loadPeerAddrs(wallet.id))[0] as PeerAddr | undefined;
-    if (!host) throw new NoShareHostError();
-
-    // Re-ingest the plaintext under a fresh random key (publishFile), then pin
-    // every resulting block to the node so the link resolves while this device
-    // is offline. The node only ever receives ciphertext.
+    const host = shareHost();
+    // Re-ingest the plaintext under a fresh random key (publishFile).
     const plaintext = await restoreFile(manifestAddr, passphrase, store);
     const origin = globalThis.location?.origin ?? '';
     const result = await publishFile(
@@ -283,18 +333,27 @@ export async function createRuntime(wallet: Wallet): Promise<Runtime> {
       host,
       origin,
     );
-    for (const addr of result.pin) {
-      const bytes = await store.get(addr);
-      if (bytes) await pushBlock(transport, host, addr, bytes, signer);
-    }
-    publishedShares.value = addShare(wallet.id, {
-      root: result.info.root,
-      path,
-      link: result.link,
-      pin: result.pin,
-      created: Date.now(),
+    return pinAndRecord(result, host, path);
+  };
+
+  const publishSiteShare = async (files: readonly File[]): Promise<string> => {
+    if (!doc || !signer) throw new Error('runtime not unlocked');
+    if (files.length === 0) throw new Error('publishSiteShare: no files');
+    const host = shareHost();
+    const inputs: SiteFileInput[] = files.map((file) => {
+      const path = sitePath(file);
+      return {
+        path,
+        contentType: file.type || mimeOf(path),
+        size: file.size,
+        content: file.stream(),
+      };
     });
-    return result.link;
+    // Prefer a conventional entry point; otherwise the first file is the index.
+    const index = inputs.find((f) => f.path === 'index.html')?.path ?? inputs[0]?.path ?? '';
+    const origin = globalThis.location?.origin ?? '';
+    const result = await publishSite(inputs, index, store, host, origin);
+    return pinAndRecord(result, host, siteLabel(files));
   };
 
   const unpublishShare = (root: string): void => {
@@ -352,6 +411,7 @@ export async function createRuntime(wallet: Wallet): Promise<Runtime> {
     restore,
     remove,
     publishShare,
+    publishSiteShare,
     unpublishShare,
     publishedShares,
     pairWithCode,

@@ -221,13 +221,33 @@ optimization, not a correctness gap.
 
 ### Phase 5 — navigable websites (service worker)
 
-Single files work after Phase 4. A multi-file site (relative URLs → subresources
-like CSS/JS/images) needs a **service worker** at `/s/…` that intercepts `fetch`
-and resolves each path to a manifest entry — same crypto, just a router in front
-of it. The manifest grows a path→`ShareBlockRef[]` map for this.
+A multi-file site (relative URLs → subresources like CSS/JS/images) needs real
+origin paths so the browser resolves and loads them. Built as:
+
+- `sdk/share.ts`: a v:2 `SiteManifest` (`index` + path→`ShareFileEntry`) beside
+  the v:1 file manifest; `parseAnyManifest` dispatches on `v`. **(done)**
+- `web/share-publisher.ts` `publishSite`: every file ingested under one random
+  key into a v:2 manifest; `web/runtime.ts` `publishSiteShare` pins it all to the
+  node and records it. `web/site-share.tsx` is the folder-picker UI
+  (`webkitdirectory`); `web/mime.ts` types each file by extension. **(done)**
+- `web/share-viewer.ts` `openShare`: returns a tagged file-or-site result;
+  a site decrypts every file into a path→bytes map. **(done)**
+- `web/site-mount.ts` + `public/sw.js`: the decrypted files are written to the
+  Cache API under `/s/<id>/<path>` and a keyless service worker (scope `/s/`)
+  serves them, so relative subresources and links resolve like a normal site.
+  `web/share-page.tsx` mounts a site (cache + SW + navigate). **(done)**
 
 **Exit criteria:** a static site with relative subresources loads and navigates
-entirely from decrypted blocks, with the host serving only ciphertext.
+entirely from decrypted blocks, with the host serving only ciphertext — proven
+by the site round-trip (publish → open every file byte-for-byte under one key)
+and the `cacheSite` layout test; the SW itself is browser-verified. **(done)**
+
+*Tradeoffs / notes:* whole-site **prefetch** — every file is decrypted up front
+so the SW stays trivial (no Iroh/crypto in the worker); lazy per-request fetch is
+a later optimization for very large sites. The site id is the manifest root, so a
+deep `/s/<id>/…` URL only resolves while the SW + cache are present (the canonical
+link is always `/s#share=…`, which repopulates them). `SITE_CACHE` is duplicated
+between `site-mount.ts` and `public/sw.js` — keep the two in sync.
 
 ## Invariants preserved
 

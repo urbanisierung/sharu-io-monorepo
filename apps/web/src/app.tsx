@@ -19,6 +19,7 @@ import type { IngestController } from './ingest-controller.js';
 import { IngestProgress } from './ingest-progress.js';
 import { messages } from './messages.js';
 import type { PeerInfo } from './runtime.js';
+import { SiteShare } from './site-share.js';
 import { StatusBanner } from './status-banner.js';
 import { Button } from './ui/button.js';
 import { DropZone } from './ui/drop-zone.js';
@@ -43,6 +44,8 @@ export interface AppProps {
   onDelete?: (path: string) => void;
   /** Publish a file as a public share, resolving to the openable link. */
   onShare?: (path: string) => Promise<string>;
+  /** Publish a folder of files as a navigable public site. */
+  onPublishSite?: (files: readonly File[]) => Promise<string>;
   onPair?: (code: string) => Promise<void>;
   onVerify?: (id: string) => void;
   onReject?: (id: string) => void;
@@ -73,6 +76,7 @@ export function App({
   onRestore,
   onDelete,
   onShare,
+  onPublishSite,
   onPair,
   onVerify,
   onReject,
@@ -191,6 +195,8 @@ export function App({
                 {phase.kind === 'success' ? t(messages.addMore) : t(messages.retry)}
               </Button>
             )}
+
+            {onPublishSite && <SiteShare onPublish={onPublishSite} />}
 
             <StatusBanner files={files} peers={peers} />
             <p class={cn(styles.muted, peers.value.length === 0 && styles.warn)}>

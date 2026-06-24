@@ -191,6 +191,7 @@ function AppScreen() {
         onRestore={(path) => download(path)}
         onDelete={(path) => ready.remove(path)}
         onShare={(path) => ready.publishShare(path)}
+        onPublishSite={(files) => ready.publishSiteShare(files)}
         onPair={(code) => ready.pairWithCode(code)}
         onVerify={(id) => ready.verifyPeer(id)}
         onReject={(id) => ready.rejectPeer(id)}
