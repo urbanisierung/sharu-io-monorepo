@@ -2,7 +2,7 @@ import type { ShareManifest } from '@safu/sdk';
 import { cleanup, render, screen } from '@testing-library/preact';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetShareViewer, ShareViewer } from './share-page.js';
-import type { OpenedShare } from './share-viewer.js';
+import type { OpenedFile, OpenedSite } from './share-viewer.js';
 
 const manifest = (over: Partial<ShareManifest> = {}): ShareManifest => ({
   v: 1,
@@ -36,7 +36,11 @@ describe('ShareViewer', () => {
   });
 
   it('renders a text share with its name, size, a download link, and the body', async () => {
-    const opened: OpenedShare = { manifest: manifest(), bytes: new TextEncoder().encode('hello') };
+    const opened: OpenedFile = {
+      kind: 'file',
+      manifest: manifest(),
+      bytes: new TextEncoder().encode('hello'),
+    };
     render(<ShareViewer code="ok" open={() => Promise.resolve(opened)} />);
 
     expect(await screen.findByText('note.txt')).toBeTruthy();
@@ -47,7 +51,8 @@ describe('ShareViewer', () => {
   });
 
   it('renders an image share as an <img> preview', async () => {
-    const opened: OpenedShare = {
+    const opened: OpenedFile = {
+      kind: 'file',
       manifest: manifest({ name: 'pic.png', contentType: 'image/png', size: 3 }),
       bytes: new Uint8Array([1, 2, 3]),
     };
@@ -56,5 +61,19 @@ describe('ShareViewer', () => {
     const img = (await screen.findByAltText('pic.png')) as HTMLImageElement;
     expect(img.tagName).toBe('IMG');
     expect(img.getAttribute('src')).toBe('blob:fake');
+  });
+
+  it('hands a site share off to be mounted by the service worker', async () => {
+    const site: OpenedSite = {
+      kind: 'site',
+      id: 'root-hash',
+      index: 'index.html',
+      files: new Map([['index.html', { contentType: 'text/html', bytes: new Uint8Array() }]]),
+    };
+    const mount = vi.fn().mockResolvedValue(undefined);
+    render(<ShareViewer code="ok" open={() => Promise.resolve(site)} mount={mount} />);
+
+    expect(await screen.findByText('Opening the shared site…')).toBeTruthy();
+    expect(mount).toHaveBeenCalledWith(site);
   });
 });

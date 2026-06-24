@@ -15,9 +15,14 @@ export { DocSync, SYNC_PROTOCOL } from './doc-sync.js';
 export { OpfsBlockStore } from './opfs-block-store.js';
 export { OpfsDocStore } from './opfs-doc-store.js';
 export {
+  type AnyManifest,
+  parseAnyManifest,
   parseManifest,
+  parseSiteManifest,
   type ShareBlockRef,
+  type ShareFileEntry,
   type ShareManifest,
+  type SiteManifest,
   serializeManifest,
 } from './share.js';
 export { createSigner, type Signer, verifySignature } from './signing.js';

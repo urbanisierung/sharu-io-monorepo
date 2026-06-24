@@ -10,16 +10,21 @@ import { formatBytes } from './format.js';
 import { shareView } from './messages.js';
 import { decodeShareCode, readShareFromHash } from './share-code.js';
 import styles from './share-page.module.css';
-import { type OpenedShare, openShareOverIroh } from './share-viewer.js';
+import { type OpenedFile, type OpenedSite, openShareOverIroh } from './share-viewer.js';
+import { mountSite } from './site-mount.js';
 
 /** Open a share from its raw fragment code. The default decodes the code and
  *  opens it over Iroh; tests inject a fake to bypass the network + the codec. */
-type Opener = (code: string) => Promise<OpenedShare>;
+type Opener = (code: string) => Promise<OpenedFile | OpenedSite>;
 const defaultOpen: Opener = (code) => openShareOverIroh(decodeShareCode(code));
+/** Mount a site share (cache its files + register the SW + navigate into it).
+ *  Injectable so tests can assert mounting without a service worker. */
+type Mounter = (site: OpenedSite) => Promise<void>;
 
 type State =
   | { kind: 'loading' }
-  | { kind: 'ready'; opened: OpenedShare; url: string }
+  | { kind: 'ready'; opened: OpenedFile; url: string }
+  | { kind: 'site' }
   | { kind: 'missing' }
   | { kind: 'failed' };
 
@@ -33,13 +38,20 @@ export function resetShareViewer(): void {
   started = false;
 }
 
-async function load(code: string | undefined, open: Opener): Promise<void> {
+async function load(code: string | undefined, open: Opener, mount: Mounter): Promise<void> {
   if (!code) {
     state.value = { kind: 'missing' };
     return;
   }
   try {
     const opened = await open(code);
+    if (opened.kind === 'site') {
+      // Hand off to the service worker, which serves the navigable site; this
+      // page then navigates away into /s/<id>/<index>.
+      state.value = { kind: 'site' };
+      await mount(opened);
+      return;
+    }
     const type = opened.manifest.contentType || 'application/octet-stream';
     const url = URL.createObjectURL(new Blob([opened.bytes as BlobPart], { type }));
     state.value = { kind: 'ready', opened, url };
@@ -53,12 +65,14 @@ export interface ShareViewerProps {
   code?: string;
   /** Opens the share; defaults to the Iroh-backed loader. Injectable for tests. */
   open?: Opener;
+  /** Mounts a site share; defaults to the real cache + service-worker mount. */
+  mount?: Mounter;
 }
 
-export function ShareViewer({ code, open = defaultOpen }: ShareViewerProps) {
+export function ShareViewer({ code, open = defaultOpen, mount = mountSite }: ShareViewerProps) {
   if (!started) {
     started = true;
-    void load(code ?? readShareFromHash(globalThis.location?.hash ?? ''), open);
+    void load(code ?? readShareFromHash(globalThis.location?.hash ?? ''), open, mount);
   }
   const s = state.value;
 
@@ -68,6 +82,13 @@ export function ShareViewer({ code, open = defaultOpen }: ShareViewerProps) {
         <div class={styles.center}>
           <h1 class={styles.title}>{t(shareView.loading)}</h1>
           <p class={styles.hint}>{t(shareView.loadingHint)}</p>
+        </div>
+      )}
+
+      {s.kind === 'site' && (
+        <div class={styles.center}>
+          <h1 class={styles.title}>{t(shareView.siteTitle)}</h1>
+          <p class={styles.hint}>{t(shareView.siteBody)}</p>
         </div>
       )}
 
@@ -104,7 +125,7 @@ export function ShareViewer({ code, open = defaultOpen }: ShareViewerProps) {
 
 /** Inline preview for the common renderable types; other types are
  *  download-only (the header always offers the download). */
-function Preview({ opened, url }: { opened: OpenedShare; url: string }) {
+function Preview({ opened, url }: { opened: OpenedFile; url: string }) {
   const type = opened.manifest.contentType;
   if (type.startsWith('image/')) {
     return <img class={styles.media} src={url} alt={opened.manifest.name} />;

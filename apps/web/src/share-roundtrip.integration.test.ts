@@ -2,8 +2,8 @@ import { MemoryBlockStore } from '@safu/sdk';
 import { describe, expect, it } from 'vitest';
 import { base64UrlToBytes, bytesToBase64Url } from './base64url.js';
 import { decodeShareCode, readShareFromHash } from './share-code.js';
-import { publishFile } from './share-publisher.js';
-import { fetchContent, fetchManifest } from './share-viewer.js';
+import { publishFile, publishSite } from './share-publisher.js';
+import { fetchContent, fetchManifest, openShare } from './share-viewer.js';
 
 const peer = { id: 'node', relayUrl: 'https://relay/' };
 const ORIGIN = 'https://safu.app';
@@ -144,5 +144,61 @@ describe('public share round-trip', () => {
     // The raw key bytes appear only after the '#'.
     expect(`${url.origin}${url.pathname}${url.search}`).not.toContain(result.info.key);
     expect(base64UrlToBytes(result.info.key).length).toBe(32);
+  });
+});
+
+describe('public site round-trip', () => {
+  const html = new TextEncoder().encode('<link rel="stylesheet" href="style.css">');
+  const css = new TextEncoder().encode('body{color:red}');
+
+  const publish = (store: MemoryBlockStore) =>
+    publishSite(
+      [
+        {
+          path: 'index.html',
+          contentType: 'text/html',
+          size: html.length,
+          content: streamOf(html, 64),
+        },
+        {
+          path: 'style.css',
+          contentType: 'text/css',
+          size: css.length,
+          content: streamOf(css, 64),
+        },
+      ],
+      'index.html',
+      store,
+      peer,
+      ORIGIN,
+    );
+
+  it('publishes a multi-file site and reopens every file under one key', async () => {
+    const store = new MemoryBlockStore();
+    const result = await publish(store);
+
+    const opened = await openShare(result.info, fetchFrom(store));
+    expect(opened.kind).toBe('site');
+    if (opened.kind !== 'site') throw new Error('expected a site');
+    expect(opened.index).toBe('index.html');
+    expect(opened.id).toBe(result.info.root);
+    expect(opened.files.get('index.html')?.bytes).toEqual(html);
+    expect(opened.files.get('index.html')?.contentType).toBe('text/html');
+    expect(opened.files.get('style.css')?.bytes).toEqual(css);
+    // Every block address (root first) is pinned for the site to resolve.
+    expect(result.pin[0]).toBe(result.info.root);
+    expect(result.pin.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('rejects an index that is not one of the published files', async () => {
+    await expect(
+      publishSite(
+        [{ path: 'a.html', contentType: 'text/html', size: 1, content: streamOf(html, 64) }],
+        'index.html',
+        new MemoryBlockStore(),
+        peer,
+        ORIGIN,
+      ),
+    ).rejects.toThrow(/index/);
   });
 });
