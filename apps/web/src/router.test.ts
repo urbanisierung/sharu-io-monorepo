@@ -5,6 +5,7 @@ describe('router', () => {
   it('maps known paths to views', () => {
     expect(routeOf('/')).toBe('landing');
     expect(routeOf('/whitepaper')).toBe('whitepaper');
+    expect(routeOf('/comparison')).toBe('comparison');
     expect(routeOf('/how-it-works')).toBe('how-it-works');
     expect(routeOf('/app')).toBe('app');
     expect(routeOf('/app/anything')).toBe('app');
@@ -21,6 +22,7 @@ describe('router', () => {
   it('round-trips a view to its canonical path', () => {
     expect(pathOf('landing')).toBe('/');
     expect(pathOf('whitepaper')).toBe('/whitepaper');
+    expect(pathOf('comparison')).toBe('/comparison');
     expect(pathOf('how-it-works')).toBe('/how-it-works');
     expect(pathOf('app')).toBe('/app');
     expect(routeOf(pathOf('app'))).toBe('app');

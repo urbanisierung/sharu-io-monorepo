@@ -6,13 +6,14 @@
 // hard refresh on `/app` or `/whitepaper` resolves client-side.
 import { signal } from '@preact/signals';
 
-export type Route = 'landing' | 'whitepaper' | 'how-it-works' | 'app';
+export type Route = 'landing' | 'whitepaper' | 'comparison' | 'how-it-works' | 'app';
 
 /** Map a URL path to a known view. Unknown paths fall back to the landing page.
  *  `/flow` is kept as an alias of `/how-it-works` so older shared links resolve. */
 export function routeOf(pathname: string): Route {
   if (pathname === '/app' || pathname.startsWith('/app/')) return 'app';
   if (pathname === '/whitepaper') return 'whitepaper';
+  if (pathname === '/comparison') return 'comparison';
   if (pathname === '/how-it-works' || pathname === '/flow') return 'how-it-works';
   return 'landing';
 }
