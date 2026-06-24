@@ -52,6 +52,10 @@ export interface AppProps {
   publishedShares?: ReadonlySignal<readonly PublishedShare[]>;
   /** Revoke a published share (unpin from the node + drop the listing). */
   onUnpublish?: (root: string) => Promise<void>;
+  /** The signing id of the peer chosen to host public shares. */
+  shareHostId?: ReadonlySignal<string | undefined>;
+  /** Choose which paired peer hosts public shares. */
+  onSetShareHost?: (id: string) => void;
   onPair?: (code: string) => Promise<void>;
   onVerify?: (id: string) => void;
   onReject?: (id: string) => void;
@@ -85,6 +89,8 @@ export function App({
   onPublishSite,
   publishedShares,
   onUnpublish,
+  shareHostId,
+  onSetShareHost,
   onPair,
   onVerify,
   onReject,
@@ -226,6 +232,8 @@ export function App({
             onVerify={onVerify}
             onReject={onReject}
             onRename={onRename}
+            shareHostId={shareHostId}
+            onSetShareHost={onSetShareHost}
           />
         )}
 

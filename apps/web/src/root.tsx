@@ -194,6 +194,8 @@ function AppScreen() {
         onPublishSite={(files) => ready.publishSiteShare(files)}
         publishedShares={ready.publishedShares}
         onUnpublish={(root) => ready.unpublishShare(root)}
+        shareHostId={ready.shareHostId}
+        onSetShareHost={(id) => ready.setShareHost(id)}
         onPair={(code) => ready.pairWithCode(code)}
         onVerify={(id) => ready.verifyPeer(id)}
         onReject={(id) => ready.rejectPeer(id)}

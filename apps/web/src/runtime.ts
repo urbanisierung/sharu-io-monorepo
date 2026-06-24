@@ -26,6 +26,7 @@ import { decodePairingCode, encodePairingCode } from './pairing.js';
 import { loadPeerAddrs, savePeerAddr } from './peer-addrs.js';
 import { ingestFile, restoreFile } from './pipeline.js';
 import { deriveSas } from './sas.js';
+import { loadShareHost, saveShareHost } from './share-host.js';
 import {
   type PublishResult,
   publishFile,
@@ -80,6 +81,11 @@ export interface Runtime {
   unpublishShare: (root: string) => Promise<void>;
   /** The files this device has published as public shares, newest first. */
   publishedShares: ReadonlySignal<readonly PublishedShare[]>;
+  /** The signing id of the peer chosen to host public shares (undefined → the
+   *  first paired peer is used). */
+  shareHostId: ReadonlySignal<string | undefined>;
+  /** Choose which paired peer (by signing id) hosts public shares. */
+  setShareHost: (id: string) => void;
   /** Pair with a peer from the connection code they shared out-of-band. */
   pairWithCode: (code: string) => Promise<void>;
   /** Mark a peer's SAS as matching (trusted). */
@@ -175,6 +181,9 @@ export async function createRuntime(wallet: Wallet): Promise<Runtime> {
   const peers = signal<readonly PeerInfo[]>([]);
   const connectionCode = signal('');
   const publishedShares = signal<readonly PublishedShare[]>(loadShares(wallet.id));
+  // The signing id of the peer chosen to host public shares (undefined → fall
+  // back to the first paired peer). Drives the "hosts shares" mark in Devices.
+  const shareHostId = signal<string | undefined>(loadShareHost(wallet.id));
   // Friendly local device labels (peer id → name); drives PeerInfo.name.
   const deviceNames = signal<Record<string, string>>(loadDeviceNames());
   // The user's per-peer "SAS matched" verdict — session UI state, distinct from
@@ -284,12 +293,20 @@ export async function createRuntime(wallet: Wallet): Promise<Runtime> {
     await sync.connect(addr);
   };
 
-  // MVP host selection: the first paired peer (typically the user's node). A
-  // device/node distinction and explicit host choice are a follow-up.
+  // The peer that hosts public shares: the user's explicit choice if set and
+  // still known, else the first paired peer (the common single-node case).
   const shareHost = (): PeerAddr => {
-    const host = Object.values(loadPeerAddrs(wallet.id))[0] as PeerAddr | undefined;
+    const addrs = loadPeerAddrs(wallet.id);
+    const chosen = shareHostId.value;
+    const host =
+      (chosen ? addrs[chosen] : undefined) ?? (Object.values(addrs)[0] as PeerAddr | undefined);
     if (!host) throw new NoShareHostError();
     return host;
+  };
+
+  const setShareHost = (id: string): void => {
+    saveShareHost(wallet.id, id);
+    shareHostId.value = id;
   };
 
   // Pin every block of a published share to the node so the link resolves while
@@ -430,6 +447,8 @@ export async function createRuntime(wallet: Wallet): Promise<Runtime> {
     publishSiteShare,
     unpublishShare,
     publishedShares,
+    shareHostId,
+    setShareHost,
     pairWithCode,
     verifyPeer,
     rejectPeer,

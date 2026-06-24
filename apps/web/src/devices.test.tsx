@@ -41,6 +41,39 @@ describe('Devices', () => {
     expect(onRename).toHaveBeenCalledWith('PEER1', 'Mom’s phone');
   });
 
+  it('lets the user choose which peer hosts public shares', () => {
+    const onSetShareHost = vi.fn();
+    const shareHostId = signal<string | undefined>(undefined);
+    const peers = signal<readonly PeerInfo[]>([{ id: 'NODE1', sas: '123456', status: 'verified' }]);
+    render(
+      <Devices
+        connectionCode={code}
+        peers={peers}
+        onPair={async () => {}}
+        shareHostId={shareHostId}
+        onSetShareHost={onSetShareHost}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Host shares here' }));
+    expect(onSetShareHost).toHaveBeenCalledWith('NODE1');
+  });
+
+  it('marks the current share host instead of offering the button', () => {
+    const shareHostId = signal<string | undefined>('NODE1');
+    const peers = signal<readonly PeerInfo[]>([{ id: 'NODE1', sas: '123456', status: 'verified' }]);
+    render(
+      <Devices
+        connectionCode={code}
+        peers={peers}
+        onPair={async () => {}}
+        shareHostId={shareHostId}
+        onSetShareHost={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Hosts public shares')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Host shares here' })).toBeNull();
+  });
+
   it('shows a friendly name when one is set', () => {
     const peers = signal<readonly PeerInfo[]>([
       { id: 'PEER1', name: 'Mom’s phone', sas: '123456', status: 'verified' },

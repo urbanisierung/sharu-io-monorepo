@@ -482,6 +482,8 @@ export const messages = defineMessages('safu', {
   publishedEmpty: 'Nothing published yet.',
   unshare: 'Revoke',
   unsharing: 'Revoking…',
+  hostShares: 'Host shares here',
+  hostingShares: 'Hosts public shares',
   devicesHeading: 'Devices',
   yourCode: 'Your link code (share it with your other device)',
   scanPrompt: 'Scan this with your other device’s camera, or share the link.',
