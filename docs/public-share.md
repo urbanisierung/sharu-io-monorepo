@@ -109,7 +109,8 @@ signed request (`{hash, signId, sig}`) + the bytes; the node's `servePins`
 accepts it only if the signer is an authorized writer and the bytes hash to the
 claimed address, then stores it — after which the node serves it via the same
 `BLOCK_PROTOCOL`. Authorization reuses the document's by-author model, not the
-transport carrier (`sync-doc.ts`).
+transport carrier (`sync-doc.ts`). Its mirror `safu/unpin/1` (`unpinBlock` /
+`serveUnpins`) deletes a block under the same authorization, for revocation.
 
 ## Availability and revocation (operational reality)
 
@@ -120,16 +121,16 @@ transport carrier (`sync-doc.ts`).
 - **Which node? (MVP)** The runtime pins to, and embeds, the first paired peer
   (`peer-addrs.ts` remembers paired addresses across reloads). A device/node
   distinction and an explicit "share host" choice are a follow-up.
-- **Revocation = unpin (partial).** "Unpublish" currently drops the share from
-  this device's local list (`shares-store.ts`); removing the pinned blocks from
-  the node still needs a `BlockStore.delete` (the interface has none yet) plus an
-  unpin message. Copies already downloaded can never be recalled — the UI says
-  so. **Follow-up:** `BlockStore.delete` across Memory/Opfs/Fs stores + a
-  `safu/unpin/1` (or a tombstone in `safu/pin/1`).
+- **Revocation = unpin.** `unpublishShare` sends a signed `safu/unpin/1` for
+  every block (`unpinBlock` → the node's `serveUnpins` deletes it via
+  `BlockStore.delete`), drops the local copy, and forgets the listing — so the
+  link stops resolving. Best-effort if the node is unreachable (the listing is
+  still removed). Copies already downloaded can never be recalled — the UI says
+  so. The `published-shares.tsx` panel lists shares with a Revoke button.
 - **Production transport seam.** End-to-end pinning over real Iroh waits on
   `apps/peer/src/transport.ts` (`createPeerTransport`, still a stub); when wired,
-  the node endpoint must advertise `PIN_PROTOCOL` alongside sync/block ALPNs. All
-  pin logic is proven today over the loopback transport.
+  the node endpoint must advertise `PIN_PROTOCOL` + `UNPIN_PROTOCOL` alongside the
+  sync/block ALPNs. All pin/unpin logic is proven today over the loopback transport.
 
 ## Phases
 
@@ -194,8 +195,8 @@ back over `BLOCK_PROTOCOL`; `DocSync` behavior unchanged (existing tests green).
 
 **Exit criteria:** publish → decode produces a manifest that egresses to the
 original bytes (`share-roundtrip.integration.test.ts`); the Share button calls
-through and surfaces the link; codec + shares-store tests pass. **(done — except
-node-side block removal on unpublish; see *Availability and revocation*.)**
+through and surfaces the link; codec + shares-store tests pass; revoke unpins
+the blocks from the node (see *Availability and revocation*). **(done)**
 
 ### Phase 4 — keyless viewer route (web)
 
