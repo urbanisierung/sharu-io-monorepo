@@ -133,16 +133,23 @@ behavior is unchanged:
 empty-payload tests pass for the raw-key path; existing passphrase tests still
 pass; typecheck + Biome clean.
 
-### Phase 2 — share manifest + codec (SDK)
+### Phase 2 — share manifest + block-fetch (SDK)
 
-- `ShareBlockRef` / `ShareManifest` types and `sealManifest` / `openManifest`
-  (encrypt/decrypt the manifest block under `K_share`) in `packages/sdk`.
-- `requestBlock` free function extracted from `DocSync`; `DocSync.requestBlock`
-  delegates to it.
+The SDK stays **crypto-free** — it handles opaque, content-addressed bytes and
+never touches keys (the same boundary that keeps `@safu/crypto` a mere dev
+dependency). So sealing the manifest under `K_share` lives with the publisher
+(Phase 3, app layer), not here. Phase 2 ships the crypto-free halves:
 
-**Exit criteria:** manifest seal/open round-trips; a manifest survives a
-hash-addressed store put/get; `DocSync` behavior unchanged (existing sync tests
-green).
+- `ShareBlockRef` / `ShareManifest` types plus `serializeManifest` /
+  `parseManifest` (encode to / validate from the bytes that get sealed) in
+  `packages/sdk/src/share.ts`.
+- `fetchBlock` free function + the `BLOCK_PROTOCOL` tag extracted into
+  `packages/sdk/src/block-fetch.ts`; `DocSync.requestBlock` delegates to it, so
+  the keyless viewer can fetch blocks without a `SyncDoc`.
+
+**Exit criteria:** manifest serialize/parse round-trips and rejects malformed
+input; `fetchBlock` pulls a block over a loopback transport; `DocSync` behavior
+unchanged (existing sync tests green).
 
 ### Phase 3 — share code + publisher (web)
 

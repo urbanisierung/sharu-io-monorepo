@@ -7,11 +7,18 @@ export {
   type Stamp,
   type StampedEntry,
 } from './allocation-table.js';
+export { BLOCK_PROTOCOL, fetchBlock } from './block-fetch.js';
 export { type BlockStore, MemoryBlockStore } from './block-store.js';
 export { type DocSnapshot, type DocStore, MemoryDocStore } from './doc-store.js';
-export { BLOCK_PROTOCOL, DocSync, SYNC_PROTOCOL } from './doc-sync.js';
+export { DocSync, SYNC_PROTOCOL } from './doc-sync.js';
 export { OpfsBlockStore } from './opfs-block-store.js';
 export { OpfsDocStore } from './opfs-doc-store.js';
+export {
+  parseManifest,
+  type ShareBlockRef,
+  type ShareManifest,
+  serializeManifest,
+} from './share.js';
 export { createSigner, type Signer, verifySignature } from './signing.js';
 export { type Delta, type FileView, SyncDoc, type WriterOp } from './sync-doc.js';
 
