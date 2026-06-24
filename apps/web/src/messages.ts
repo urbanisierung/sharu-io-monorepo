@@ -14,7 +14,7 @@ export const landing = defineMessages('safu.landing', {
   heroSubtitle:
     'Sharu is a decentralized, zero-knowledge, local-first backup and sync platform. Files are encrypted on your device and synced peer-to-peer across your own machines — no servers, no accounts, and no one who can read them but you.',
   launch: 'Launch the app',
-  learnMore: 'See how it works',
+  learnMore: 'See the pipeline',
   watchFlow: 'How it works',
 
   problemKicker: 'The problem',
