@@ -50,25 +50,25 @@ those (and authorize the device's id here) and the node begins replicating.
 > wire-compatible backup node over `safu_transport::native`, with no Node or
 > browser. If you want a headless node today, use it.
 
-## The one remaining seam: a headless transport
+## The headless transport (implemented)
 
-Everything above is complete and tested. The only unimplemented piece is a
-headless (no-browser, no-Tauri) Iroh transport — `createPeerTransport()` in
-`src/transport.ts`, which currently fails fast. Two viable wirings, both reusing
-the **native** Iroh core already built for desktop (M3)
-(`crates/safu-transport` → `safu_transport::native`, direct UDP hole-punching),
-rather than the relay-only WASM build:
+`createPeerTransport()` in `src/transport.ts` is now wired via **B. WASM-in-Node**:
+the relay-only Iroh WASM core, booted under Node by reading its `.wasm` from disk
+(`@safu/transport/iroh` has a universal loader mirroring `@safu/crypto`'s). Node 22
+supplies the only globals the binding needs — `fetch`, `WebSocket`, and
+`crypto.getRandomValues` — so no shims are required. The transport advertises every
+ALPN the node serves: `SYNC_PROTOCOL`, `BLOCK_PROTOCOL`, and the public-share
+`PIN_PROTOCOL` / `UNPIN_PROTOCOL`. A Node boot test (`packages/transport/src/iroh.boot.test.ts`)
+proves the WASM instantiates headless and creates an endpoint.
 
-- **A. Native binding (recommended).** Expose `safu_transport::native` to Node
-  via napi-rs (a small cdylib), or run the native core as a sidecar the peer
-  talks to over a local socket. This is the desktop transport minus the Tauri
-  command bridge — same QUIC hole-punching, best NAT traversal for an always-on
-  node, no browser globals.
-- **B. WASM-in-Node.** Add a Node boot path to the Iroh WASM binding (mirror
-  `packages/crypto/src/wasm.ts`, which reads its `.wasm` from disk under Node)
-  and supply the globals it expects (`fetch`, a `ws` WebSocket). Relay-only and
-  simplest to stand up, but routes all traffic through the n0 relay.
+Tradeoff: relay-only routes all traffic through the n0 relay (which still sees only
+ciphertext) rather than hole-punching directly. For best NAT traversal on a
+NAS / VPS / Raspberry Pi, prefer:
 
-Implementing either makes `main.ts` a runnable always-on node with no other
-changes. (Running the CLI also needs a TypeScript-aware runner, e.g. `tsx`,
-because the repo uses `.js` import specifiers resolved by the bundler.)
+- **A. Native binding (best NAT traversal).** Already realized by the self-contained
+  Rust CLI `crates/safu-node` over `safu_transport::native` (direct UDP
+  hole-punching, no Node or browser). Use it where direct connectivity matters.
+
+`main.ts` is now a runnable always-on node. (Running the CLI needs a TypeScript-aware
+runner, e.g. `tsx`, because the repo uses `.js` import specifiers resolved by the
+bundler.)

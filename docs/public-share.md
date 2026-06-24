@@ -127,10 +127,12 @@ transport carrier (`sync-doc.ts`). Its mirror `safu/unpin/1` (`unpinBlock` /
   link stops resolving. Best-effort if the node is unreachable (the listing is
   still removed). Copies already downloaded can never be recalled — the UI says
   so. The `published-shares.tsx` panel lists shares with a Revoke button.
-- **Production transport seam.** End-to-end pinning over real Iroh waits on
-  `apps/peer/src/transport.ts` (`createPeerTransport`, still a stub); when wired,
-  the node endpoint must advertise `PIN_PROTOCOL` + `UNPIN_PROTOCOL` alongside the
-  sync/block ALPNs. All pin/unpin logic is proven today over the loopback transport.
+- **Production transport seam (done).** `apps/peer/src/transport.ts`
+  (`createPeerTransport`) now boots the relay-only Iroh WASM core headless under
+  Node and advertises `SYNC_PROTOCOL`, `BLOCK_PROTOCOL`, `PIN_PROTOCOL`, and
+  `UNPIN_PROTOCOL` — so the always-on TS peer can pin/serve/unpin public shares
+  over real Iroh, not just loopback. For direct hole-punching prefer the native
+  Rust node `crates/safu-node`.
 
 ## Phases
 
