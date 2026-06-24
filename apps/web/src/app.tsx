@@ -18,7 +18,9 @@ import { FileTable } from './file-table.js';
 import type { IngestController } from './ingest-controller.js';
 import { IngestProgress } from './ingest-progress.js';
 import { messages } from './messages.js';
+import { PublishedShares } from './published-shares.js';
 import type { PeerInfo } from './runtime.js';
+import type { PublishedShare } from './shares-store.js';
 import { SiteShare } from './site-share.js';
 import { StatusBanner } from './status-banner.js';
 import { Button } from './ui/button.js';
@@ -46,6 +48,10 @@ export interface AppProps {
   onShare?: (path: string) => Promise<string>;
   /** Publish a folder of files as a navigable public site. */
   onPublishSite?: (files: readonly File[]) => Promise<string>;
+  /** The public shares this device has published, for re-copy + revoke. */
+  publishedShares?: ReadonlySignal<readonly PublishedShare[]>;
+  /** Revoke a published share (unpin from the node + drop the listing). */
+  onUnpublish?: (root: string) => Promise<void>;
   onPair?: (code: string) => Promise<void>;
   onVerify?: (id: string) => void;
   onReject?: (id: string) => void;
@@ -77,6 +83,8 @@ export function App({
   onDelete,
   onShare,
   onPublishSite,
+  publishedShares,
+  onUnpublish,
   onPair,
   onVerify,
   onReject,
@@ -197,6 +205,9 @@ export function App({
             )}
 
             {onPublishSite && <SiteShare onPublish={onPublishSite} />}
+            {publishedShares && onUnpublish && (
+              <PublishedShares shares={publishedShares} onUnpublish={onUnpublish} />
+            )}
 
             <StatusBanner files={files} peers={peers} />
             <p class={cn(styles.muted, peers.value.length === 0 && styles.warn)}>

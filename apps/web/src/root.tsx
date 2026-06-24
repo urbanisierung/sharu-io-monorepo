@@ -192,6 +192,8 @@ function AppScreen() {
         onDelete={(path) => ready.remove(path)}
         onShare={(path) => ready.publishShare(path)}
         onPublishSite={(files) => ready.publishSiteShare(files)}
+        publishedShares={ready.publishedShares}
+        onUnpublish={(root) => ready.unpublishShare(root)}
         onPair={(code) => ready.pairWithCode(code)}
         onVerify={(id) => ready.verifyPeer(id)}
         onReject={(id) => ready.rejectPeer(id)}

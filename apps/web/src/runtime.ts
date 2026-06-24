@@ -16,6 +16,7 @@ import {
   type Signer,
   SYNC_PROTOCOL,
   SyncDoc,
+  unpinBlock,
 } from '@safu/sdk';
 import type { PeerAddr, Transport } from '@safu/transport';
 import { loadDeviceNames, saveDeviceName } from './device-names.js';
@@ -74,9 +75,9 @@ export interface Runtime {
    *  every file under a fresh random key, pin to the node, and return the link.
    *  Rejects with {@link NoShareHostError} if no node is paired. */
   publishSiteShare: (files: readonly File[]) => Promise<string>;
-  /** Stop listing a published share locally (see docs/public-share.md on the
-   *  pending node-side block removal). */
-  unpublishShare: (root: string) => void;
+  /** Revoke a published share: unpin its blocks from the node and drop the local
+   *  copy + listing. Best-effort if the node is unreachable. */
+  unpublishShare: (root: string) => Promise<void>;
   /** The files this device has published as public shares, newest first. */
   publishedShares: ReadonlySignal<readonly PublishedShare[]>;
   /** Pair with a peer from the connection code they shared out-of-band. */
@@ -356,10 +357,25 @@ export async function createRuntime(wallet: Wallet): Promise<Runtime> {
     return pinAndRecord(result, host, siteLabel(files));
   };
 
-  const unpublishShare = (root: string): void => {
-    // Drops the share from this device's list. Removing the pinned blocks from
-    // the node needs a BlockStore.delete + an unpin message (BlockStore has no
-    // delete yet) — tracked as a follow-up in docs/public-share.md.
+  const unpublishShare = async (root: string): Promise<void> => {
+    // Revoke the share: unpin every block from the node (so the link stops
+    // resolving) and drop our local copy, then forget the listing. Best-effort —
+    // if the node is unreachable we still remove the listing rather than leaving
+    // the user stuck; the node keeps serving until it next hears the unpin.
+    const share = publishedShares.value.find((s) => s.root === root);
+    if (share && signer) {
+      const host = Object.values(loadPeerAddrs(wallet.id))[0] as PeerAddr | undefined;
+      for (const addr of share.pin) {
+        if (host) {
+          try {
+            await unpinBlock(transport, host, addr, signer);
+          } catch {
+            /* node unreachable — listing still removed below */
+          }
+        }
+        await store.delete(addr);
+      }
+    }
     publishedShares.value = removeShare(wallet.id, root);
   };
 
