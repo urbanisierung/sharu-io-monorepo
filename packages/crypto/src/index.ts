@@ -184,3 +184,33 @@ export async function deriveKey(passphrase: string, salt: Uint8Array): Promise<U
   await ready();
   return derive_key(new TextEncoder().encode(passphrase), salt);
 }
+
+/** A single AES-256-GCM sealed blob: ciphertext (16-byte tag appended) plus the
+ *  random nonce needed to open it. */
+export interface SealedBytes {
+  nonce: Uint8Array;
+  ciphertext: Uint8Array;
+}
+
+/** Seal one small blob under a 32-byte `key` with a fresh random nonce. For the
+ *  public-share manifest, which is sealed under the share key and stored as one
+ *  content-addressed block — not a stream. AES-GCM authenticates it, so opening
+ *  with the wrong key or tampered bytes throws. */
+export async function sealBytes(key: Uint8Array, plaintext: Uint8Array): Promise<SealedBytes> {
+  await ready();
+  if (key.length !== KEY_LEN) throw new Error(`key must be ${KEY_LEN} bytes, got ${key.length}`);
+  const nonce = randomBytes(NONCE_LEN);
+  return { nonce, ciphertext: seal(key, nonce, plaintext) };
+}
+
+/** Open a blob sealed by `sealBytes`. Throws if authentication fails (wrong key
+ *  or tampered ciphertext). */
+export async function openBytes(
+  key: Uint8Array,
+  nonce: Uint8Array,
+  ciphertext: Uint8Array,
+): Promise<Uint8Array> {
+  await ready();
+  if (key.length !== KEY_LEN) throw new Error(`key must be ${KEY_LEN} bytes, got ${key.length}`);
+  return open(key, nonce, ciphertext);
+}

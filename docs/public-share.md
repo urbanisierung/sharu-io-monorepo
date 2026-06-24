@@ -154,9 +154,13 @@ unchanged (existing sync tests green).
 ### Phase 3 — share code + publisher (web)
 
 - `apps/web/src/share-code.ts`: `encodeShareCode` / `decodeShareCode` /
-  `shareLink` / `readShareFromHash`, mirroring `pairing.ts`.
-- `apps/web/src/share-publisher.ts`: re-ingest a file under a random key, persist
-  blocks + manifest to the `BlockStore`, pin to the node, return a link.
+  `shareLink` / `readShareFromHash`, mirroring `pairing.ts`. **(done)**
+- `packages/crypto`: `sealBytes` / `openBytes` — authenticated single-blob
+  seal/open, used to seal the manifest under the share key as one
+  content-addressed block. **(done)**
+- `apps/web/src/share-publisher.ts`: re-ingest a file under a random key
+  (`createIngestStreamWithKey`), seal its manifest (`sealBytes`), persist blocks
+  + manifest to the `BlockStore`, pin to the node, return a link.
 - A "Publish" / "Unpublish" affordance in the wallet UI, with a published-shares
   list for revocation.
 
