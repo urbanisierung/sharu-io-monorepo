@@ -1,6 +1,6 @@
 import { LoopbackNetwork } from '@safu/transport';
 import { describe, expect, it } from 'vitest';
-import { type PinPolicy, pushBlock, servePins } from './block-pin.js';
+import { type PinPolicy, pushBlock, servePins, serveUnpins, unpinBlock } from './block-pin.js';
 import { MemoryBlockStore } from './block-store.js';
 import { createSigner } from './signing.js';
 
@@ -59,5 +59,41 @@ describe('block pin', () => {
     );
     expect(await pushBlock(client, node.addr(), 'len-2', new Uint8Array([1]), device)).toBe(false);
     expect(await store.has('len-2')).toBe(true);
+  });
+});
+
+describe('block unpin', () => {
+  it('deletes a block on a signed unpin from an authorized device', async () => {
+    const { node, client } = wire();
+    const store = new MemoryBlockStore();
+    await store.put('hash-1', new Uint8Array([1, 2, 3]));
+    const stop = serveUnpins(node, store, allow(device.id));
+    await flush();
+
+    const ok = await unpinBlock(client, node.addr(), 'hash-1', device);
+    expect(ok).toBe(true);
+    expect(await store.has('hash-1')).toBe(false);
+    stop();
+  });
+
+  it('rejects an unpin from an unauthorized signer and keeps the block', async () => {
+    const { node, client } = wire();
+    const store = new MemoryBlockStore();
+    await store.put('hash-1', new Uint8Array([1, 2, 3]));
+    serveUnpins(node, store, allow(device.id));
+    await flush();
+
+    const ok = await unpinBlock(client, node.addr(), 'hash-1', stranger);
+    expect(ok).toBe(false);
+    expect(await store.has('hash-1')).toBe(true);
+  });
+
+  it('treats unpinning an absent block as success (idempotent)', async () => {
+    const { node, client } = wire();
+    const store = new MemoryBlockStore();
+    serveUnpins(node, store, allow(device.id));
+    await flush();
+
+    expect(await unpinBlock(client, node.addr(), 'never-stored', device)).toBe(true);
   });
 });

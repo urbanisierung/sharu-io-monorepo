@@ -3,7 +3,7 @@
 // interface the SDK already depends on, so nothing in the sync/transfer layers
 // changes. Blocks are files named by their (hex) BLAKE3 hash under `dir`; only
 // opaque ciphertext is ever written, honouring the zero-knowledge invariant.
-import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { BlockStore } from '@safu/sdk';
 import { isNotFound } from './fs-util.js';
@@ -43,6 +43,11 @@ export class FsBlockStore implements BlockStore {
       if (isNotFound(error)) return false;
       throw error;
     }
+  }
+
+  async delete(hash: string): Promise<void> {
+    // `force` makes deleting an absent block a no-op (idempotent unpin).
+    await rm(this.#path(hash), { force: true });
   }
 
   #ensureDir(): Promise<unknown> {

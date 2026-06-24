@@ -9,7 +9,15 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { blake3 } from '@safu/crypto';
-import { createSigner, DocSync, fetchBlock, MemoryBlockStore, pushBlock, SyncDoc } from '@safu/sdk';
+import {
+  createSigner,
+  DocSync,
+  fetchBlock,
+  MemoryBlockStore,
+  pushBlock,
+  SyncDoc,
+  unpinBlock,
+} from '@safu/sdk';
 import { LoopbackNetwork } from '@safu/transport';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createPeer } from './peer.js';
@@ -119,6 +127,13 @@ describe('headless backup peer over loopback', () => {
     expect(await pushBlock(deviceTransport, peer.addr, hash, block, deviceSigner)).toBe(true);
     const pulled = await fetchBlock(deviceTransport, peer.addr, hash, new MemoryBlockStore());
     expect(pulled).toEqual(block);
+
+    // Revoking the share: a stranger cannot unpin, the owner can, and the block
+    // is gone from the node afterwards (the link stops resolving).
+    expect(await unpinBlock(deviceTransport, peer.addr, hash, stranger)).toBe(false);
+    expect(await peer.store.has(hash)).toBe(true);
+    expect(await unpinBlock(deviceTransport, peer.addr, hash, deviceSigner)).toBe(true);
+    expect(await peer.store.has(hash)).toBe(false);
 
     await peer.close();
   });

@@ -65,6 +65,17 @@ async fn block_has(state: State<'_, Safu>, hash: String) -> Result<bool, String>
         .unwrap_or(false))
 }
 
+/// Remove a block (idempotent — a missing block is success), to reclaim a
+/// revoked public share's pinned ciphertext.
+#[tauri::command]
+async fn block_delete(state: State<'_, Safu>, hash: String) -> Result<(), String> {
+    match tokio::fs::remove_file(state.block_path(&hash)).await {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
 // ---- Native transport bridge (plan §3.2) ------------------------------------
 
 #[tauri::command]
@@ -203,6 +214,7 @@ pub fn run() {
             block_put,
             block_get,
             block_has,
+            block_delete,
             transport_id,
             transport_relay,
             transport_connect,

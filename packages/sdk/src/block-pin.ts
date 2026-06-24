@@ -16,6 +16,9 @@ import { type Signer, verifySignature } from './signing.js';
 /** ALPN-style protocol tag for block pinning. */
 export const PIN_PROTOCOL = 'safu/pin/1';
 
+/** ALPN-style protocol tag for unpinning (revoking) a block. */
+export const UNPIN_PROTOCOL = 'safu/unpin/1';
+
 const ACK_OK = 1;
 const ACK_REJECT = 0;
 const enc = new TextEncoder();
@@ -49,6 +52,26 @@ export async function pushBlock(
   }
 }
 
+/** Unpin (revoke) a block from `peer`: send a signed request naming the block's
+ *  hash. Resolves true if the node accepted it and dropped the block. Revoking a
+ *  public share unpins its blocks so the link stops resolving. */
+export async function unpinBlock(
+  transport: Transport,
+  peer: PeerAddr,
+  hash: string,
+  signer: Signer,
+): Promise<boolean> {
+  const channel = await transport.connect(peer, UNPIN_PROTOCOL);
+  try {
+    const request: PinRequest = { hash, signId: signer.id, sig: signer.sign(enc.encode(hash)) };
+    await channel.send(enc.encode(JSON.stringify(request)));
+    const { value } = await channel.messages().next();
+    return value?.length === 1 && value[0] === ACK_OK;
+  } finally {
+    await channel.close();
+  }
+}
+
 /** What the node will accept a pin from, and (optionally) how it checks block
  *  integrity. `authorized` is the node's current writer set; `verifyHash`, if
  *  given, asserts the bytes actually hash to the claimed address — injected by
@@ -74,41 +97,87 @@ export function servePins(transport: Transport, store: BlockStore, policy: PinPo
   };
 }
 
+/** Accept inbound unpin channels until the returned stop function is called.
+ *  A block is deleted only if the request is signed by an authorized peer. */
+export function serveUnpins(
+  transport: Transport,
+  store: BlockStore,
+  policy: PinPolicy,
+): () => void {
+  let active = true;
+  void (async () => {
+    for await (const channel of transport.accept(UNPIN_PROTOCOL)) {
+      if (!active) break;
+      void acceptUnpin(channel, store, policy);
+    }
+  })();
+  return () => {
+    active = false;
+  };
+}
+
 async function acceptPin(channel: Channel, store: BlockStore, policy: PinPolicy): Promise<void> {
   try {
     const messages = channel.messages();
     const head = await messages.next();
     const body = await messages.next();
-    if (head.done || body.done || !(await accepts(head.value, body.value, policy))) {
+    const request = head.done ? undefined : authorize(head.value, policy);
+    const ok =
+      request !== undefined &&
+      !body.done &&
+      (!policy.verifyHash || (await policy.verifyHash(request.hash, body.value)));
+    if (!ok || !request) {
       await channel.send(Uint8Array.of(ACK_REJECT));
       return;
     }
-    const { hash } = JSON.parse(dec.decode(head.value)) as PinRequest;
-    await store.put(hash, body.value);
+    await store.put(request.hash, body.value);
     await channel.send(Uint8Array.of(ACK_OK));
   } catch {
-    // A malformed frame or a transport error: reject if we still can, else drop.
-    try {
-      await channel.send(Uint8Array.of(ACK_REJECT));
-    } catch {
-      /* channel already gone */
-    }
+    await reject(channel);
   } finally {
     await channel.close();
   }
 }
 
-async function accepts(head: Uint8Array, body: Uint8Array, policy: PinPolicy): Promise<boolean> {
+async function acceptUnpin(channel: Channel, store: BlockStore, policy: PinPolicy): Promise<void> {
+  try {
+    const messages = channel.messages();
+    const head = await messages.next();
+    const request = head.done ? undefined : authorize(head.value, policy);
+    if (!request) {
+      await channel.send(Uint8Array.of(ACK_REJECT));
+      return;
+    }
+    await store.delete(request.hash);
+    await channel.send(Uint8Array.of(ACK_OK));
+  } catch {
+    await reject(channel);
+  } finally {
+    await channel.close();
+  }
+}
+
+/** Parse a request frame and return it only if it is well-formed, from an
+ *  authorized signer, and carries that signer's signature over the hash. */
+function authorize(head: Uint8Array, policy: PinPolicy): PinRequest | undefined {
   let request: PinRequest;
   try {
     request = JSON.parse(dec.decode(head)) as PinRequest;
   } catch {
-    return false;
+    return undefined;
   }
-  if (typeof request?.hash !== 'string' || request.hash.length === 0) return false;
-  if (typeof request.signId !== 'string' || typeof request.sig !== 'string') return false;
-  if (!policy.authorized(request.signId)) return false;
-  if (!verifySignature(request.signId, enc.encode(request.hash), request.sig)) return false;
-  if (policy.verifyHash && !(await policy.verifyHash(request.hash, body))) return false;
-  return true;
+  if (typeof request?.hash !== 'string' || request.hash.length === 0) return undefined;
+  if (typeof request.signId !== 'string' || typeof request.sig !== 'string') return undefined;
+  if (!policy.authorized(request.signId)) return undefined;
+  if (!verifySignature(request.signId, enc.encode(request.hash), request.sig)) return undefined;
+  return request;
+}
+
+/** Best-effort reject after a malformed frame or transport error. */
+async function reject(channel: Channel): Promise<void> {
+  try {
+    await channel.send(Uint8Array.of(ACK_REJECT));
+  } catch {
+    /* channel already gone */
+  }
 }
