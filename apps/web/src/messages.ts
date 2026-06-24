@@ -217,7 +217,7 @@ export const flow = defineMessages('safu.flow', {
     'Argon2id derives the encryption key from your password, on your device. The key is never uploaded and never stored in plaintext — forget the password and there is no reset.',
   wallet3Title: 'Link devices to the same wallet',
   wallet3Body:
-    'Open the wallet on another device with the same password, confirm the short safety number shown on both screens, and they sync the wallet’s files directly over Iroh.',
+    'Linking is a deliberate step: share one device’s connection code (or scan its QR) with the other so they can find each other. Enter the same password on both, confirm the short safety number shown on each screen, and only then do they sync the wallet’s files directly over Iroh.',
   wallet4Title: 'Back up and restore the wallet',
   wallet4Body:
     'Save a recovery sheet to re-open the wallet anywhere, and run an always-on backup node to keep a full ciphertext replica reachable even when every device is offline.',
@@ -291,9 +291,9 @@ export const flowEli5 = defineMessages('safu.flow.eli5', {
   wallet2Title: 'Your secret word is the key',
   wallet2Body:
     'Only your secret word can open the box. It never leaves your gadget, and nobody can make a new one — so do not forget it!',
-  wallet3Title: 'Open the same box on another gadget',
+  wallet3Title: 'Link your other gadget to the box',
   wallet3Body:
-    'Type the same secret word on your phone, check that both gadgets show the same safety word, and they share the very same box.',
+    'First show the link (or the little square code) from one gadget to the other so they can find each other. Then type the same secret word on both, check that they show the same safety word, and now they share the very same box.',
   wallet4Title: 'Keep a spare and never lose it',
   wallet4Body:
     'Write your secret word on a recovery sheet, and let an always-awake toy box hold a spare copy for you.',
@@ -345,8 +345,9 @@ export const flowMachine = defineMessages('safu.flow.machine', {
   wallet2Title: 'key := Argon2id(password)',
   wallet2Body:
     'KDF runs on-device. Key non-exportable, never persisted in plaintext. No reset, no escrow.',
-  wallet3Title: 'link := same wallet, same password',
-  wallet3Body: 'Peer joins via shared password; SAS-verified pairing; direct sync over Iroh.',
+  wallet3Title: 'link := connection_code + password + SAS',
+  wallet3Body:
+    'Pairing is explicit: peer A emits a connection code (addr + signing id); peer B imports it, derives the same key from the shared password, both confirm the SAS, then direct sync over Iroh.',
   wallet4Title: 'durability := recovery_sheet + replica',
   wallet4Body:
     'Recovery sheet restores wallet on any peer. safu-node holds an always-on ciphertext replica.',
