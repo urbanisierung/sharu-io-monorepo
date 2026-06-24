@@ -8,6 +8,7 @@ export const landing = defineMessages('safu.landing', {
   brand: 'SHARU',
   logoAlt: 'Sharu wolf logo',
   whitepaper: 'Read the whitepaper',
+  comparison: 'IPFS vs. Iroh',
   badge: 'zero-knowledge · local-first · peer-to-peer',
   heroLine1: 'Your data.',
   heroLine2: 'Your devices.',
@@ -151,6 +152,122 @@ export const whitepaper = defineMessages('safu.whitepaper', {
   guarantee5: 'Content-addressed — blocks are named by BLAKE3 hash and are tamper-evident.',
   guarantee6:
     'Conflict-free — a CRDT allocation table converges deterministically and never drops a write.',
+
+  footer: 'Sharu — zero-knowledge, local-first backup & sync',
+});
+
+/** Comparison page copy: this architecture (Iroh / direct-QUIC) vs. the original
+ *  sharu-io approach (2019-era js-ipfs + a global DHT + Electron). Mirrors
+ *  docs/architecture-comparison-ipfs-vs-iroh.md. */
+export const comparison = defineMessages('safu.comparison', {
+  back: 'Back',
+  title: 'IPFS vs. Iroh',
+  subtitle: 'Why Sharu was rebuilt on direct-QUIC peer-to-peer transport',
+  meta: 'Architecture note · 2026 · sharu.io',
+  launch: 'Launch the app',
+
+  abstractKicker: 'In one line',
+  abstractTitle: 'Two ways to move encrypted blocks between devices.',
+  abstractBody:
+    'The original Sharu used IPFS to get content addressing and “store it anywhere” decentralization for free — at the cost of DHT latency, fragile connectivity behind NAT, a heavy Electron runtime, and a security model bolted onto storage. The rewrite keeps the one IPFS idea that earns its place — addressing blocks by their hash — and rebuilds everything else around what this product actually is: private, instant, zero-knowledge sync between a user’s own devices.',
+
+  tableKicker: 'Side by side',
+  tableTitle: 'The same job, two architectures.',
+  tableColDimension: 'Dimension',
+  tableColOriginal: 'Original (IPFS)',
+  tableColModern: 'Project Safu (Iroh)',
+
+  rowDiscoveryDim: 'Content discovery',
+  rowDiscoveryOld: 'Global Distributed Hash Table (DHT) routing',
+  rowDiscoveryNew: 'Direct node-to-node; the public key is the address',
+  rowTransportDim: 'Transport',
+  rowTransportOld: 'libp2p streams over the DHT-resolved path',
+  rowTransportNew: 'Native QUIC (iroh-blobs for blocks, iroh-docs for state)',
+  rowNatDim: 'NAT traversal',
+  rowNatOld: 'DHT + relay; fragile behind symmetric NAT',
+  rowNatNew: 'UDP hole-punching with DERP/relay fallback',
+  rowAddrDim: 'Content addressing',
+  rowAddrOld: 'CIDs (multihash, typically SHA-256)',
+  rowAddrNew: 'BLAKE3 hash of the ciphertext',
+  rowRuntimeDim: 'Runtime',
+  rowRuntimeOld: 'Electron (bundled Chromium + Node)',
+  rowRuntimeNew: 'Tauri 2.0 (system webview + small Rust core)',
+  rowParityDim: 'Web / desktop parity',
+  rowParityOld: 'Separate js-ipfs browser path',
+  rowParityNew: 'One Rust core → WASM on web, native on desktop',
+  rowCryptoDim: 'Encryption',
+  rowCryptoOld: 'Layered on top of IPFS storage',
+  rowCryptoNew: 'Zero-knowledge; encrypt-before-transmit at the block boundary',
+  rowStateDim: 'State / conflicts',
+  rowStateOld: 'Application-level, coupled to network state',
+  rowStateNew: 'Deterministic replicated documents (iroh-docs)',
+
+  originalProsKicker: 'IPFS · the case for',
+  originalProsTitle: 'What the original approach got right.',
+  originalPro1:
+    'Content addressing for free — immutable, hash-named, deduplicated blocks with intrinsic integrity.',
+  originalPro2:
+    '“Store it anywhere” — any node or public gateway can serve a block; you need to know what you want, not who has it.',
+  originalPro3: 'A large, mature ecosystem of tooling, gateways, and pinning services.',
+  originalPro4:
+    'Censorship resistance — content can be replicated and served by arbitrarily many independent nodes.',
+
+  originalConsKicker: 'IPFS · the cost',
+  originalConsTitle: 'Where it worked against this product.',
+  originalCon1:
+    'DHT latency — resolving a content address means many round trips before a single byte transfers.',
+  originalCon2:
+    'Connection fragility — symmetric NATs frequently defeat DHT-mediated connectivity, so transfers stall.',
+  originalCon3:
+    'Heavy runtime — Electron bundles a full Chromium + Node, with the RAM, disk, and attack surface that implies.',
+  originalCon4:
+    'Security bolted onto storage — encryption sits on top of a system designed for public, replicated content, leaking metadata.',
+  originalCon5:
+    'No clean runtime parity — a real browser client meant duplicating the business logic.',
+
+  modernProsKicker: 'Iroh · the case for',
+  modernProsTitle: 'What the rewrite buys.',
+  modernPro1:
+    'Instant connections — public-key addressing and direct QUIC remove the DHT round-trips entirely.',
+  modernPro2:
+    'Robust NAT traversal — hole-punching plus relay fallback handles the cases that broke the DHT approach.',
+  modernPro3:
+    'Zero-knowledge by construction — only opaque ciphertext crosses the boundary; keys are never persisted in plaintext.',
+  modernPro4:
+    'Streaming, bounded memory — multi-gigabyte files flow through pipelines and never inflate a buffer.',
+  modernPro5:
+    'True multi-runtime parity — one runtime-agnostic core, WASM on web and native on desktop, no duplicated logic.',
+  modernPro6:
+    'Lightweight runtime — Tauri reuses the OS webview, a fraction of Electron’s footprint and attack surface.',
+
+  modernConsKicker: 'Iroh · the trade-offs',
+  modernConsTitle: 'What it gives up — deliberately.',
+  modernCon1:
+    'Direct-connectivity assumption — a sync fabric between your own devices and trusted peers, not a public “anyone can serve this CID” network.',
+  modernCon2:
+    'Smaller, newer ecosystem — fewer third-party gateways, tools, and community resources than IPFS.',
+  modernCon3:
+    'Relay dependency in hostile networks — when hole-punching fails, transfers fall back to relay infrastructure.',
+  modernCon4:
+    'Build complexity — cross-compiling the core to WASM and native adds toolchain and CI burden (paid once, at build time).',
+
+  whyKicker: 'The decision',
+  whyTitle: 'Why Sharu is built this way.',
+  why1Title: 'The product is private sync, not public publishing',
+  why1Body:
+    'IPFS optimizes for “anyone can discover and serve this content.” Sharu’s data is private and encrypted — nobody else should discover or serve it — so the DHT’s central feature is pure overhead and is removed. Public-key addressing fits the real access pattern: you sync with peers you already know.',
+  why2Title: 'Latency and reliability are the product',
+  why2Body:
+    'Local-first means sync must feel instant and survive bad networks. DHT resolution and NAT fragility undermine that. Direct QUIC plus hole-punching turns connection setup into line-speed transit and handles the NAT cases that broke the old design.',
+  why3Title: 'Zero-knowledge must be structural, not layered',
+  why3Body:
+    'Encrypting on top of a system built for public, replicated blocks leaks metadata and makes the privacy story fragile. Encrypting before the transport boundary means the network only ever sees ciphertext — privacy becomes an invariant enforced by tests, not a convention.',
+  why4Title: 'One core, two runtimes — no duplication',
+  why4Body:
+    'Compiling one Rust core to WASM and native gives genuine web/desktop parity, keeps the SDK runtime-agnostic, and means crypto and sync logic exist exactly once. Tauri keeps the desktop shell light enough for an always-on background backup agent.',
+  why5Title: 'Keep only what earns its place',
+  why5Body:
+    'The one IPFS concept retained is content addressing by hash — now via BLAKE3 — because immutability, deduplication, and intrinsic integrity are genuinely valuable. The global DHT, libp2p routing, Electron, and storage-coupled crypto were costs without a matching benefit for this product, and were replaced.',
 
   footer: 'Sharu — zero-knowledge, local-first backup & sync',
 });

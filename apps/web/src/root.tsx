@@ -8,6 +8,7 @@ import { t } from '@cascivo/i18n';
 import { signal } from '@preact/signals';
 import { App } from './app.js';
 import styles from './app.module.css';
+import { Comparison } from './comparison.js';
 import { FlowPage } from './flow.js';
 import { Landing } from './landing.js';
 import { messages } from './messages.js';
@@ -250,12 +251,16 @@ export function Root() {
       <Landing
         onLaunch={launch}
         onWhitepaper={() => navigate('whitepaper')}
+        onComparison={() => navigate('comparison')}
         onFlow={() => navigate('how-it-works')}
       />
     );
   }
   if (view === 'whitepaper') {
     return <Whitepaper onBack={() => navigate('landing')} onLaunch={launch} />;
+  }
+  if (view === 'comparison') {
+    return <Comparison onBack={() => navigate('landing')} onLaunch={launch} />;
   }
   if (view === 'how-it-works') {
     return <FlowPage onBack={() => navigate('landing')} onLaunch={launch} />;
