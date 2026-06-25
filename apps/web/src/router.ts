@@ -5,6 +5,7 @@
 // Cloudflare `_redirects` SPA fallback serves index.html for every path, so a
 // hard refresh on `/app` or `/whitepaper` resolves client-side.
 import { signal } from '@preact/signals';
+import { flushSync } from 'preact/compat';
 
 export type Route =
   | 'landing'
@@ -43,25 +44,23 @@ function prefersReducedMotion(): boolean {
   return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
-/** Resolve once the next frame is painted — by then Preact has re-rendered the
- *  new view, so a wrapping view transition captures it rather than the old DOM. */
-function nextFrame(): Promise<void> {
-  return new Promise((resolve) => {
-    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => resolve());
-    else resolve();
-  });
-}
-
 /** The View Transitions starter, or null when unsupported or motion is reduced
- *  (then callers just apply the change directly — no animation). */
+ *  (then callers just apply the change directly — no animation). The update runs
+ *  inside `flushSync` so the DOM is reconciled synchronously and the callback
+ *  returns at once. Returning a promise that waited on `requestAnimationFrame`
+ *  would hang — the browser suspends rendering (and rAF) while it awaits the
+ *  callback — and abort with a timeout. Rapid navigations reject the
+ *  transition's promises with AbortError; those are expected, so swallow them. */
 function viewTransition(): ((update: () => void) => void) | null {
   const doc = globalThis.document;
   if (!doc || typeof doc.startViewTransition !== 'function' || prefersReducedMotion()) return null;
   return (update) => {
-    doc.startViewTransition(() => {
-      update();
-      return nextFrame();
+    const vt = doc.startViewTransition(() => {
+      flushSync(update);
     });
+    vt.updateCallbackDone.catch(() => {});
+    vt.ready.catch(() => {});
+    vt.finished.catch(() => {});
   };
 }
 
