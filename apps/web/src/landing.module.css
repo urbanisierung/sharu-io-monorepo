@@ -119,6 +119,15 @@
   margin-top: var(--space-2xs);
 }
 
+/* Tertiary links, in their own row beneath the action buttons. */
+.heroLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+  margin-top: var(--space-xs);
+}
+
 /* Outlined chip (secondary action). */
 .ghost {
   display: inline-flex;

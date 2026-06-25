@@ -2,10 +2,11 @@
 // wants to add or restore one), this card lets them pick which to open, create a
 // new one, or restore from a backup file. Signal-driven, no React hooks; copy
 // via @cascivo/i18n. It is pure UI — the parent owns wallet state and storage.
-import { t } from '@cascivo/i18n';
+
 import { signal } from '@preact/signals';
 import styles from './auth.module.css';
 import { messages } from './messages.js';
+import { tr as t } from './reading-mode.js';
 import { Button } from './ui/button.js';
 import type { WalletMeta } from './wallet.js';
 import { parseWalletBackup, type WalletBackup } from './wallet-backup.js';

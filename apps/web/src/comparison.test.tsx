@@ -6,7 +6,7 @@ afterEach(cleanup);
 
 describe('Comparison', () => {
   it('contrasts the IPFS and Iroh approaches across the page', () => {
-    render(<Comparison onBack={() => {}} onLaunch={() => {}} />);
+    render(<Comparison onLaunch={() => {}} />);
     expect(screen.getByText('IPFS vs. Iroh')).toBeTruthy();
     expect(screen.getByText('Original (IPFS)')).toBeTruthy();
     expect(screen.getByText('Project Safu (Iroh)')).toBeTruthy();
@@ -19,16 +19,9 @@ describe('Comparison', () => {
     expect(screen.getByText('Why Sharu is built this way.')).toBeTruthy();
   });
 
-  it('returns to the landing page from the back control', () => {
-    const onBack = vi.fn();
-    render(<Comparison onBack={onBack} onLaunch={() => {}} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
-    expect(onBack).toHaveBeenCalledOnce();
-  });
-
   it('launches the app from the call to action', () => {
     const onLaunch = vi.fn();
-    render(<Comparison onBack={() => {}} onLaunch={onLaunch} />);
+    render(<Comparison onLaunch={onLaunch} />);
     fireEvent.click(screen.getByRole('button', { name: 'Launch the app' }));
     expect(onLaunch).toHaveBeenCalledOnce();
   });

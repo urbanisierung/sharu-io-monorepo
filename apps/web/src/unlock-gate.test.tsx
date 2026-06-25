@@ -55,9 +55,19 @@ describe('UnlockGate (create mode)', () => {
     fireEvent.click(screen.getByLabelText('Show password'));
     expect(field.type).toBe('text');
   });
+
+  it('focuses the wallet name field on mount', () => {
+    render(<UnlockGate mode="create" onSubmit={() => {}} />);
+    expect(document.activeElement).toBe(screen.getByLabelText('Wallet name'));
+  });
 });
 
 describe('UnlockGate (unlock mode)', () => {
+  it('focuses the password field on mount', () => {
+    render(<UnlockGate mode="unlock" walletName="Personal" onSubmit={() => {}} />);
+    expect(document.activeElement).toBe(screen.getByLabelText('Password'));
+  });
+
   it('greets a returning wallet by name and unlocks', () => {
     const onSubmit = vi.fn();
     render(<UnlockGate mode="unlock" walletName="Personal" onSubmit={onSubmit} />);

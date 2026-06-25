@@ -1,0 +1,247 @@
+.page {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+}
+
+.head {
+  display: grid;
+  gap: 0.6rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--cascivo-color-border);
+}
+
+.meta {
+  font-family: var(--safu-font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--cascivo-color-muted);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--safu-font-mono);
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  font-weight: 800;
+  background: linear-gradient(
+    92deg,
+    var(--cascivo-color-primary),
+    var(--cascivo-color-accent-2) 55%,
+    var(--cascivo-color-accent)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 2.4rem rgba(177, 92, 255, 0.3);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--cascivo-color-muted);
+  max-width: 60ch;
+}
+
+.section {
+  padding: 2.25rem 0;
+  border-top: 1px solid var(--cascivo-color-border);
+}
+
+.section:first-of-type {
+  border-top: 0;
+}
+
+.h2 {
+  font-size: clamp(1.35rem, 3vw, 1.9rem);
+  margin: 0 0 1rem;
+  color: var(--cascivo-color-foreground);
+}
+
+.h3 {
+  font-size: 1.05rem;
+  margin: 1.75rem 0 0.75rem;
+  color: var(--cascivo-color-foreground);
+}
+
+.body {
+  margin: 0 0 1rem;
+  max-width: 70ch;
+  line-height: 1.7;
+  color: var(--cascivo-color-muted);
+}
+
+.body:last-child {
+  margin-bottom: 0;
+}
+
+.note {
+  margin: 0.75rem 0 0;
+  max-width: 70ch;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--cascivo-color-muted);
+}
+
+/* Use-case cards */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius);
+  background: var(--cascivo-color-surface);
+}
+
+.cardTitle {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+  color: var(--cascivo-color-foreground);
+}
+
+.cardBody {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--cascivo-color-muted);
+}
+
+/* Install command blocks */
+.commands {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.command {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.cmdLabel {
+  font-family: var(--safu-font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.7rem;
+  color: var(--cascivo-color-accent);
+}
+
+.code {
+  display: block;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius);
+  background: var(--cascivo-color-surface);
+  font-family: var(--safu-font-mono);
+  font-size: 0.85rem;
+  color: var(--cascivo-color-foreground);
+  overflow-x: auto;
+}
+
+.pre {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius);
+  background: var(--cascivo-color-surface);
+  font-family: var(--safu-font-mono);
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--cascivo-color-foreground);
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* Reference tables */
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius);
+  background: var(--cascivo-color-surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  min-width: 34rem;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 0.8rem 1rem;
+  vertical-align: top;
+  border-bottom: 1px solid var(--cascivo-color-border);
+  line-height: 1.5;
+}
+
+.table tr:last-child td {
+  border-bottom: 0;
+}
+
+.table thead th {
+  font-family: var(--safu-font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.72rem;
+  color: var(--cascivo-color-accent);
+}
+
+.table td {
+  color: var(--cascivo-color-muted);
+}
+
+.inlineCode {
+  font-family: var(--safu-font-mono);
+  font-size: 0.85rem;
+  color: var(--cascivo-color-foreground);
+  white-space: nowrap;
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-family: var(--safu-font-mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cascivo-color-primary-foreground);
+  background: var(--cascivo-color-primary);
+}
+
+/* Call to action */
+.cta {
+  padding: 2.5rem 0 0;
+  border-top: 1px solid var(--cascivo-color-border);
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+}
+
+.ctaTitle {
+  margin: 0;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  color: var(--cascivo-color-foreground);
+}
+
+.ctaBody {
+  margin: 0;
+  color: var(--cascivo-color-muted);
+}
+
+.footer {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--cascivo-color-border);
+  font-family: var(--safu-font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--cascivo-color-muted);
+}

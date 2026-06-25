@@ -71,7 +71,19 @@
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--cascivo-color-border, #d4d4d8);
   border-radius: var(--cascivo-radius, 0.5rem);
+  background: var(--cascivo-color-surface);
+  color: var(--cascivo-color-foreground);
   font: inherit;
+}
+
+.search::placeholder {
+  color: var(--cascivo-color-muted);
+}
+
+.search:focus-visible {
+  outline: 2px solid var(--cascivo-color-primary);
+  outline-offset: 1px;
+  border-color: var(--cascivo-color-primary);
 }
 
 .table {
@@ -153,6 +165,80 @@
   white-space: nowrap;
 }
 
+/* Per-row overflow menu (the three-dots button + its dropdown). */
+.menuWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Transparent full-screen catcher so a click anywhere closes the menu. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  z-index: 21;
+  display: flex;
+  flex-direction: column;
+  min-width: 9.5rem;
+  padding: 0.3rem;
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius, 0.5rem);
+  background: var(--cascivo-color-surface);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.45);
+}
+
+.menuItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.6rem;
+  border: 0;
+  border-radius: var(--cascivo-radius, 0.5rem);
+  background: transparent;
+  color: var(--cascivo-color-foreground);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .menuItem:hover {
+    background: color-mix(in srgb, var(--cascivo-color-primary) 14%, transparent);
+  }
+}
+
+.menuItem:focus-visible {
+  outline: 2px solid var(--cascivo-color-primary);
+  outline-offset: -2px;
+}
+
+.menuItem:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.menuItemDanger {
+  color: var(--cascivo-color-danger);
+}
+
+.menuLabel {
+  padding: 0.4rem 0.6rem 0.2rem;
+  font-size: 0.78rem;
+  color: var(--cascivo-color-muted);
+}
+
 /* The published-share link + copy button, wrapping onto its own line below the
    row actions. */
 .shareLink {
@@ -168,9 +254,9 @@
   min-width: 0;
   padding: 0.3rem 0.4rem;
   font-size: 0.85em;
-  color: inherit;
-  background: var(--cascivo-surface, #fff);
-  border: 1px solid var(--cascivo-border, #ccc);
+  color: var(--cascivo-color-foreground);
+  background: var(--cascivo-color-surface);
+  border: 1px solid var(--cascivo-color-border);
   border-radius: 0.3rem;
 }
 

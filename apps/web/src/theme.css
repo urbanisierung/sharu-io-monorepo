@@ -118,3 +118,14 @@ body {
     text-shadow: none;
   }
 }
+
+/* View transitions: a quick cross-fade between routes (router.ts wraps each
+   navigation in document.startViewTransition). Skipped for reduced motion —
+   both here and in the router, which doesn't start a transition at all then. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 200ms;
+    animation-timing-function: var(--ease-out, ease);
+  }
+}

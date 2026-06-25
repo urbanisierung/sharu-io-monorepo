@@ -3,9 +3,9 @@
 // Encrypt → Address → Sync → Restore — then hands off to the app via `onLaunch`.
 // All copy through @cascivo/i18n; no React hooks.
 import { cn } from '@cascivo/core';
-import { t } from '@cascivo/i18n';
 import styles from './landing.module.css';
 import { landing } from './messages.js';
+import { tr as t } from './reading-mode.js';
 import { Button } from './ui/button.js';
 
 const problems = [
@@ -35,29 +35,17 @@ const installs = [
   { label: landing.cliWindowsLabel, command: landing.cliWindowsCmd },
 ];
 
-const CLI_DOCS_URL =
-  'https://github.com/urbanisierung/sharu-io-monorepo/tree/main/crates/safu-node';
-
 export interface LandingProps {
   onLaunch: () => void;
   onWhitepaper: () => void;
   onComparison: () => void;
   onFlow: () => void;
+  onCliDocs: () => void;
 }
 
-export function Landing({ onLaunch, onWhitepaper, onComparison, onFlow }: LandingProps) {
+export function Landing({ onLaunch, onWhitepaper, onComparison, onFlow, onCliDocs }: LandingProps) {
   return (
     <div class={styles.page}>
-      <nav class={styles.nav}>
-        <span class={styles.brand}>
-          <img class={styles.brandLogo} src="/logo.png" alt={t(landing.logoAlt)} />
-          <span class={styles.wordmark}>{t(landing.brand)}</span>
-        </span>
-        <Button intent="primary" onClick={onLaunch}>
-          {t(landing.launch)}
-        </Button>
-      </nav>
-
       <header class={cn(styles.hero, styles.reveal)} style={{ '--i': '0' }}>
         <span class={styles.badge}>{t(landing.badge)}</span>
         <h1 class={styles.heroTitle}>
@@ -73,6 +61,8 @@ export function Landing({ onLaunch, onWhitepaper, onComparison, onFlow }: Landin
           <a class={styles.ghost} href="#pipeline">
             {t(landing.learnMore)}
           </a>
+        </div>
+        <div class={styles.heroLinks}>
           <button class={styles.textLink} type="button" onClick={onFlow}>
             {t(landing.watchFlow)}
           </button>
@@ -141,9 +131,9 @@ export function Landing({ onLaunch, onWhitepaper, onComparison, onFlow }: Landin
             </div>
           ))}
         </div>
-        <a class={styles.ghost} href={CLI_DOCS_URL} target="_blank" rel="noreferrer">
+        <button class={styles.ghost} type="button" onClick={onCliDocs}>
           {t(landing.cliLink)}
-        </a>
+        </button>
       </section>
 
       <section class={cn(styles.cta, styles.reveal)} style={{ '--i': '5' }}>

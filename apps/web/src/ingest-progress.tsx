@@ -2,12 +2,13 @@
 // drop so the user watches each file move from waiting → adding → safe (or
 // failed), instead of guessing at a single counter. Signal-driven, no hooks; all
 // copy via @cascivo/i18n.
-import { t } from '@cascivo/i18n';
+
 import type { ReadonlySignal } from '@preact/signals';
 import { fileKind, formatBytes } from './format.js';
 import type { FileProgress } from './ingest-controller.js';
 import styles from './ingest-progress.module.css';
 import { messages } from './messages.js';
+import { tr as t } from './reading-mode.js';
 import { Icon } from './ui/icon.js';
 
 const STATUS_LABEL = {

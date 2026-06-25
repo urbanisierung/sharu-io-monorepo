@@ -1,8 +1,9 @@
 // The in-app whitepaper: a technical description of how Sharu works, rendered
 // from @cascivo/i18n copy (no hardcoded strings, no React hooks). Reachable from
 // the landing page; `onBack` returns there and `onLaunch` opens the app.
-import { t } from '@cascivo/i18n';
+
 import { whitepaper } from './messages.js';
+import { tr as t } from './reading-mode.js';
 import { Button } from './ui/button.js';
 import styles from './whitepaper.module.css';
 
@@ -54,21 +55,14 @@ const guarantees = [
 ];
 
 export interface WhitepaperProps {
-  onBack: () => void;
   onLaunch: () => void;
 }
 
-export function Whitepaper({ onBack, onLaunch }: WhitepaperProps) {
+export function Whitepaper({ onLaunch }: WhitepaperProps) {
   return (
     <div class={styles.page}>
-      <nav class={styles.nav}>
-        <Button intent="neutral" onClick={onBack}>
-          {t(whitepaper.back)}
-        </Button>
-        <span class={styles.meta}>{t(whitepaper.meta)}</span>
-      </nav>
-
       <header class={styles.head}>
+        <span class={styles.meta}>{t(whitepaper.meta)}</span>
         <h1 class={styles.title}>{t(whitepaper.title)}</h1>
         <p class={styles.subtitle}>{t(whitepaper.subtitle)}</p>
       </header>

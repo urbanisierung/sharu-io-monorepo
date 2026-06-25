@@ -3,10 +3,10 @@
 // say so plainly: a warning while there's no other device, switching to a calm
 // confirmation once one is linked. Nothing to show before the first file.
 import { cn } from '@cascivo/core';
-import { t } from '@cascivo/i18n';
 import type { ReadonlySignal } from '@preact/signals';
 import type { FileView } from '@safu/sdk';
 import { messages } from './messages.js';
+import { tr as t } from './reading-mode.js';
 import type { PeerInfo } from './runtime.js';
 import styles from './status-banner.module.css';
 

@@ -5,10 +5,11 @@
 // shown when the user arrived via a device-link URL). Signal-driven, no React
 // hooks; all copy via @cascivo/i18n. It only collects + validates input and
 // hands the password (and, when creating, the name) to `onSubmit`.
-import { t } from '@cascivo/i18n';
+
 import { signal } from '@preact/signals';
 import styles from './auth.module.css';
 import { messages } from './messages.js';
+import { tr as t } from './reading-mode.js';
 import { saveRecoverySheet } from './recovery.js';
 import { Button } from './ui/button.js';
 
@@ -30,6 +31,13 @@ export function resetUnlockGate(): void {
   reveal.value = false;
   error.value = null;
   busy.value = false;
+}
+
+/** Focus the field on mount so the user can type straight away. A stable
+ *  reference, so Preact invokes it only when the input mounts/unmounts — never
+ *  on a re-render, which would steal focus mid-typing. */
+function focusOnMount(input: HTMLInputElement | null): void {
+  input?.focus();
 }
 
 export interface UnlockGateProps {
@@ -103,6 +111,7 @@ export function UnlockGate({ mode, walletName, pairing, onSubmit, onBack }: Unlo
               <span class={styles.label}>{t(messages.walletNameLabel)}</span>
               <input
                 class={styles.input}
+                ref={creating ? focusOnMount : undefined}
                 aria-label={t(messages.walletNameLabel)}
                 placeholder={t(messages.walletNamePlaceholder)}
                 value={name.value}
@@ -117,6 +126,7 @@ export function UnlockGate({ mode, walletName, pairing, onSubmit, onBack }: Unlo
             <span class={styles.label}>{t(messages.passwordLabel)}</span>
             <input
               class={styles.input}
+              ref={creating ? undefined : focusOnMount}
               type={reveal.value ? 'text' : 'password'}
               aria-label={t(messages.passwordLabel)}
               placeholder={t(messages.passwordLabel)}

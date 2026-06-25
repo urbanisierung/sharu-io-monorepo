@@ -5,15 +5,17 @@
 // key/direction, search query, the row mid-confirm) — no React hooks; all copy
 // via @cascivo/i18n. The SDK already carries this metadata on every FileView;
 // this component just stops throwing it away.
-import { t } from '@cascivo/i18n';
+
+import { cn } from '@cascivo/core';
 import { type ReadonlySignal, signal } from '@preact/signals';
 import type { FileView } from '@safu/sdk';
 import styles from './file-table.module.css';
 import { fileKind, formatBytes, formatDate } from './format.js';
 import { messages } from './messages.js';
+import { tr as t } from './reading-mode.js';
 import { AddFilesButton } from './ui/add-files-button.js';
-import { Button } from './ui/button.js';
 import { Icon } from './ui/icon.js';
+import { IconButton } from './ui/icon-button.js';
 
 type SortKey = 'name' | 'size' | 'modified';
 
@@ -28,6 +30,8 @@ const shareLinks = signal<Record<string, string>>({});
 const sharingPath = signal<string | null>(null);
 const copiedPath = signal<string | null>(null);
 const shareErrors = signal<Record<string, string>>({});
+// Which row's overflow (three-dots) menu is open, if any.
+const openMenuPath = signal<string | null>(null);
 
 /** Reset the module-level view state — for deterministic tests. */
 export function resetFileTableView(): void {
@@ -40,6 +44,17 @@ export function resetFileTableView(): void {
   sharingPath.value = null;
   copiedPath.value = null;
   shareErrors.value = {};
+  openMenuPath.value = null;
+}
+
+function toggleMenu(path: string): void {
+  openMenuPath.value = openMenuPath.value === path ? null : path;
+  pendingDelete.value = null;
+}
+
+function closeMenu(): void {
+  openMenuPath.value = null;
+  pendingDelete.value = null;
 }
 
 function compare(a: FileView, b: FileView, key: SortKey): number {
@@ -161,56 +176,107 @@ export function FileTable({ files, onRestore, onDelete, onShare, onAddFiles }: F
                     <td class={styles.numeric}>{formatDate(file.modified)}</td>
                     <td class={styles.numeric}>{file.blocks.length}</td>
                     <td class={styles.actions}>
-                      {pendingDelete.value === file.path ? (
-                        <>
-                          <span class={styles.muted}>{t(messages.deleteConfirm)}</span>
-                          <Button
-                            intent="primary"
-                            onClick={() => {
-                              onDelete?.(file.path);
-                              pendingDelete.value = null;
-                            }}
-                          >
-                            {t(messages.deleteYes)}
-                          </Button>
-                          <Button intent="neutral" onClick={() => (pendingDelete.value = null)}>
-                            {t(messages.deleteCancel)}
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          {onRestore && (
-                            <Button
-                              intent="neutral"
-                              onClick={() => {
-                                restoreFailedPath.value = null;
-                                onRestore(file.path).catch(() => {
-                                  restoreFailedPath.value = file.path;
-                                });
+                      <div class={styles.menuWrap}>
+                        <IconButton
+                          icon="more"
+                          label={t(messages.rowActions)}
+                          aria-haspopup="menu"
+                          aria-expanded={openMenuPath.value === file.path}
+                          onClick={() => toggleMenu(file.path)}
+                        />
+                        {openMenuPath.value === file.path && (
+                          <>
+                            <button
+                              type="button"
+                              class={styles.backdrop}
+                              aria-hidden="true"
+                              tabIndex={-1}
+                              onClick={closeMenu}
+                            />
+                            <div
+                              class={styles.menu}
+                              role="menu"
+                              onKeyDown={(event) => {
+                                if (event.key === 'Escape') closeMenu();
                               }}
                             >
-                              {t(messages.download)}
-                            </Button>
-                          )}
-                          {onShare && (
-                            <Button
-                              intent="neutral"
-                              onClick={() => void publishShare(file.path, onShare)}
-                            >
-                              {sharingPath.value === file.path
-                                ? t(messages.sharePublishing)
-                                : t(messages.share)}
-                            </Button>
-                          )}
-                          {onDelete && (
-                            <Button
-                              intent="neutral"
-                              onClick={() => (pendingDelete.value = file.path)}
-                            >
-                              {t(messages.delete)}
-                            </Button>
-                          )}
-                        </>
+                              {pendingDelete.value === file.path ? (
+                                <>
+                                  <span class={styles.menuLabel}>{t(messages.deleteConfirm)}</span>
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    class={cn(styles.menuItem, styles.menuItemDanger)}
+                                    onClick={() => {
+                                      onDelete?.(file.path);
+                                      closeMenu();
+                                    }}
+                                  >
+                                    <Icon name="trash" />
+                                    {t(messages.deleteYes)}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    role="menuitem"
+                                    class={styles.menuItem}
+                                    onClick={() => (pendingDelete.value = null)}
+                                  >
+                                    <Icon name="close" />
+                                    {t(messages.deleteCancel)}
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  {onRestore && (
+                                    <button
+                                      type="button"
+                                      role="menuitem"
+                                      class={styles.menuItem}
+                                      onClick={() => {
+                                        restoreFailedPath.value = null;
+                                        closeMenu();
+                                        onRestore(file.path).catch(() => {
+                                          restoreFailedPath.value = file.path;
+                                        });
+                                      }}
+                                    >
+                                      <Icon name="download" />
+                                      {t(messages.download)}
+                                    </button>
+                                  )}
+                                  {onShare && (
+                                    <button
+                                      type="button"
+                                      role="menuitem"
+                                      class={styles.menuItem}
+                                      onClick={() => {
+                                        closeMenu();
+                                        void publishShare(file.path, onShare);
+                                      }}
+                                    >
+                                      <Icon name="share" />
+                                      {t(messages.share)}
+                                    </button>
+                                  )}
+                                  {onDelete && (
+                                    <button
+                                      type="button"
+                                      role="menuitem"
+                                      class={cn(styles.menuItem, styles.menuItemDanger)}
+                                      onClick={() => (pendingDelete.value = file.path)}
+                                    >
+                                      <Icon name="trash" />
+                                      {t(messages.delete)}
+                                    </button>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      {sharingPath.value === file.path && (
+                        <span class={styles.muted}>{t(messages.sharePublishing)}</span>
                       )}
                       {shareErrors.value[file.path] && (
                         <p class={styles.warn}>
@@ -226,18 +292,19 @@ export function FileTable({ files, onRestore, onDelete, onShare, onAddFiles }: F
                             type="text"
                             readonly
                             value={shareLinks.value[file.path]}
-                            aria-label={t(messages.share)}
+                            aria-label={t(messages.shareLink)}
                           />
-                          <Button
-                            intent="neutral"
+                          <IconButton
+                            icon={copiedPath.value === file.path ? 'check' : 'copy'}
+                            label={
+                              copiedPath.value === file.path
+                                ? t(messages.shareCopied)
+                                : t(messages.shareCopy)
+                            }
                             onClick={() =>
                               copyShareLink(file.path, shareLinks.value[file.path] as string)
                             }
-                          >
-                            {copiedPath.value === file.path
-                              ? t(messages.shareCopied)
-                              : t(messages.shareCopy)}
-                          </Button>
+                          />
                         </div>
                       )}
                     </td>
