@@ -74,51 +74,52 @@
   border-color: var(--cascivo-color-primary);
 }
 
-/* Settings: a column of titled cards, each with a description and a regular,
-   content-width control — not a stack of full-width buttons. */
+/* Settings: a tight column of compact rows — a title, a short description and a
+   regular control — each only as tall as its content, flowing top to bottom. */
 .settings {
-  display: grid;
-  gap: 1rem;
-  width: min(40rem, 92vw);
-  justify-items: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: min(34rem, 92vw);
 }
 
 .settingsHead {
   display: grid;
-  gap: 0.3rem;
+  gap: 0.15rem;
+  margin-bottom: 0.1rem;
 }
 
 .settingsTitle {
   margin: 0;
-  font-size: 1.4rem;
+  font-size: 1.2rem;
 }
 
 .settingsIntro {
   margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
   color: var(--cascivo-color-muted);
-  line-height: 1.5;
 }
 
 .setting {
   display: grid;
-  gap: 0.5rem;
-  padding: 1.1rem 1.25rem;
+  gap: 0.3rem;
+  padding: 0.7rem 0.85rem;
   border: 1px solid var(--cascivo-color-border);
   border-radius: var(--cascivo-radius, 0.5rem);
-  background: color-mix(in srgb, var(--cascivo-color-surface) 60%, transparent);
+  background: color-mix(in srgb, var(--cascivo-color-surface) 50%, transparent);
 }
 
 .settingTitle {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   color: var(--cascivo-color-foreground);
 }
 
 .settingDesc {
   margin: 0;
-  max-width: 56ch;
-  font-size: 0.9rem;
-  line-height: 1.55;
+  font-size: 0.83rem;
+  line-height: 1.45;
   color: var(--cascivo-color-muted);
 }
 
@@ -126,8 +127,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.6rem;
-  margin-top: 0.25rem;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
 }
 
 .settingRow input {
