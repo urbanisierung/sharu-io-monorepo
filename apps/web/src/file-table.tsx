@@ -13,8 +13,8 @@ import { fileKind, formatBytes, formatDate } from './format.js';
 import { messages } from './messages.js';
 import { tr as t } from './reading-mode.js';
 import { AddFilesButton } from './ui/add-files-button.js';
-import { Button } from './ui/button.js';
 import { Icon } from './ui/icon.js';
+import { IconButton } from './ui/icon-button.js';
 
 type SortKey = 'name' | 'size' | 'modified';
 
@@ -165,51 +165,54 @@ export function FileTable({ files, onRestore, onDelete, onShare, onAddFiles }: F
                       {pendingDelete.value === file.path ? (
                         <>
                           <span class={styles.muted}>{t(messages.deleteConfirm)}</span>
-                          <Button
-                            intent="primary"
+                          <IconButton
+                            icon="check"
+                            intent="danger"
+                            label={t(messages.deleteYes)}
                             onClick={() => {
                               onDelete?.(file.path);
                               pendingDelete.value = null;
                             }}
-                          >
-                            {t(messages.deleteYes)}
-                          </Button>
-                          <Button intent="neutral" onClick={() => (pendingDelete.value = null)}>
-                            {t(messages.deleteCancel)}
-                          </Button>
+                          />
+                          <IconButton
+                            icon="close"
+                            label={t(messages.deleteCancel)}
+                            onClick={() => (pendingDelete.value = null)}
+                          />
                         </>
                       ) : (
                         <>
                           {onRestore && (
-                            <Button
-                              intent="neutral"
+                            <IconButton
+                              icon="download"
+                              label={t(messages.download)}
                               onClick={() => {
                                 restoreFailedPath.value = null;
                                 onRestore(file.path).catch(() => {
                                   restoreFailedPath.value = file.path;
                                 });
                               }}
-                            >
-                              {t(messages.download)}
-                            </Button>
+                            />
                           )}
                           {onShare && (
-                            <Button
-                              intent="neutral"
+                            <IconButton
+                              icon="share"
+                              label={
+                                sharingPath.value === file.path
+                                  ? t(messages.sharePublishing)
+                                  : t(messages.share)
+                              }
+                              disabled={sharingPath.value === file.path}
                               onClick={() => void publishShare(file.path, onShare)}
-                            >
-                              {sharingPath.value === file.path
-                                ? t(messages.sharePublishing)
-                                : t(messages.share)}
-                            </Button>
+                            />
                           )}
                           {onDelete && (
-                            <Button
-                              intent="neutral"
+                            <IconButton
+                              icon="trash"
+                              intent="danger"
+                              label={t(messages.delete)}
                               onClick={() => (pendingDelete.value = file.path)}
-                            >
-                              {t(messages.delete)}
-                            </Button>
+                            />
                           )}
                         </>
                       )}
@@ -227,18 +230,19 @@ export function FileTable({ files, onRestore, onDelete, onShare, onAddFiles }: F
                             type="text"
                             readonly
                             value={shareLinks.value[file.path]}
-                            aria-label={t(messages.share)}
+                            aria-label={t(messages.shareLink)}
                           />
-                          <Button
-                            intent="neutral"
+                          <IconButton
+                            icon={copiedPath.value === file.path ? 'check' : 'copy'}
+                            label={
+                              copiedPath.value === file.path
+                                ? t(messages.shareCopied)
+                                : t(messages.shareCopy)
+                            }
                             onClick={() =>
                               copyShareLink(file.path, shareLinks.value[file.path] as string)
                             }
-                          >
-                            {copiedPath.value === file.path
-                              ? t(messages.shareCopied)
-                              : t(messages.shareCopy)}
-                          </Button>
+                          />
                         </div>
                       )}
                     </td>

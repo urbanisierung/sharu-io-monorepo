@@ -99,7 +99,7 @@ describe('FileTable', () => {
 
     const input = (await within(
       screen.getByText('alpha.txt').closest('tr') as HTMLElement,
-    ).findByLabelText('Share')) as HTMLInputElement;
+    ).findByLabelText('Share link')) as HTMLInputElement;
     expect(input.value).toBe(link);
   });
 
