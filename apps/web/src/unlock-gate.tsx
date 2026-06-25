@@ -33,6 +33,13 @@ export function resetUnlockGate(): void {
   busy.value = false;
 }
 
+/** Focus the field on mount so the user can type straight away. A stable
+ *  reference, so Preact invokes it only when the input mounts/unmounts — never
+ *  on a re-render, which would steal focus mid-typing. */
+function focusOnMount(input: HTMLInputElement | null): void {
+  input?.focus();
+}
+
 export interface UnlockGateProps {
   /** 'create' shows the name + confirm fields and the no-reset warning; 'unlock'
    *  greets a returning user with just a password. */
@@ -104,6 +111,7 @@ export function UnlockGate({ mode, walletName, pairing, onSubmit, onBack }: Unlo
               <span class={styles.label}>{t(messages.walletNameLabel)}</span>
               <input
                 class={styles.input}
+                ref={creating ? focusOnMount : undefined}
                 aria-label={t(messages.walletNameLabel)}
                 placeholder={t(messages.walletNamePlaceholder)}
                 value={name.value}
@@ -118,6 +126,7 @@ export function UnlockGate({ mode, walletName, pairing, onSubmit, onBack }: Unlo
             <span class={styles.label}>{t(messages.passwordLabel)}</span>
             <input
               class={styles.input}
+              ref={creating ? undefined : focusOnMount}
               type={reveal.value ? 'text' : 'password'}
               aria-label={t(messages.passwordLabel)}
               placeholder={t(messages.passwordLabel)}
