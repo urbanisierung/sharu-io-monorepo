@@ -35,17 +35,15 @@ const installs = [
   { label: landing.cliWindowsLabel, command: landing.cliWindowsCmd },
 ];
 
-const CLI_DOCS_URL =
-  'https://github.com/urbanisierung/sharu-io-monorepo/tree/main/crates/safu-node';
-
 export interface LandingProps {
   onLaunch: () => void;
   onWhitepaper: () => void;
   onComparison: () => void;
   onFlow: () => void;
+  onCliDocs: () => void;
 }
 
-export function Landing({ onLaunch, onWhitepaper, onComparison, onFlow }: LandingProps) {
+export function Landing({ onLaunch, onWhitepaper, onComparison, onFlow, onCliDocs }: LandingProps) {
   return (
     <div class={styles.page}>
       <header class={cn(styles.hero, styles.reveal)} style={{ '--i': '0' }}>
@@ -133,9 +131,9 @@ export function Landing({ onLaunch, onWhitepaper, onComparison, onFlow }: Landin
             </div>
           ))}
         </div>
-        <a class={styles.ghost} href={CLI_DOCS_URL} target="_blank" rel="noreferrer">
+        <button class={styles.ghost} type="button" onClick={onCliDocs}>
           {t(landing.cliLink)}
-        </a>
+        </button>
       </section>
 
       <section class={cn(styles.cta, styles.reveal)} style={{ '--i': '5' }}>

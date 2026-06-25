@@ -11,6 +11,7 @@ const TRIPLES: Record<string, [Namespace, Namespace, Namespace]> = {
   landing: [m.landing, m.landingEli5, m.landingMachine],
   whitepaper: [m.whitepaper, m.whitepaperEli5, m.whitepaperMachine],
   comparison: [m.comparison, m.comparisonEli5, m.comparisonMachine],
+  cliDocs: [m.cliDocs, m.cliDocsEli5, m.cliDocsMachine],
   flow: [m.flow, m.flowEli5, m.flowMachine],
   share: [m.shareView, m.shareViewEli5, m.shareViewMachine],
   app: [m.messages, m.messagesEli5, m.messagesMachine],

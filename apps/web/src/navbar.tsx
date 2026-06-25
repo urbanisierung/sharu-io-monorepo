@@ -22,7 +22,13 @@ import { Icon, type IconName } from './ui/icon.js';
 import { SegmentedControl } from './ui/segmented-control.js';
 import { type AppView, activeView } from './view-state.js';
 
-const MARKETING_ROUTES: readonly Route[] = ['landing', 'whitepaper', 'comparison', 'how-it-works'];
+const MARKETING_ROUTES: readonly Route[] = [
+  'landing',
+  'whitepaper',
+  'comparison',
+  'how-it-works',
+  'cli-docs',
+];
 
 const LINKS: readonly { route: Route; label: Message<string> }[] = [
   { route: 'whitepaper', label: landing.whitepaper },

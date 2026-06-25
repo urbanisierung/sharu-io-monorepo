@@ -7,6 +7,7 @@
 // re-voices the whole app. This barrel keeps the historical `./messages.js`
 // import path stable and wires the variants to the resolver.
 import { messages, messagesEli5, messagesMachine } from './messages/app.js';
+import { cliDocs, cliDocsEli5, cliDocsMachine } from './messages/cli-docs.js';
 import { comparison, comparisonEli5, comparisonMachine } from './messages/comparison.js';
 import { flow, flowEli5, flowMachine } from './messages/flow.js';
 import { landing, landingEli5, landingMachine } from './messages/landing.js';
@@ -16,6 +17,9 @@ import { whitepaper, whitepaperEli5, whitepaperMachine } from './messages/whitep
 import { registerVariants } from './reading-mode.js';
 
 export {
+  cliDocs,
+  cliDocsEli5,
+  cliDocsMachine,
   comparison,
   comparisonEli5,
   comparisonMachine,
@@ -42,6 +46,7 @@ export {
 registerVariants(landing, landingEli5, landingMachine);
 registerVariants(whitepaper, whitepaperEli5, whitepaperMachine);
 registerVariants(comparison, comparisonEli5, comparisonMachine);
+registerVariants(cliDocs, cliDocsEli5, cliDocsMachine);
 registerVariants(flow, flowEli5, flowMachine);
 registerVariants(shareView, shareViewEli5, shareViewMachine);
 registerVariants(messages, messagesEli5, messagesMachine);

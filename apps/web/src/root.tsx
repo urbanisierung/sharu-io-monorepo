@@ -7,6 +7,7 @@
 import { signal } from '@preact/signals';
 import { App } from './app.js';
 import styles from './app.module.css';
+import { CliDocs } from './cli-docs.js';
 import { Comparison } from './comparison.js';
 import { FlowPage } from './flow.js';
 import { Landing } from './landing.js';
@@ -253,6 +254,7 @@ function RouteContent() {
         onWhitepaper={() => navigate('whitepaper')}
         onComparison={() => navigate('comparison')}
         onFlow={() => navigate('how-it-works')}
+        onCliDocs={() => navigate('cli-docs')}
       />
     );
   }
@@ -264,6 +266,9 @@ function RouteContent() {
   }
   if (view === 'how-it-works') {
     return <FlowPage onLaunch={launch} />;
+  }
+  if (view === 'cli-docs') {
+    return <CliDocs onLaunch={launch} />;
   }
   // The keyless share viewer renders with no wallet/unlock — the runtime is
   // never created here, so opening a public link stays instant and anonymous.

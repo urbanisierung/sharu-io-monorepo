@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "preview:host": "vite preview --host",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "gen:cli-docs": "UPDATE_CLI_SPEC=1 vitest run --project node src/cli-docs/cli-spec.integration.test.ts && biome check --write src/cli-docs/cli-spec.generated.ts"
   },
   "dependencies": {
     "@cascivo/core": "0.1.0",

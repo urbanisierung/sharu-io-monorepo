@@ -4,16 +4,22 @@ import { Landing } from './landing.js';
 
 afterEach(cleanup);
 
+function renderLanding(overrides: Partial<Parameters<typeof Landing>[0]> = {}) {
+  render(
+    <Landing
+      onLaunch={() => {}}
+      onWhitepaper={() => {}}
+      onComparison={() => {}}
+      onFlow={() => {}}
+      onCliDocs={() => {}}
+      {...overrides}
+    />,
+  );
+}
+
 describe('Landing', () => {
   it('explains what Sharu is, the problem, and how it works', () => {
-    render(
-      <Landing
-        onLaunch={() => {}}
-        onWhitepaper={() => {}}
-        onComparison={() => {}}
-        onFlow={() => {}}
-      />,
-    );
+    renderLanding();
     expect(screen.getByText('Your data.')).toBeTruthy();
     expect(screen.getByText('Nobody else.')).toBeTruthy();
     expect(screen.getByText('The problem')).toBeTruthy();
@@ -24,72 +30,42 @@ describe('Landing', () => {
   });
 
   it('offers the always-on backup node with a one-line install', () => {
-    render(
-      <Landing
-        onLaunch={() => {}}
-        onWhitepaper={() => {}}
-        onComparison={() => {}}
-        onFlow={() => {}}
-      />,
-    );
+    renderLanding();
     expect(screen.getByText('Backup node')).toBeTruthy();
     expect(screen.getByText(/install\.sh \| sh$/)).toBeTruthy();
-    const docs = screen.getByRole('link', { name: 'Read the backup-node docs' });
-    expect(docs.getAttribute('href')).toContain('crates/safu-node');
+  });
+
+  it('opens the backup-node docs from its section', () => {
+    const onCliDocs = vi.fn();
+    renderLanding({ onCliDocs });
+    fireEvent.click(screen.getByRole('button', { name: 'Read the backup-node docs' }));
+    expect(onCliDocs).toHaveBeenCalledOnce();
   });
 
   it('launches the app from the call to action', () => {
     const onLaunch = vi.fn();
-    render(
-      <Landing
-        onLaunch={onLaunch}
-        onWhitepaper={() => {}}
-        onComparison={() => {}}
-        onFlow={() => {}}
-      />,
-    );
+    renderLanding({ onLaunch });
     fireEvent.click(screen.getAllByRole('button', { name: 'Launch the app' })[0] as HTMLElement);
     expect(onLaunch).toHaveBeenCalledOnce();
   });
 
   it('opens the whitepaper from the hero link', () => {
     const onWhitepaper = vi.fn();
-    render(
-      <Landing
-        onLaunch={() => {}}
-        onWhitepaper={onWhitepaper}
-        onComparison={() => {}}
-        onFlow={() => {}}
-      />,
-    );
+    renderLanding({ onWhitepaper });
     fireEvent.click(screen.getByRole('button', { name: 'Read the whitepaper' }));
     expect(onWhitepaper).toHaveBeenCalledOnce();
   });
 
   it('opens the IPFS-vs-Iroh comparison from the hero link', () => {
     const onComparison = vi.fn();
-    render(
-      <Landing
-        onLaunch={() => {}}
-        onWhitepaper={() => {}}
-        onComparison={onComparison}
-        onFlow={() => {}}
-      />,
-    );
+    renderLanding({ onComparison });
     fireEvent.click(screen.getByRole('button', { name: 'IPFS vs. Iroh' }));
     expect(onComparison).toHaveBeenCalledOnce();
   });
 
   it('opens the interaction walkthrough from the hero link', () => {
     const onFlow = vi.fn();
-    render(
-      <Landing
-        onLaunch={() => {}}
-        onWhitepaper={() => {}}
-        onComparison={() => {}}
-        onFlow={onFlow}
-      />,
-    );
+    renderLanding({ onFlow });
     fireEvent.click(screen.getByRole('button', { name: 'How it works' }));
     expect(onFlow).toHaveBeenCalledOnce();
   });
