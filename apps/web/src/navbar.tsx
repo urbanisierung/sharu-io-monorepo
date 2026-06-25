@@ -3,11 +3,15 @@
 // carries the brand and the reading-mode toggle; on marketing routes it adds the
 // section links + Launch, and in the unlocked app it absorbs what used to be the
 // app's own topbar and tab bar (wallet name, sync status, Files/Devices/Settings).
-// The toggle's own labels come from the stable `nav` namespace via `t`; every
-// other label re-voices with the reading mode via `tr`. No hooks; route +
-// runtime arrive as props, the rest is read from signals.
+//
+// On a phone the bar collapses to brand + the main CTA + a burger button; the
+// links and the reading-mode toggle move into the menu the burger opens, so the
+// bar stays one compact row. The toggle's own labels come from the stable `nav`
+// namespace via `t`; every other label re-voices with the reading mode via `tr`.
+// No hooks; route + runtime arrive as props, the rest is read from signals.
 import { cn } from '@cascivo/core';
 import { type Message, t } from '@cascivo/i18n';
+import { signal } from '@preact/signals';
 import { landing, messages, nav } from './messages.js';
 import styles from './navbar.module.css';
 import { type Mode, readingMode, tr } from './reading-mode.js';
@@ -32,6 +36,14 @@ const TABS: readonly { id: AppView; icon: IconName; label: Message<string> }[] =
   { id: 'settings', icon: 'settings', label: messages.navSettings },
 ];
 
+// View state: whether the phone burger menu is open. Reset between tests.
+const menuOpen = signal(false);
+
+/** Reset the module-level view state — for deterministic tests. */
+export function resetNavbar(): void {
+  menuOpen.value = false;
+}
+
 export interface NavbarProps {
   route: Route;
   /** The unlocked runtime, or null on marketing/picker/unlock/share screens. */
@@ -43,6 +55,7 @@ export interface NavbarProps {
 export function Navbar({ route, runtime, onLaunch }: NavbarProps) {
   const isMarketing = MARKETING_ROUTES.includes(route);
   const inApp = route === 'app' && runtime !== null;
+  const open = menuOpen.value;
 
   const modeOptions: readonly { id: Mode; label: string }[] = [
     { id: 'regular', label: t(nav.modeRegular) },
@@ -50,10 +63,19 @@ export function Navbar({ route, runtime, onLaunch }: NavbarProps) {
     { id: 'machine', label: t(nav.modeMachine) },
   ];
 
+  const goLanding = () => {
+    menuOpen.value = false;
+    navigate('landing');
+  };
+  const launch = () => {
+    menuOpen.value = false;
+    onLaunch();
+  };
+
   return (
     <header class={styles.bar}>
       <div class={styles.inner}>
-        <button type="button" class={styles.brand} onClick={() => navigate('landing')}>
+        <button type="button" class={styles.brand} onClick={goLanding}>
           <img class={styles.logo} src="/logo.png" alt={tr(messages.logoAlt)} />
           <span class={styles.wordmark}>{tr(landing.brand)}</span>
           {inApp && runtime ? <span class={styles.walletTag}>{runtime.walletName}</span> : null}
@@ -78,6 +100,56 @@ export function Navbar({ route, runtime, onLaunch }: NavbarProps) {
         {inApp && runtime ? <SyncIndicator runtime={runtime} /> : null}
 
         <div class={styles.right}>
+          <div class={styles.toggleInline}>
+            <SegmentedControl
+              options={modeOptions}
+              value={readingMode.value}
+              onChange={(mode) => {
+                readingMode.value = mode;
+              }}
+              label={t(nav.modeLabel)}
+            />
+          </div>
+          {isMarketing ? (
+            <Button intent="primary" onClick={launch}>
+              {tr(landing.launch)}
+            </Button>
+          ) : null}
+          <button
+            type="button"
+            class={styles.burger}
+            aria-expanded={open}
+            aria-controls="navbar-menu"
+            aria-label={open ? t(nav.closeMenu) : t(nav.openMenu)}
+            onClick={() => {
+              menuOpen.value = !open;
+            }}
+          >
+            <Icon name={open ? 'close' : 'menu'} />
+          </button>
+        </div>
+      </div>
+
+      {open ? (
+        <div class={styles.menuPanel} id="navbar-menu">
+          {isMarketing ? (
+            <nav class={styles.menuLinks} aria-label={tr(messages.primaryNav)}>
+              {LINKS.map((link) => (
+                <button
+                  key={link.route}
+                  type="button"
+                  class={cn(styles.menuLink, route === link.route && styles.linkActive)}
+                  aria-current={route === link.route ? 'page' : undefined}
+                  onClick={() => {
+                    menuOpen.value = false;
+                    navigate(link.route);
+                  }}
+                >
+                  {tr(link.label)}
+                </button>
+              ))}
+            </nav>
+          ) : null}
           <SegmentedControl
             options={modeOptions}
             value={readingMode.value}
@@ -85,14 +157,10 @@ export function Navbar({ route, runtime, onLaunch }: NavbarProps) {
               readingMode.value = mode;
             }}
             label={t(nav.modeLabel)}
+            class={styles.menuToggle}
           />
-          {isMarketing ? (
-            <Button intent="primary" onClick={onLaunch}>
-              {tr(landing.launch)}
-            </Button>
-          ) : null}
         </div>
-      </div>
+      ) : null}
 
       {inApp ? (
         <nav class={styles.tabs} aria-label={tr(messages.primaryNav)}>

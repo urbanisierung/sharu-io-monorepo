@@ -8,4 +8,7 @@ export const nav = defineMessages('safu.nav', {
   modeRegular: 'Regular',
   modeEli5: 'ELI5',
   modeMachine: 'Machine',
+  openMenu: 'Open menu',
+  closeMenu: 'Close menu',
+  menu: 'Menu',
 });

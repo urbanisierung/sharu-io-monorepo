@@ -7,11 +7,32 @@
 import type { JSX } from 'preact';
 import type { FileKind } from '../format.js';
 
-export type IconName = 'files' | 'devices' | 'settings' | 'inbox' | 'plus' | FileKind;
+export type IconName =
+  | 'files'
+  | 'devices'
+  | 'settings'
+  | 'inbox'
+  | 'plus'
+  | 'menu'
+  | 'close'
+  | FileKind;
 
 const GLYPHS: Record<IconName, JSX.Element> = {
   files: (
     <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+  ),
+  menu: (
+    <>
+      <line x1="4" x2="20" y1="6" y2="6" />
+      <line x1="4" x2="20" y1="12" y2="12" />
+      <line x1="4" x2="20" y1="18" y2="18" />
+    </>
+  ),
+  close: (
+    <>
+      <line x1="18" x2="6" y1="6" y2="18" />
+      <line x1="6" x2="18" y1="6" y2="18" />
+    </>
   ),
   devices: (
     <>

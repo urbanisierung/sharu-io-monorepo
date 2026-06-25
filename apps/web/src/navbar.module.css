@@ -96,6 +96,69 @@
   gap: 0.75rem;
 }
 
+/* Burger: hidden on the desktop, shown once the bar collapses on a phone. */
+.burger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  padding: 0.4rem;
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius, 0.5rem);
+  background: transparent;
+  color: var(--cascivo-color-foreground);
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.burger:focus-visible {
+  outline: 2px solid var(--cascivo-color-primary);
+  outline-offset: 2px;
+}
+
+.toggleInline {
+  display: inline-flex;
+}
+
+/* The collapsed menu the burger opens — the links + reading-mode toggle that no
+   longer fit the bar on a phone. Rendered only while open; hidden on the desktop
+   where the burger can't be reached. */
+.menuPanel {
+  display: none;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 0.85rem clamp(1rem, 4vw, 2rem) 1.1rem;
+  border-top: 1px solid var(--cascivo-color-border);
+  background: color-mix(in srgb, var(--cascivo-color-bg) 92%, transparent);
+}
+
+.menuLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.menuLink {
+  border: 0;
+  background: transparent;
+  padding: 0.6rem 0.25rem;
+  text-align: left;
+  color: var(--cascivo-color-foreground);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.menuLink:focus-visible {
+  outline: 2px solid var(--cascivo-color-primary);
+  outline-offset: 2px;
+}
+
+.menuToggle {
+  align-self: flex-start;
+}
+
 /* Sync indicator (ported from the old app topbar). */
 .sync {
   display: inline-flex;
@@ -175,6 +238,26 @@
 .tabIcon {
   font-size: 1.15rem;
   line-height: 1;
+}
+
+/* Phone: collapse the bar to brand + main CTA + burger. The inline links and
+   reading-mode toggle move into the burger menu so the bar stays one row. */
+@media (max-width: 48rem) {
+  .links {
+    display: none;
+  }
+
+  .toggleInline {
+    display: none;
+  }
+
+  .burger {
+    display: inline-flex;
+  }
+
+  .menuPanel {
+    display: flex;
+  }
 }
 
 @media (max-width: 32rem) {

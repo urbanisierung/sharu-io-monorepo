@@ -1,8 +1,9 @@
 import { signal } from '@preact/signals';
-import { cleanup, fireEvent, render, screen } from '@testing-library/preact';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/preact';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Navbar } from './navbar.js';
+import { Navbar, resetNavbar } from './navbar.js';
 import { readingMode, resetReadingMode } from './reading-mode.js';
+import { route } from './router.js';
 import type { Runtime } from './runtime.js';
 import { activeView, resetAppView } from './view-state.js';
 
@@ -10,6 +11,8 @@ afterEach(() => {
   cleanup();
   resetReadingMode();
   resetAppView();
+  resetNavbar();
+  route.value = 'landing';
 });
 
 /** Navbar reads only the wallet name and sync status off the runtime. */
@@ -60,5 +63,35 @@ describe('Navbar', () => {
     expect(screen.queryByRole('button', { name: 'Read the whitepaper' })).toBeNull();
     expect(screen.queryByRole('button', { name: /Files/ })).toBeNull();
     expect(screen.getByRole('toolbar', { name: 'Reading mode' })).toBeTruthy();
+  });
+
+  it('collapses the remaining entries behind a burger menu', () => {
+    render(<Navbar route="landing" runtime={null} onLaunch={() => {}} />);
+    // Closed by default: a burger offers to open, no menu panel yet.
+    expect(document.getElementById('navbar-menu')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
+
+    // Open: the menu carries the links + a reading-mode toggle (the second one,
+    // alongside the inline toggle that CSS hides on a phone).
+    const panel = document.getElementById('navbar-menu');
+    expect(panel).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Close menu' })).toBeTruthy();
+    expect(
+      within(panel as HTMLElement).getByRole('toolbar', { name: 'Reading mode' }),
+    ).toBeTruthy();
+    expect(
+      within(panel as HTMLElement).getByRole('button', { name: 'IPFS vs. Iroh' }),
+    ).toBeTruthy();
+  });
+
+  it('navigates and closes the menu from a burger menu link', () => {
+    render(<Navbar route="landing" runtime={null} onLaunch={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
+    const panel = document.getElementById('navbar-menu') as HTMLElement;
+
+    fireEvent.click(within(panel).getByRole('button', { name: 'Read the whitepaper' }));
+    expect(route.value).toBe('whitepaper');
+    expect(document.getElementById('navbar-menu')).toBeNull();
   });
 });
