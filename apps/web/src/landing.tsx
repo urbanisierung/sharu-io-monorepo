@@ -63,6 +63,8 @@ export function Landing({ onLaunch, onWhitepaper, onComparison, onFlow }: Landin
           <a class={styles.ghost} href="#pipeline">
             {t(landing.learnMore)}
           </a>
+        </div>
+        <div class={styles.heroLinks}>
           <button class={styles.textLink} type="button" onClick={onFlow}>
             {t(landing.watchFlow)}
           </button>
