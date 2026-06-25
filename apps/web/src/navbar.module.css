@@ -121,6 +121,12 @@
   display: inline-flex;
 }
 
+/* The Launch CTA shows its full label on the desktop and a short one once the
+   bar collapses; the button keeps the full label as its accessible name. */
+.ctaShort {
+  display: none;
+}
+
 /* The collapsed menu the burger opens — the links + reading-mode toggle that no
    longer fit the bar on a phone. Rendered only while open; hidden on the desktop
    where the burger can't be reached. */
@@ -257,6 +263,14 @@
 
   .menuPanel {
     display: flex;
+  }
+
+  .ctaFull {
+    display: none;
+  }
+
+  .ctaShort {
+    display: inline;
   }
 }
 

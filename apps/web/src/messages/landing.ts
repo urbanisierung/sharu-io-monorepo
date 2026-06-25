@@ -14,6 +14,7 @@ export const landing = defineMessages('safu.landing', {
   heroSubtitle:
     'Sharu is a decentralized, zero-knowledge, local-first backup and sync platform. Files are encrypted on your device and synced peer-to-peer across your own machines — no servers, no accounts, and no one who can read them but you.',
   launch: 'Launch the app',
+  launchShort: 'Launch',
   learnMore: 'See the pipeline',
   watchFlow: 'How it works',
 
@@ -89,6 +90,7 @@ export const landingEli5 = defineMessages('safu.landing.eli5', {
   heroSubtitle:
     'Sharu keeps copies of your things safe. It locks them up on your own gadget with a secret word, then hands the locked boxes straight to your other gadgets — no faraway helper holding them, no sign-up, and nobody but you can ever peek inside.',
   launch: 'Open the app',
+  launchShort: 'Open',
   learnMore: 'See how the boxes travel',
   watchFlow: 'How it works',
 
@@ -165,6 +167,7 @@ export const landingMachine = defineMessages('safu.landing.machine', {
   heroSubtitle:
     'sharu := decentralized, zk, local-first backup+sync. encrypt@device → sync p2p across own devices. servers=0, accounts=0, readers := you-only.',
   launch: 'app → launch',
+  launchShort: 'launch',
   learnMore: 'pipeline → view',
   watchFlow: 'mechanism → how',
 

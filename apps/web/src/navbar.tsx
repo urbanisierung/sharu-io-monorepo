@@ -111,8 +111,9 @@ export function Navbar({ route, runtime, onLaunch }: NavbarProps) {
             />
           </div>
           {isMarketing ? (
-            <Button intent="primary" onClick={launch}>
-              {tr(landing.launch)}
+            <Button intent="primary" onClick={launch} aria-label={tr(landing.launch)}>
+              <span class={styles.ctaFull}>{tr(landing.launch)}</span>
+              <span class={styles.ctaShort}>{tr(landing.launchShort)}</span>
             </Button>
           ) : null}
           <button
