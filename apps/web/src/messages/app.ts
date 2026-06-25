@@ -79,6 +79,7 @@ export const messages = defineMessages('safu', {
   emptyBody:
     'Drag files anywhere onto this panel, or use Add files. Everything is encrypted on this device before it syncs.',
   download: 'Download',
+  rowActions: 'Actions',
   restoreFailed: 'We couldn’t open this file. Make sure every device uses the same password.',
   searchFiles: 'Search files',
   noMatches: 'No files match “{query}”',
@@ -213,6 +214,7 @@ export const messagesEli5 = defineMessages('safu.eli5', {
   emptyBody:
     'Drag stuff anywhere onto this box, or tap Add stuff. Everything gets locked up on this gadget before it shares.',
   download: 'Get it',
+  rowActions: 'Things you can do',
   restoreFailed: 'We couldn’t open this file. Make sure every gadget uses the same secret word.',
   searchFiles: 'Find stuff',
   noMatches: 'Nothing matches “{query}”',
@@ -341,6 +343,7 @@ export const messagesMachine = defineMessages('safu.machine', {
   emptyTitle: 'empty',
   emptyBody: 'drag files onto panel, or add. encrypt-on-device precedes sync.',
   download: 'get',
+  rowActions: 'actions',
   restoreFailed: 'err: open failed. verify same passphrase across devices.',
   searchFiles: 'find',
   noMatches: 'no match: “{query}”',

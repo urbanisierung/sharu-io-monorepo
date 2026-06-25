@@ -20,6 +20,7 @@ export type IconName =
   | 'trash'
   | 'check'
   | 'copy'
+  | 'more'
   | FileKind;
 
 const GLYPHS: Record<IconName, JSX.Element> = {
@@ -51,6 +52,13 @@ const GLYPHS: Record<IconName, JSX.Element> = {
     </>
   ),
   check: <polyline points="20 6 9 17 4 12" />,
+  more: (
+    <>
+      <circle cx="12" cy="5" r="1" />
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="12" cy="19" r="1" />
+    </>
+  ),
   copy: (
     <>
       <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />

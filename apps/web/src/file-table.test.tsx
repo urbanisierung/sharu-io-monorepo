@@ -19,6 +19,13 @@ function tableText(): string {
   return screen.getByRole('table').textContent ?? '';
 }
 
+/** Open a row's three-dots overflow menu and return the row element. */
+function openRowMenu(name: string): HTMLElement {
+  const row = screen.getByText(name).closest('tr') as HTMLElement;
+  fireEvent.click(within(row).getByRole('button', { name: 'Actions' }));
+  return row;
+}
+
 beforeEach(resetFileTableView);
 afterEach(cleanup);
 
@@ -69,23 +76,23 @@ describe('FileTable', () => {
     expect(text.indexOf('zebra.png')).toBeLessThan(text.indexOf('mid.pdf'));
   });
 
-  it('restores a file through onRestore', () => {
+  it('restores a file through onRestore from the row menu', () => {
     const onRestore = vi.fn().mockResolvedValue(undefined);
     renderTable({ onRestore });
-    const row = screen.getByText('alpha.txt').closest('tr') as HTMLElement;
-    fireEvent.click(within(row).getByRole('button', { name: 'Download' }));
+    const row = openRowMenu('alpha.txt');
+    fireEvent.click(within(row).getByRole('menuitem', { name: 'Download' }));
     expect(onRestore).toHaveBeenCalledWith('alpha.txt');
   });
 
   it('deletes only after a confirmation step', () => {
     const onDelete = vi.fn();
     renderTable({ onDelete });
-    let row = screen.getByText('alpha.txt').closest('tr') as HTMLElement;
-    fireEvent.click(within(row).getByRole('button', { name: 'Delete' }));
+    let row = openRowMenu('alpha.txt');
+    fireEvent.click(within(row).getByRole('menuitem', { name: 'Delete' }));
     expect(onDelete).not.toHaveBeenCalled();
 
     row = screen.getByText('alpha.txt').closest('tr') as HTMLElement;
-    fireEvent.click(within(row).getByRole('button', { name: 'Remove' }));
+    fireEvent.click(within(row).getByRole('menuitem', { name: 'Remove' }));
     expect(onDelete).toHaveBeenCalledWith('alpha.txt');
   });
 
@@ -93,8 +100,8 @@ describe('FileTable', () => {
     const link = 'https://safu.app/s#share=abc';
     const onShare = vi.fn().mockResolvedValue(link);
     renderTable({ onShare });
-    const row = screen.getByText('alpha.txt').closest('tr') as HTMLElement;
-    fireEvent.click(within(row).getByRole('button', { name: 'Share' }));
+    const row = openRowMenu('alpha.txt');
+    fireEvent.click(within(row).getByRole('menuitem', { name: 'Share' }));
     expect(onShare).toHaveBeenCalledWith('alpha.txt');
 
     const input = (await within(
@@ -106,8 +113,8 @@ describe('FileTable', () => {
   it('shows a prompt when no always-on node is paired', async () => {
     const onShare = vi.fn().mockRejectedValue(new Error('no-share-host'));
     renderTable({ onShare });
-    const row = screen.getByText('alpha.txt').closest('tr') as HTMLElement;
-    fireEvent.click(within(row).getByRole('button', { name: 'Share' }));
+    const row = openRowMenu('alpha.txt');
+    fireEvent.click(within(row).getByRole('menuitem', { name: 'Share' }));
     expect(await screen.findByText(/Pair your always-on node first/)).toBeTruthy();
   });
 });

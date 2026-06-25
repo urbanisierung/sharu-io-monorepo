@@ -94,7 +94,9 @@ describe('App shell (plan §2.4)', () => {
     controller.unlock('p');
     files.value = [{ path: 'secret.bin', size: 1, modified: 1, blocks: ['m'] }];
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Download' }));
+    // The row actions live behind the three-dots menu.
+    fireEvent.click(await screen.findByRole('button', { name: 'Actions' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Download' }));
     expect(await screen.findByText(/same password/)).toBeTruthy();
   });
 
