@@ -1,0 +1,219 @@
+/* One sticky bar for the whole app. Sits above every route; its z-index clears
+   the in-app content (which no longer has a topbar of its own). */
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--cascivo-color-border);
+  background: color-mix(in srgb, var(--cascivo-color-bg) 86%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.7rem clamp(1rem, 4vw, 2rem);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.logo {
+  height: 1.7rem;
+  width: auto;
+  filter: drop-shadow(0 0 0.35rem rgba(0, 234, 255, 0.45));
+}
+
+.wordmark {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--cascivo-color-primary);
+  text-shadow: var(--cascivo-glow-cyan);
+  /* Cyberpunk wordmark: a faulty-neon-sign flicker (see theme.css). */
+  animation: safu-flicker 5s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wordmark {
+    animation: none;
+  }
+}
+
+.walletTag {
+  font-size: 0.8rem;
+  color: var(--cascivo-color-muted);
+}
+
+/* Marketing section links. */
+.links {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.link {
+  border: 0;
+  background: transparent;
+  padding: 0.4rem 0.7rem;
+  border-radius: var(--cascivo-radius, 0.5rem);
+  color: var(--cascivo-color-muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--dur-micro, 120ms) var(--ease-out, ease);
+}
+
+@media (hover: hover) {
+  .link:hover {
+    color: var(--cascivo-color-foreground);
+  }
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--cascivo-color-primary);
+  outline-offset: 2px;
+}
+
+.linkActive {
+  color: var(--cascivo-color-primary);
+}
+
+.right {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Sync indicator (ported from the old app topbar). */
+.sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--cascivo-color-muted);
+}
+
+.dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--cascivo-color-muted);
+}
+
+.dotIdle {
+  background: var(--cascivo-color-success);
+  box-shadow: 0 0 0.4rem var(--cascivo-color-success);
+}
+
+.dotSyncing {
+  background: var(--cascivo-color-primary);
+  box-shadow: var(--cascivo-glow-cyan);
+}
+
+.dotError {
+  background: var(--cascivo-color-danger);
+  box-shadow: 0 0 0.4rem var(--cascivo-color-danger);
+}
+
+/* In-app section tabs: a centered row under the bar on the desktop, a fixed
+   bottom bar on a phone (the thumb-reachable spot), exactly as the old app
+   navigation behaved. */
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.4rem clamp(1rem, 4vw, 2rem);
+  border-top: 1px solid var(--cascivo-color-border);
+  background: color-mix(in srgb, var(--cascivo-color-bg) 86%, transparent);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--cascivo-radius, 0.5rem);
+  background: transparent;
+  color: var(--cascivo-color-muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--dur-micro, 120ms) var(--ease-out, ease);
+}
+
+@media (hover: hover) {
+  .tab:hover {
+    color: var(--cascivo-color-foreground);
+  }
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--cascivo-color-primary);
+  outline-offset: 2px;
+}
+
+.tabActive {
+  color: var(--cascivo-color-primary);
+  border-color: var(--cascivo-color-border);
+  background: color-mix(in srgb, var(--cascivo-color-primary) 12%, transparent);
+}
+
+.tabIcon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+@media (max-width: 32rem) {
+  .walletTag {
+    display: none;
+  }
+}
+
+/* Phone: the section tabs drop to a fixed bottom bar with stacked icon+label
+   tabs (the native-app pattern). The app content reserves bottom room for it. */
+@media (max-width: 40rem) {
+  .tabs {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 30;
+    justify-content: space-around;
+    gap: 0;
+    padding: 0.25rem 0.5rem calc(0.25rem + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--cascivo-color-border);
+    backdrop-filter: blur(8px);
+  }
+
+  .tab {
+    flex: 1;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.35rem 0.25rem;
+    border-color: transparent;
+    background: transparent;
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
+  }
+
+  .tabActive {
+    border-color: transparent;
+    background: transparent;
+  }
+
+  .tabIcon {
+    font-size: 1.4rem;
+  }
+}

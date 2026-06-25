@@ -4,7 +4,6 @@
 // the running app. The runtime (Iroh transport + crypto WASM + OPFS) is created
 // per wallet at unlock — never on the landing page — so the marketing pages stay
 // instant. No router library, no hooks; state is a handful of signals.
-import { t } from '@cascivo/i18n';
 import { signal } from '@preact/signals';
 import { App } from './app.js';
 import styles from './app.module.css';
@@ -12,7 +11,9 @@ import { Comparison } from './comparison.js';
 import { FlowPage } from './flow.js';
 import { Landing } from './landing.js';
 import { messages } from './messages.js';
+import { Navbar } from './navbar.js';
 import { readPairingFromHash } from './pairing.js';
+import { tr as t } from './reading-mode.js';
 import { navigate, route } from './router.js';
 import { createRuntime, type Runtime } from './runtime.js';
 import { ShareViewer } from './share-page.js';
@@ -184,9 +185,7 @@ function AppScreen() {
         controller={ready.controller}
         files={ready.files}
         peers={ready.peers}
-        syncStatus={ready.syncStatus}
         connectionCode={ready.connectionCode}
-        walletName={ready.walletName}
         onBackup={downloadWalletBackup}
         onSwitchWallet={() => void switchWallet()}
         onRestore={(path) => download(path)}
@@ -244,7 +243,8 @@ function AppScreen() {
   );
 }
 
-export function Root() {
+/** The route's content, beneath the global navbar. */
+function RouteContent() {
   const view = route.value;
   if (view === 'landing') {
     return (
@@ -257,13 +257,13 @@ export function Root() {
     );
   }
   if (view === 'whitepaper') {
-    return <Whitepaper onBack={() => navigate('landing')} onLaunch={launch} />;
+    return <Whitepaper onLaunch={launch} />;
   }
   if (view === 'comparison') {
-    return <Comparison onBack={() => navigate('landing')} onLaunch={launch} />;
+    return <Comparison onLaunch={launch} />;
   }
   if (view === 'how-it-works') {
-    return <FlowPage onBack={() => navigate('landing')} onLaunch={launch} />;
+    return <FlowPage onLaunch={launch} />;
   }
   // The keyless share viewer renders with no wallet/unlock — the runtime is
   // never created here, so opening a public link stays instant and anonymous.
@@ -271,4 +271,13 @@ export function Root() {
     return <ShareViewer />;
   }
   return <AppScreen />;
+}
+
+export function Root() {
+  return (
+    <>
+      <Navbar route={route.value} runtime={runtime.value} onLaunch={launch} />
+      <RouteContent />
+    </>
+  );
 }

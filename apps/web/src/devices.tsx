@@ -3,12 +3,13 @@
 // when arriving via a pairing deep link, walk the user through the safety-number
 // check in plain language, and let them give each paired device a friendly name
 // instead of reading a raw key id. Signal-driven, no hooks; copy via i18n.
-import { t } from '@cascivo/i18n';
+
 import { type ReadonlySignal, signal } from '@preact/signals';
 import styles from './app.module.css';
 import { messages } from './messages.js';
 import { pairingLink, readPairingFromHash } from './pairing.js';
 import { QrCode } from './qr-code.js';
+import { tr as t } from './reading-mode.js';
 import type { PeerInfo } from './runtime.js';
 import { Button } from './ui/button.js';
 

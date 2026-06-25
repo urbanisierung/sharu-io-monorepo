@@ -3,9 +3,9 @@
 // Encrypt → Address → Sync → Restore — then hands off to the app via `onLaunch`.
 // All copy through @cascivo/i18n; no React hooks.
 import { cn } from '@cascivo/core';
-import { t } from '@cascivo/i18n';
 import styles from './landing.module.css';
 import { landing } from './messages.js';
+import { tr as t } from './reading-mode.js';
 import { Button } from './ui/button.js';
 
 const problems = [
@@ -48,16 +48,6 @@ export interface LandingProps {
 export function Landing({ onLaunch, onWhitepaper, onComparison, onFlow }: LandingProps) {
   return (
     <div class={styles.page}>
-      <nav class={styles.nav}>
-        <span class={styles.brand}>
-          <img class={styles.brandLogo} src="/logo.png" alt={t(landing.logoAlt)} />
-          <span class={styles.wordmark}>{t(landing.brand)}</span>
-        </span>
-        <Button intent="primary" onClick={onLaunch}>
-          {t(landing.launch)}
-        </Button>
-      </nav>
-
       <header class={cn(styles.hero, styles.reveal)} style={{ '--i': '0' }}>
         <span class={styles.badge}>{t(landing.badge)}</span>
         <h1 class={styles.heroTitle}>

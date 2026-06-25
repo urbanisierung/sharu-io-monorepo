@@ -9,7 +9,6 @@
 // desktop and a fixed bottom bar on a phone, so every view is one tap away while
 // the file list stays the centre of attention.
 import { cn } from '@cascivo/core';
-import { t } from '@cascivo/i18n';
 import { type ReadonlySignal, signal } from '@preact/signals';
 import type { FileView } from '@safu/sdk';
 import styles from './app.module.css';
@@ -19,25 +18,21 @@ import type { IngestController } from './ingest-controller.js';
 import { IngestProgress } from './ingest-progress.js';
 import { messages } from './messages.js';
 import { PublishedShares } from './published-shares.js';
+import { tr as t } from './reading-mode.js';
 import type { PeerInfo } from './runtime.js';
 import type { PublishedShare } from './shares-store.js';
 import { SiteShare } from './site-share.js';
 import { StatusBanner } from './status-banner.js';
 import { Button } from './ui/button.js';
 import { DropZone } from './ui/drop-zone.js';
-import { Icon, type IconName } from './ui/icon.js';
-
-type AppView = 'files' | 'devices' | 'settings';
+import { type AppView, activeView } from './view-state.js';
 
 export interface AppProps {
   controller: IngestController;
   files: ReadonlySignal<readonly FileView[]>;
   peers: ReadonlySignal<readonly PeerInfo[]>;
-  syncStatus: ReadonlySignal<'idle' | 'syncing' | 'error'>;
   /** This device's connection code (a signal — empty until unlock derives it). */
   connectionCode?: ReadonlySignal<string>;
-  /** The active wallet's name, shown in the header. */
-  walletName?: string;
   /** Download a portable backup of the active wallet. */
   onBackup?: () => void;
   /** Lock the active wallet and return to the wallet picker. */
@@ -66,7 +61,6 @@ export interface AppProps {
 }
 
 const draftWatchPath = signal('');
-const activeView = signal<AppView>('files');
 
 /** Reset the module-level view state — for deterministic tests. */
 export function resetAppView(): void {
@@ -78,9 +72,7 @@ export function App({
   controller,
   files,
   peers,
-  syncStatus,
   connectionCode,
-  walletName,
   onBackup,
   onSwitchWallet,
   onRestore,
@@ -98,70 +90,13 @@ export function App({
   onWatch,
 }: AppProps) {
   const phase = controller.phase.value;
-  const sync = syncStatus.value;
-  const syncLabel =
-    sync === 'syncing'
-      ? t(messages.syncingNow)
-      : sync === 'error'
-        ? t(messages.syncProblem)
-        : t(messages.syncUpToDate);
-  const dotClass =
-    sync === 'syncing' ? styles.dotSyncing : sync === 'error' ? styles.dotError : styles.dotIdle;
-
-  // Which views are reachable depends on the handlers this runtime supplies, so
-  // the Devices and Settings tabs only appear when there is something behind
-  // them (e.g. the web build has no folder watching). Files is always present.
-  const hasSettings = Boolean(onWatch || onBackup || onSwitchWallet);
-  const tabs: readonly { id: AppView; icon: IconName; label: string }[] = [
-    { id: 'files', icon: 'files', label: t(messages.navFiles) },
-    ...(onPair
-      ? [{ id: 'devices' as const, icon: 'devices' as const, label: t(messages.navDevices) }]
-      : []),
-    ...(hasSettings
-      ? [{ id: 'settings' as const, icon: 'settings' as const, label: t(messages.navSettings) }]
-      : []),
-  ];
-  const view: AppView = tabs.some((tab) => tab.id === activeView.value)
-    ? activeView.value
-    : 'files';
+  // The section (Files / Devices / Settings) is chosen from the global navbar's
+  // tabs; this shell renders the active section's content. A section with no
+  // backing handlers simply renders nothing.
+  const view: AppView = activeView.value;
 
   return (
     <div class={styles.app}>
-      <header class={styles.topbar}>
-        <div class={styles.brand}>
-          <img class={styles.brandLogo} src="/logo.png" alt={t(messages.logoAlt)} />
-          <h1 class={styles.brandName}>{t(messages.title)}</h1>
-          {walletName ? (
-            <span class={styles.brandTag}>{walletName}</span>
-          ) : (
-            <span class={styles.brandTag}>{t(messages.tagline)}</span>
-          )}
-        </div>
-        <span class={styles.sync}>
-          <span class={cn(styles.dot, dotClass)} aria-hidden="true" />
-          {syncLabel}
-        </span>
-      </header>
-
-      {tabs.length > 1 && (
-        <nav class={styles.nav} aria-label={t(messages.primaryNav)}>
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              class={cn(styles.navItem, view === tab.id && styles.navItemActive)}
-              aria-current={view === tab.id ? 'page' : undefined}
-              onClick={() => {
-                activeView.value = tab.id;
-              }}
-            >
-              <Icon name={tab.icon} class={styles.navIcon} />
-              <span class={styles.navLabel}>{tab.label}</span>
-            </button>
-          ))}
-        </nav>
-      )}
-
       <main class={styles.content}>
         {view === 'files' && (
           <>

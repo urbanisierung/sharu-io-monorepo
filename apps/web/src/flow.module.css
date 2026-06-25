@@ -54,53 +54,6 @@
   color: var(--cascivo-color-muted);
 }
 
-/* ---- Reading-mode toggle · segmented control (regular / ELI5 / machine) ----- */
-
-.modes {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  margin-top: 0.5rem;
-  padding: 0.3rem;
-  border: 1px solid var(--cascivo-color-border);
-  border-radius: 0.7rem;
-  background: var(--cascivo-color-surface);
-}
-
-.mode {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: var(--cascivo-color-muted);
-  font-family: var(--safu-font-mono);
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 0.45rem 0.95rem;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition:
-    color var(--dur-micro, 120ms) var(--ease-out, ease),
-    background var(--dur-micro, 120ms) var(--ease-out, ease);
-}
-
-@media (hover: hover) {
-  .mode:hover {
-    color: var(--cascivo-color-foreground);
-  }
-}
-
-.mode:focus-visible {
-  outline: 2px solid var(--cascivo-color-primary);
-  outline-offset: 2px;
-}
-
-.modeActive,
-.modeActive:hover {
-  color: var(--cascivo-color-primary-foreground);
-  background: linear-gradient(92deg, var(--cascivo-color-primary), var(--cascivo-color-accent-2));
-}
-
 .section {
   padding: 2.5rem 0;
   border-top: 1px solid var(--cascivo-color-border);

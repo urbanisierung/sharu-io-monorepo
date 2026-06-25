@@ -3,11 +3,12 @@
 // from the node so the link stops resolving (already-downloaded copies cannot be
 // recalled). Signal-driven view state; the data is the runtime's publishedShares
 // signal, persisted per wallet in shares-store.ts.
-import { t } from '@cascivo/i18n';
+
 import { type ReadonlySignal, signal } from '@preact/signals';
 import { formatDate } from './format.js';
 import { messages } from './messages.js';
 import styles from './published-shares.module.css';
+import { tr as t } from './reading-mode.js';
 import type { PublishedShare } from './shares-store.js';
 import { Button } from './ui/button.js';
 

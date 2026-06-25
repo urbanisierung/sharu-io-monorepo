@@ -5,10 +5,11 @@
 // shown when the user arrived via a device-link URL). Signal-driven, no React
 // hooks; all copy via @cascivo/i18n. It only collects + validates input and
 // hands the password (and, when creating, the name) to `onSubmit`.
-import { t } from '@cascivo/i18n';
+
 import { signal } from '@preact/signals';
 import styles from './auth.module.css';
 import { messages } from './messages.js';
+import { tr as t } from './reading-mode.js';
 import { saveRecoverySheet } from './recovery.js';
 import { Button } from './ui/button.js';
 

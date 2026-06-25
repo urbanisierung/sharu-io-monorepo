@@ -5,12 +5,13 @@
 // key/direction, search query, the row mid-confirm) — no React hooks; all copy
 // via @cascivo/i18n. The SDK already carries this metadata on every FileView;
 // this component just stops throwing it away.
-import { t } from '@cascivo/i18n';
+
 import { type ReadonlySignal, signal } from '@preact/signals';
 import type { FileView } from '@safu/sdk';
 import styles from './file-table.module.css';
 import { fileKind, formatBytes, formatDate } from './format.js';
 import { messages } from './messages.js';
+import { tr as t } from './reading-mode.js';
 import { AddFilesButton } from './ui/add-files-button.js';
 import { Button } from './ui/button.js';
 import { Icon } from './ui/icon.js';

@@ -3,9 +3,10 @@
 // re-ingests them under a single random key, pins them to the node, and returns
 // an openable link — shown here for copying. Self-contained signal-driven view
 // state, all copy via @cascivo/i18n.
-import { t } from '@cascivo/i18n';
+
 import { signal } from '@preact/signals';
 import { messages } from './messages.js';
+import { tr as t } from './reading-mode.js';
 import styles from './site-share.module.css';
 import { Button } from './ui/button.js';
 

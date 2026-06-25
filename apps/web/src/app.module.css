@@ -4,136 +4,8 @@
   flex-direction: column;
 }
 
-/* Sticky top bar: brand on the left, a calm sync indicator on the right. Wraps
-   on narrow screens so it stays usable on a phone. */
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding: 0.75rem clamp(1rem, 4vw, 2rem);
-  border-bottom: 1px solid var(--cascivo-color-border);
-  background: color-mix(in srgb, var(--cascivo-color-bg) 86%, transparent);
-  backdrop-filter: blur(8px);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-}
-
-.brandLogo {
-  height: 1.7rem;
-  width: auto;
-  filter: drop-shadow(0 0 0.35rem rgba(0, 234, 255, 0.45));
-}
-
-.brandName {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  color: var(--cascivo-color-primary);
-  text-shadow: var(--cascivo-glow-cyan);
-  /* Cyberpunk wordmark: a faulty-neon-sign flicker (see theme.css). */
-  animation: safu-flicker 5s linear infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .brandName {
-    animation: none;
-  }
-}
-
-.brandTag {
-  font-size: 0.8rem;
-  color: var(--cascivo-color-muted);
-}
-
-.sync {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.85rem;
-  color: var(--cascivo-color-muted);
-}
-
-.dot {
-  width: 0.6rem;
-  height: 0.6rem;
-  border-radius: 50%;
-  background: var(--cascivo-color-muted);
-}
-
-.dotIdle {
-  background: var(--cascivo-color-success);
-  box-shadow: 0 0 0.4rem var(--cascivo-color-success);
-}
-
-.dotSyncing {
-  background: var(--cascivo-color-primary);
-  box-shadow: var(--cascivo-glow-cyan);
-}
-
-.dotError {
-  background: var(--cascivo-color-danger);
-  box-shadow: 0 0 0.4rem var(--cascivo-color-danger);
-}
-
-/* Primary navigation: a centered row of tabs under the top bar on the desktop.
-   On a phone it becomes a fixed bottom bar (see the media query below), the
-   reachable-with-a-thumb spot, so switching views never hides the file list. */
-.nav {
-  display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.5rem clamp(1rem, 4vw, 2rem);
-  border-bottom: 1px solid var(--cascivo-color-border);
-  background: color-mix(in srgb, var(--cascivo-color-bg) 86%, transparent);
-}
-
-.navItem {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 2.75rem;
-  padding: 0.5rem 1rem;
-  border: 1px solid transparent;
-  border-radius: var(--cascivo-radius, 0.5rem);
-  background: transparent;
-  color: var(--cascivo-color-muted);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  transition: color var(--dur-micro) var(--ease-out);
-}
-
-@media (hover: hover) {
-  .navItem:hover {
-    color: var(--cascivo-color-foreground);
-  }
-}
-
-.navItem:focus-visible {
-  outline: 2px solid var(--cascivo-color-primary);
-  outline-offset: 2px;
-}
-
-.navItemActive {
-  color: var(--cascivo-color-primary);
-  border-color: var(--cascivo-color-border);
-  background: color-mix(in srgb, var(--cascivo-color-primary) 12%, transparent);
-}
-
-.navIcon {
-  font-size: 1.15rem;
-  line-height: 1;
-}
+/* The brand, sync indicator and section tabs that used to live here now belong
+   to the global navbar (navbar.module.css). */
 
 /* Centered content column with comfortable, screen-aware padding. */
 .content {
@@ -147,48 +19,9 @@
   gap: 1.5rem;
 }
 
-@media (max-width: 32rem) {
-  .brandTag {
-    display: none;
-  }
-}
-
-/* Phone: the navigation drops to a fixed bottom bar with stacked icon+label
-   tabs (the native-app pattern), and the content gets bottom room so the bar
-   never covers the last row. */
+/* Phone: the navbar's section tabs become a fixed bottom bar, so the content
+   gets bottom room to keep its last row clear of them. */
 @media (max-width: 40rem) {
-  .nav {
-    position: fixed;
-    inset: auto 0 0 0;
-    z-index: 10;
-    justify-content: space-around;
-    gap: 0;
-    padding: 0.25rem 0.5rem calc(0.25rem + env(safe-area-inset-bottom, 0px));
-    border-top: 1px solid var(--cascivo-color-border);
-    border-bottom: none;
-    backdrop-filter: blur(8px);
-  }
-
-  .navItem {
-    flex: 1;
-    flex-direction: column;
-    gap: 0.15rem;
-    padding: 0.35rem 0.25rem;
-    border-color: transparent;
-    background: transparent;
-    font-size: 0.7rem;
-    letter-spacing: 0.02em;
-  }
-
-  .navItemActive {
-    border-color: transparent;
-    background: transparent;
-  }
-
-  .navIcon {
-    font-size: 1.4rem;
-  }
-
   .content {
     padding-bottom: 6rem;
   }

@@ -8,16 +8,14 @@ import { resetFileTableView } from './file-table.js';
 import { IngestController } from './ingest-controller.js';
 import type { PeerInfo } from './runtime.js';
 import { resetUnlockGate } from './unlock-gate.js';
+import { activeView } from './view-state.js';
 
 function renderApp(props: Partial<Parameters<typeof App>[0]> = {}) {
   const controller = new IngestController(async () => {});
   const files = signal<readonly FileView[]>([]);
   const peers = signal<readonly PeerInfo[]>([]);
-  const syncStatus = signal<'idle' | 'syncing' | 'error'>('idle');
-  render(
-    <App controller={controller} files={files} peers={peers} syncStatus={syncStatus} {...props} />,
-  );
-  return { controller, files, peers, syncStatus };
+  render(<App controller={controller} files={files} peers={peers} {...props} />);
+  return { controller, files, peers };
 }
 
 afterEach(() => {
@@ -29,13 +27,6 @@ afterEach(() => {
 });
 
 describe('App shell (plan §2.4)', () => {
-  it('shows a calm, plain-language sync status in the top bar', async () => {
-    const { syncStatus } = renderApp();
-    expect(screen.getByText('Up to date')).toBeTruthy();
-    syncStatus.value = 'syncing';
-    expect(await screen.findByText('Syncing…')).toBeTruthy();
-  });
-
   it('reveals the drop surface only while a file is dragged over the list', async () => {
     const { controller } = renderApp();
     controller.unlock('hunter2pass');
@@ -51,15 +42,14 @@ describe('App shell (plan §2.4)', () => {
     );
   });
 
-  it('shows the active wallet name and backup/switch controls in Settings', () => {
+  it('shows the backup/switch controls in the Settings section', async () => {
     const onBackup = vi.fn();
     const onSwitchWallet = vi.fn();
-    renderApp({ walletName: 'Personal', onBackup, onSwitchWallet });
-    // The wallet name stays in the top bar across views...
-    expect(screen.getByText('Personal')).toBeTruthy();
-    // ...while the wallet controls live behind the Settings tab.
-    fireEvent.click(screen.getByRole('button', { name: /Settings/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'Back up this wallet' }));
+    renderApp({ onBackup, onSwitchWallet });
+    // The Settings section (selected from the navbar's tabs) holds the wallet
+    // controls.
+    activeView.value = 'settings';
+    fireEvent.click(await screen.findByRole('button', { name: 'Back up this wallet' }));
     expect(onBackup).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole('button', { name: 'Switch wallet' }));
     expect(onSwitchWallet).toHaveBeenCalledOnce();
@@ -119,8 +109,8 @@ describe('App shell (plan §2.4)', () => {
     controller.unlock('p');
     peers.value = [{ id: 'PEER1', sas: '123456', status: 'pending' }];
 
-    // Devices live behind their own tab now.
-    fireEvent.click(screen.getByRole('button', { name: /Devices/ }));
+    // Devices live in their own section, selected from the navbar's tabs.
+    activeView.value = 'devices';
     // The SAS is shown for out-of-band comparison...
     expect(await screen.findByText('123456')).toBeTruthy();
     // ...and confirming it calls back with the peer id.
@@ -137,7 +127,7 @@ describe('App shell (plan §2.4)', () => {
     });
     controller.unlock('p');
     peers.value = [{ id: 'PEER1', sas: '123456', status: 'rejected' }];
-    fireEvent.click(screen.getByRole('button', { name: /Devices/ }));
+    activeView.value = 'devices';
     expect(await screen.findByText(/no longer make changes/)).toBeTruthy();
   });
 });

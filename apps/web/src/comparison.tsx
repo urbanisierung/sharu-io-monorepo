@@ -3,9 +3,10 @@
 // @cascivo/i18n copy (no hardcoded strings, no React hooks), mirroring
 // docs/architecture-comparison-ipfs-vs-iroh.md. Reachable from the landing page;
 // `onBack` returns there and `onLaunch` opens the app.
-import { t } from '@cascivo/i18n';
+
 import styles from './comparison.module.css';
 import { comparison } from './messages.js';
+import { tr as t } from './reading-mode.js';
 import { Button } from './ui/button.js';
 
 const rows = [
@@ -67,21 +68,14 @@ const reasons = [
 ];
 
 export interface ComparisonProps {
-  onBack: () => void;
   onLaunch: () => void;
 }
 
-export function Comparison({ onBack, onLaunch }: ComparisonProps) {
+export function Comparison({ onLaunch }: ComparisonProps) {
   return (
     <div class={styles.page}>
-      <nav class={styles.nav}>
-        <Button intent="neutral" onClick={onBack}>
-          {t(comparison.back)}
-        </Button>
-        <span class={styles.meta}>{t(comparison.meta)}</span>
-      </nav>
-
       <header class={styles.head}>
+        <span class={styles.meta}>{t(comparison.meta)}</span>
         <h1 class={styles.title}>{t(comparison.title)}</h1>
         <p class={styles.subtitle}>{t(comparison.subtitle)}</p>
       </header>

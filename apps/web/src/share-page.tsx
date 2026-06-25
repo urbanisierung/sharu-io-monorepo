@@ -4,10 +4,11 @@
 // fragment key, verify each block against its hash), and renders by contentType.
 // All network + crypto is the injectable `open`; the component is pure view +
 // a one-shot load, so tests drive it without a transport.
-import { t } from '@cascivo/i18n';
+
 import { signal } from '@preact/signals';
 import { formatBytes } from './format.js';
 import { shareView } from './messages.js';
+import { tr as t } from './reading-mode.js';
 import { decodeShareCode, readShareFromHash } from './share-code.js';
 import styles from './share-page.module.css';
 import { type OpenedFile, type OpenedSite, openShareOverIroh } from './share-viewer.js';
