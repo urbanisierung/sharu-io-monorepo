@@ -57,9 +57,82 @@
   padding: 0 0.65rem;
   border: 1px solid var(--cascivo-color-border, #d4d4d8);
   border-radius: var(--cascivo-radius, 0.5rem);
+  background: var(--cascivo-color-surface);
+  color: var(--cascivo-color-foreground);
   font: inherit;
   font-size: 0.95rem;
   line-height: 1.2;
+}
+
+.input::placeholder {
+  color: var(--cascivo-color-muted);
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--cascivo-color-primary);
+  outline-offset: 1px;
+  border-color: var(--cascivo-color-primary);
+}
+
+/* Settings: a column of titled cards, each with a description and a regular,
+   content-width control — not a stack of full-width buttons. */
+.settings {
+  display: grid;
+  gap: 1rem;
+  width: min(40rem, 92vw);
+  justify-items: stretch;
+}
+
+.settingsHead {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.settingsTitle {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.settingsIntro {
+  margin: 0;
+  color: var(--cascivo-color-muted);
+  line-height: 1.5;
+}
+
+.setting {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius, 0.5rem);
+  background: color-mix(in srgb, var(--cascivo-color-surface) 60%, transparent);
+}
+
+.settingTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--cascivo-color-foreground);
+}
+
+.settingDesc {
+  margin: 0;
+  max-width: 56ch;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--cascivo-color-muted);
+}
+
+.settingRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+
+.settingRow input {
+  flex: 1 1 12rem;
+  min-width: 0;
 }
 
 /* The file list's surface: a positioned wrapper so the drag-only drop overlay

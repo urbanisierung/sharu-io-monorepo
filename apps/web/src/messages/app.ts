@@ -47,6 +47,14 @@ export const messages = defineMessages('safu', {
   backupHint:
     'Save a backup file to restore this wallet on another device. It contains your password — keep it private.',
   switchWallet: 'Switch wallet',
+  settingsHeading: 'Settings',
+  settingsIntro: 'Manage how this device backs up, and the wallet open here.',
+  watchHint:
+    'Point Sharu at a folder on this device. New and changed files inside it are encrypted and backed up automatically — no dragging required. Desktop only.',
+  backupTitle: 'Wallet backup',
+  switchWalletTitle: 'Open a different wallet',
+  switchWalletHint:
+    'Lock this wallet and return to the picker to open or create another. Your encrypted files stay on this device.',
   wrongPassword:
     'That password doesn’t match the one set on this device. Enter the password you created here.',
   unlockFailed: 'Something went wrong unlocking. Please try again.',
@@ -182,6 +190,14 @@ export const messagesEli5 = defineMessages('safu.eli5', {
   backupHint:
     'Save a backup file so you can bring this magic box to another gadget. It holds your secret word — keep it just for you.',
   switchWallet: 'Switch magic box',
+  settingsHeading: 'Settings',
+  settingsIntro: 'Change how this gadget keeps your stuff safe, and the magic box open here.',
+  watchHint:
+    'Show Sharu a folder on this gadget. Anything new or changed inside it gets locked up and kept safe all by itself — no dragging needed. Computers only.',
+  backupTitle: 'Magic box backup',
+  switchWalletTitle: 'Open a different magic box',
+  switchWalletHint:
+    'Lock this magic box and go back to pick or make another one. Your locked-up stuff stays right here on this gadget.',
   wrongPassword:
     'That secret word isn’t the one set on this gadget. Type the secret word you made here.',
   unlockFailed: 'Oops, something went wrong opening it. Please try again.',
@@ -314,6 +330,14 @@ export const messagesMachine = defineMessages('safu.machine', {
   backupWallet: 'export wallet',
   backupHint: 'export backup to restore on another device. contains passphrase — keep private.',
   switchWallet: 'switch wallet',
+  settingsHeading: 'settings',
+  settingsIntro: 'config: device backup behavior + active wallet.',
+  watchHint:
+    'point safu-node at a folder on this device. new|changed files inside → auto encrypt + back up. no drag. desktop only.',
+  backupTitle: 'wallet backup',
+  switchWalletTitle: 'open different wallet',
+  switchWalletHint:
+    'lock wallet → return to picker (open|create another). encrypted files remain on device.',
   wrongPassword: 'err: passphrase != device passphrase. enter local passphrase.',
   unlockFailed: 'err: unlock failed. retry.',
   saveRecovery: 'export recovery',

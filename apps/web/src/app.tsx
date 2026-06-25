@@ -173,44 +173,61 @@ export function App({
         )}
 
         {view === 'settings' && (
-          <>
+          <section class={styles.settings}>
+            <header class={styles.settingsHead}>
+              <h2 class={styles.settingsTitle}>{t(messages.settingsHeading)}</h2>
+              <p class={styles.settingsIntro}>{t(messages.settingsIntro)}</p>
+            </header>
+
             {onWatch && (
-              <section class={styles.gate}>
-                <h2>{t(messages.watchHeading)}</h2>
-                <input
-                  class={styles.input}
-                  aria-label={t(messages.watchPlaceholder)}
-                  placeholder={t(messages.watchPlaceholder)}
-                  value={draftWatchPath.value}
-                  onInput={(event) => {
-                    draftWatchPath.value = (event.target as HTMLInputElement).value;
-                  }}
-                />
-                <Button intent="neutral" onClick={() => void onWatch(draftWatchPath.value)}>
-                  {t(messages.watch)}
-                </Button>
-              </section>
+              <article class={styles.setting}>
+                <h3 class={styles.settingTitle}>{t(messages.watchHeading)}</h3>
+                <p class={styles.settingDesc}>{t(messages.watchHint)}</p>
+                <div class={styles.settingRow}>
+                  <input
+                    class={styles.input}
+                    aria-label={t(messages.watchPlaceholder)}
+                    placeholder={t(messages.watchPlaceholder)}
+                    value={draftWatchPath.value}
+                    onInput={(event) => {
+                      draftWatchPath.value = (event.target as HTMLInputElement).value;
+                    }}
+                  />
+                  <Button
+                    intent="neutral"
+                    disabled={draftWatchPath.value.trim() === ''}
+                    onClick={() => void onWatch(draftWatchPath.value)}
+                  >
+                    {t(messages.watch)}
+                  </Button>
+                </div>
+              </article>
             )}
 
-            {(onBackup || onSwitchWallet) && (
-              <section class={styles.gate}>
-                <h2>{t(messages.walletHeading)}</h2>
-                {onBackup && (
-                  <>
-                    <p class={styles.muted}>{t(messages.backupHint)}</p>
-                    <Button intent="neutral" onClick={onBackup}>
-                      {t(messages.backupWallet)}
-                    </Button>
-                  </>
-                )}
-                {onSwitchWallet && (
+            {onBackup && (
+              <article class={styles.setting}>
+                <h3 class={styles.settingTitle}>{t(messages.backupTitle)}</h3>
+                <p class={styles.settingDesc}>{t(messages.backupHint)}</p>
+                <div class={styles.settingRow}>
+                  <Button intent="neutral" onClick={onBackup}>
+                    {t(messages.backupWallet)}
+                  </Button>
+                </div>
+              </article>
+            )}
+
+            {onSwitchWallet && (
+              <article class={styles.setting}>
+                <h3 class={styles.settingTitle}>{t(messages.switchWalletTitle)}</h3>
+                <p class={styles.settingDesc}>{t(messages.switchWalletHint)}</p>
+                <div class={styles.settingRow}>
                   <Button intent="neutral" onClick={onSwitchWallet}>
                     {t(messages.switchWallet)}
                   </Button>
-                )}
-              </section>
+                </div>
+              </article>
             )}
-          </>
+          </section>
         )}
       </main>
     </div>

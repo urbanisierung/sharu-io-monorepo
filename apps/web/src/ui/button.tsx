@@ -2,7 +2,7 @@ import { cn } from '@cascivo/core';
 import type { JSX } from 'preact';
 import styles from './button.module.css';
 
-export interface ButtonProps extends JSX.HTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends Omit<JSX.IntrinsicElements['button'], 'intent'> {
   intent?: 'primary' | 'neutral';
 }
 
