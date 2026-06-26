@@ -7,11 +7,11 @@
 }
 
 .ok {
-  background: color-mix(in srgb, #15803d 14%, transparent);
-  color: #15803d;
+  background: color-mix(in srgb, var(--cascivo-color-success) 14%, transparent);
+  color: var(--cascivo-color-success);
 }
 
 .risk {
-  background: color-mix(in srgb, #b45309 16%, transparent);
-  color: #b45309;
+  background: color-mix(in srgb, var(--cascivo-color-warning) 16%, transparent);
+  color: var(--cascivo-color-warning);
 }

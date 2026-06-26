@@ -10,6 +10,9 @@ import { tr as t } from './reading-mode.js';
 import styles from './site-share.module.css';
 import { Button } from './ui/button.js';
 
+/** How long a "Copied" confirmation stays up before reverting. */
+const COPIED_RESET_MS = 2000;
+
 const publishing = signal(false);
 const link = signal<string | null>(null);
 const error = signal<string | null>(null);
@@ -78,13 +81,16 @@ export function SiteShare({ onPublish }: SiteShareProps) {
             type="text"
             readonly
             value={link.value}
-            aria-label={t(messages.publishSite)}
+            aria-label={t(messages.shareLink)}
           />
           <Button
             intent="neutral"
             onClick={() => {
               void globalThis.navigator?.clipboard?.writeText(link.value as string);
               copied.value = true;
+              globalThis.setTimeout(() => {
+                copied.value = false;
+              }, COPIED_RESET_MS);
             }}
           >
             {copied.value ? t(messages.shareCopied) : t(messages.shareCopy)}

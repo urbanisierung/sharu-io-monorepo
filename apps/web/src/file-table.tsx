@@ -19,6 +19,9 @@ import { IconButton } from './ui/icon-button.js';
 
 type SortKey = 'name' | 'size' | 'modified';
 
+/** How long a "Copied" confirmation stays up before reverting. */
+const COPIED_RESET_MS = 2000;
+
 const query = signal('');
 const sortKey = signal<SortKey>('name');
 const sortAsc = signal(true);
@@ -101,6 +104,10 @@ async function publishShare(path: string, onShare: (path: string) => Promise<str
 function copyShareLink(path: string, link: string): void {
   void globalThis.navigator?.clipboard?.writeText(link);
   copiedPath.value = path;
+  // Let the "Copied" confirmation fade back so it never reads stale.
+  globalThis.setTimeout(() => {
+    if (copiedPath.value === path) copiedPath.value = null;
+  }, COPIED_RESET_MS);
 }
 
 export function FileTable({ files, onRestore, onDelete, onShare, onAddFiles }: FileTableProps) {

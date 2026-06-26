@@ -12,6 +12,9 @@ import { tr as t } from './reading-mode.js';
 import type { PublishedShare } from './shares-store.js';
 import { Button } from './ui/button.js';
 
+/** How long a "Copied" confirmation stays up before reverting. */
+const COPIED_RESET_MS = 2000;
+
 const copiedRoot = signal<string | null>(null);
 const unpublishing = signal<string | null>(null);
 
@@ -62,6 +65,9 @@ export function PublishedShares({ shares, onUnpublish }: PublishedSharesProps) {
                 onClick={() => {
                   void globalThis.navigator?.clipboard?.writeText(share.link);
                   copiedRoot.value = share.root;
+                  globalThis.setTimeout(() => {
+                    if (copiedRoot.value === share.root) copiedRoot.value = null;
+                  }, COPIED_RESET_MS);
                 }}
               >
                 {copiedRoot.value === share.root ? t(messages.shareCopied) : t(messages.shareCopy)}

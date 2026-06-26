@@ -3,6 +3,7 @@
 // Encrypt → Address → Sync → Restore — then hands off to the app via `onLaunch`.
 // All copy through @cascivo/i18n; no React hooks.
 import { cn } from '@cascivo/core';
+import { GITHUB_URL } from '@safu/config';
 import styles from './landing.module.css';
 import { landing } from './messages.js';
 import { tr as t } from './reading-mode.js';
@@ -131,6 +132,7 @@ export function Landing({ onLaunch, onWhitepaper, onComparison, onFlow, onCliDoc
             </div>
           ))}
         </div>
+        <p class={styles.cliVerify}>{t(landing.cliVerify)}</p>
         <button class={styles.ghost} type="button" onClick={onCliDocs}>
           {t(landing.cliLink)}
         </button>
@@ -145,8 +147,28 @@ export function Landing({ onLaunch, onWhitepaper, onComparison, onFlow, onCliDoc
       </section>
 
       <footer class={styles.footer}>
-        <span class={styles.footerWord}>{t(landing.brand)}</span>
-        <span>{t(landing.footer)}</span>
+        <div class={styles.footerBrand}>
+          <span class={styles.footerWord}>{t(landing.brand)}</span>
+          <span>{t(landing.footer)}</span>
+        </div>
+        <nav class={styles.footerLinks} aria-label={t(landing.footerNav)}>
+          <button class={styles.footerLink} type="button" onClick={onWhitepaper}>
+            {t(landing.whitepaper)}
+          </button>
+          <button class={styles.footerLink} type="button" onClick={onFlow}>
+            {t(landing.watchFlow)}
+          </button>
+          <button class={styles.footerLink} type="button" onClick={onComparison}>
+            {t(landing.comparison)}
+          </button>
+          <button class={styles.footerLink} type="button" onClick={onCliDocs}>
+            {t(landing.cliLink)}
+          </button>
+          <a class={styles.footerLink} href={GITHUB_URL} target="_blank" rel="noreferrer noopener">
+            {t(landing.sourceLink)}
+          </a>
+        </nav>
+        <span class={styles.footerRights}>{t(landing.rights)}</span>
       </footer>
     </div>
   );

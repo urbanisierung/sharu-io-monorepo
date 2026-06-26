@@ -278,6 +278,19 @@
   .walletTag {
     display: none;
   }
+
+  /* Collapse the sync text to the dot alone, but keep it announced (sr-only). */
+  .syncLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 }
 
 /* Phone: the section tabs drop to a fixed bottom bar with stacked icon+label

@@ -71,10 +71,14 @@ export const landing = defineMessages('safu.landing', {
   cliWindowsLabel: 'Windows · PowerShell',
   cliWindowsCmd: `irm ${SITE_URL}/install.ps1 | iex`,
   cliLink: 'Read the backup-node docs',
+  cliVerify: 'Prefer to read it first? Inspect the install script before you run it.',
 
   ctaTitle: 'Take your backups back.',
   ctaBody: 'No account. No upload to anyone. Set a passphrase and start.',
   footer: 'Sharu — zero-knowledge, local-first backup & sync',
+  footerNav: 'Footer',
+  sourceLink: 'View the source',
+  rights: '© Sharu',
 });
 
 /** ELI5 reading mode — same keys, retold so a five-year-old gets it. */
@@ -148,10 +152,14 @@ export const landingEli5 = defineMessages('safu.landing.eli5', {
   cliWindowsLabel: 'Windows · PowerShell',
   cliWindowsCmd: `irm ${SITE_URL}/install.ps1 | iex`,
   cliLink: 'Read the always-awake-helper guide',
+  cliVerify: 'Want to peek first? Look at the little setup script before you run it.',
 
   ctaTitle: 'Take your safe copies back.',
   ctaBody: 'No sign-up. Nothing handed to anyone. Pick a secret word and start.',
   footer: 'Sharu — only-you-can-peek, lives-on-your-stuff backup & sync',
+  footerNav: 'Footer',
+  sourceLink: 'See how it’s built',
+  rights: '© Sharu',
 });
 
 /** Machine reading mode — same keys, stripped to terse near-protocol notation. */
@@ -221,8 +229,12 @@ export const landingMachine = defineMessages('safu.landing.machine', {
   cliWindowsLabel: 'Windows · PowerShell',
   cliWindowsCmd: `irm ${SITE_URL}/install.ps1 | iex`,
   cliLink: 'backup-node docs → read',
+  cliVerify: 'read-first? inspect install script before exec.',
 
   ctaTitle: 'backups → reclaim.',
   ctaBody: 'account=0. upload(anyone)=0. set passphrase → start.',
   footer: 'sharu — zk, local-first backup+sync',
+  footerNav: 'footer',
+  sourceLink: 'source → view',
+  rights: '© sharu',
 });

@@ -42,7 +42,7 @@
 }
 
 .warn {
-  color: #b45309;
+  color: var(--cascivo-color-warning);
 }
 
 .gate {
@@ -154,8 +154,8 @@
 .notice {
   font-size: 0.85rem;
   line-height: 1.4;
-  color: #b45309;
-  background: color-mix(in srgb, #b45309 12%, transparent);
+  color: var(--cascivo-color-warning);
+  background: color-mix(in srgb, var(--cascivo-color-warning) 12%, transparent);
   padding: 0.6rem 0.75rem;
   border-radius: var(--cascivo-radius, 0.5rem);
 }

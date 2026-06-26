@@ -40,6 +40,14 @@ function focusOnMount(input: HTMLInputElement | null): void {
   input?.focus();
 }
 
+/** Drop the password (and the rest of the field state) from memory the moment
+ *  the gate leaves the screen — on Back, a route change, or the app revealing —
+ *  not only on a successful submit. Preact calls a stable ref with the element
+ *  on mount and `null` on unmount; we reset on the latter. */
+function clearOnUnmount(section: HTMLElement | null): void {
+  if (section === null) resetUnlockGate();
+}
+
 export interface UnlockGateProps {
   /** 'create' shows the name + confirm fields and the no-reset warning; 'unlock'
    *  greets a returning user with just a password. */
@@ -96,7 +104,7 @@ export function UnlockGate({ mode, walletName, pairing, onSubmit, onBack }: Unlo
   };
 
   return (
-    <section class={styles.screen}>
+    <section class={styles.screen} ref={clearOnUnmount}>
       <div class={styles.card}>
         <div class={styles.brand}>
           <img class={styles.logo} src="/logo.png" alt={t(messages.logoAlt)} />

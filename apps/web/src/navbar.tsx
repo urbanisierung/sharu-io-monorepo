@@ -204,7 +204,9 @@ function SyncIndicator({ runtime }: { runtime: Runtime }) {
   return (
     <span class={styles.sync}>
       <span class={cn(styles.dot, dotClass)} aria-hidden="true" />
-      {label}
+      {/* The text collapses to screen-reader-only on the narrowest phones so the
+          dot alone holds the bar to one row; the status stays announced. */}
+      <span class={styles.syncLabel}>{label}</span>
     </span>
   );
 }

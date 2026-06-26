@@ -7,3 +7,6 @@ export const DOMAIN = 'new.sharu.io';
 
 /** The canonical site origin, derived from {@link DOMAIN}. */
 export const SITE_URL = `https://${DOMAIN}`;
+
+/** The project's public source home — surfaced as a trust signal in the UI. */
+export const GITHUB_URL = 'https://github.com/sharu-io';
