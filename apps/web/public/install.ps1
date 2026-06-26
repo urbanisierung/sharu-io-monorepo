@@ -8,10 +8,13 @@
 #   SAFU_NODE_INSTALL_DIR  install directory (default: %LOCALAPPDATA%\safu-node\bin).
 #   SAFU_NODE_REPO         owner/repo to download from
 #                          (default: urbanisierung/sharu-io-monorepo).
+#   SAFU_NODE_TOKEN        GitHub token with read access, for installing from a
+#                          private repo (also honours GH_TOKEN / GITHUB_TOKEN).
 $ErrorActionPreference = 'Stop'
 
 $repo = if ($env:SAFU_NODE_REPO) { $env:SAFU_NODE_REPO } else { 'urbanisierung/sharu-io-monorepo' }
 $installDir = if ($env:SAFU_NODE_INSTALL_DIR) { $env:SAFU_NODE_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA 'safu-node\bin' }
+$token = if ($env:SAFU_NODE_TOKEN) { $env:SAFU_NODE_TOKEN } elseif ($env:GH_TOKEN) { $env:GH_TOKEN } elseif ($env:GITHUB_TOKEN) { $env:GITHUB_TOKEN } else { $null }
 
 $arch = $env:PROCESSOR_ARCHITECTURE
 switch ($arch) {
@@ -20,24 +23,58 @@ switch ($arch) {
 }
 
 $asset = "safu-node-$target.zip"
-$base = if ($env:SAFU_NODE_VERSION) {
+$releaseApi = if ($env:SAFU_NODE_VERSION) {
+  "https://api.github.com/repos/$repo/releases/tags/safu-node-v$($env:SAFU_NODE_VERSION)"
+} else {
+  "https://api.github.com/repos/$repo/releases/latest"
+}
+$publicBase = if ($env:SAFU_NODE_VERSION) {
   "https://github.com/$repo/releases/download/safu-node-v$($env:SAFU_NODE_VERSION)"
 } else {
   "https://github.com/$repo/releases/latest/download"
 }
-$url = "$base/$asset"
+
+# Resolve a release asset's authenticated API URL by name. Private repos 404 the
+# public releases/download path for anonymous requests, so a token install must
+# go through the API assets endpoint instead.
+function Get-AssetUrl([string]$name) {
+  $headers = @{ 'Accept' = 'application/vnd.github+json' }
+  if ($token) { $headers['Authorization'] = "Bearer $token" }
+  $release = Invoke-RestMethod -Uri $releaseApi -Headers $headers -UseBasicParsing
+  ($release.assets | Where-Object { $_.name -eq $name } | Select-Object -First 1).url
+}
+
+# Download a release asset by name. With a token, fetch through the API assets
+# endpoint (works for private repos); otherwise use the public URL.
+function Save-Asset([string]$name, [string]$outFile) {
+  if ($token) {
+    $apiUrl = Get-AssetUrl $name
+    if (-not $apiUrl) { throw "asset $name not found in release" }
+    $headers = @{ 'Accept' = 'application/octet-stream'; 'Authorization' = "Bearer $token" }
+    Invoke-WebRequest -Uri $apiUrl -Headers $headers -OutFile $outFile -UseBasicParsing
+  } else {
+    Invoke-WebRequest -Uri "$publicBase/$name" -OutFile $outFile -UseBasicParsing
+  }
+}
 
 $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("safu-node-" + [System.Guid]::NewGuid())
 New-Item -ItemType Directory -Path $tmp -Force | Out-Null
 try {
   $zip = Join-Path $tmp $asset
   Write-Host "downloading $asset…"
-  Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+  try {
+    Save-Asset $asset $zip
+  } catch {
+    if (-not $token) {
+      throw "could not download $asset. If $repo is private, set a token with read access and re-run, e.g.:`n  `$env:SAFU_NODE_TOKEN = (gh auth token); irm https://new.sharu.io/install.ps1 | iex"
+    }
+    throw "could not download $asset from $repo - is the token valid and does it grant read access? ($_)"
+  }
 
   # Verify the checksum when the sidecar .sha256 is available.
   try {
     $sumFile = "$zip.sha256"
-    Invoke-WebRequest -Uri "$url.sha256" -OutFile $sumFile -UseBasicParsing
+    Save-Asset "$asset.sha256" $sumFile
     $expected = ((Get-Content $sumFile -Raw).Trim() -split '\s+')[0].ToLower()
     $actual = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
     if ($expected -ne $actual) { throw "checksum mismatch (expected $expected, got $actual)" }
@@ -47,8 +84,10 @@ try {
   }
 
   Expand-Archive -Path $zip -DestinationPath $tmp -Force
+  $exe = Join-Path $tmp 'safu-node.exe'
+  if (-not (Test-Path $exe)) { throw "the archive did not contain safu-node.exe" }
   New-Item -ItemType Directory -Path $installDir -Force | Out-Null
-  Copy-Item -Path (Join-Path $tmp 'safu-node.exe') -Destination (Join-Path $installDir 'safu-node.exe') -Force
+  Copy-Item -Path $exe -Destination (Join-Path $installDir 'safu-node.exe') -Force
 
   Write-Host "installed safu-node to $installDir\safu-node.exe"
   & (Join-Path $installDir 'safu-node.exe') version
