@@ -38,6 +38,9 @@ function page(route: Route) {
 
 export interface Prerendered {
   path: string;
+  /** The route this page was rendered for — stamped on `#app` so the client only
+   *  hydrates when the served HTML matches the current route (main.tsx). */
+  route: Route;
   html: string;
   title: string;
   description: string;
@@ -54,6 +57,6 @@ export function prerender(): Prerendered[] {
       </>,
     );
     const { title, description } = pageMeta(route);
-    return { path, html, title, description };
+    return { path, route, html, title, description };
   });
 }

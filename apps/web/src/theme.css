@@ -102,6 +102,16 @@ body::before {
   box-sizing: border-box;
 }
 
+/* The app mounts here. A viewport-tall flex column: the sticky navbar takes its
+   natural height and each route's full-height surface fills the rest (flex: 1),
+   so /app and the auth/booting screens don't add a second 100dvh below the bar
+   and trigger a needless scrollbar. The page still scrolls when content is tall. */
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
 ::selection {
   background: var(--cascivo-color-accent);
   color: #fff;

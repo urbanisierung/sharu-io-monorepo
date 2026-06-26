@@ -1,16 +1,17 @@
-import { MemoryBlockStore } from '@safu/sdk';
-import { describe, expect, it } from 'vitest';
 import {
   blake3,
   type ChunkingParams,
   createEgressStream,
   createIngestStream,
   type EncryptedBlock,
-} from './index.js';
+} from '@safu/crypto';
+import { describe, expect, it } from 'vitest';
+import { MemoryBlockStore } from './block-store.js';
 
 // Plan §1.4: stream a payload through ingest → BlockStore → egress and assert
 // BLAKE3 hash parity of output vs input. Blocks are content-addressed in the
-// store by BLAKE3(ciphertext).
+// store by BLAKE3(ciphertext). Lives in the SDK (the integration layer over
+// crypto + storage); crypto itself must not depend on the SDK, even in tests.
 const CHUNKING: ChunkingParams = { min: 1024, avg: 4096, max: 16384 };
 const PASS = 'a long enough passphrase for the test';
 

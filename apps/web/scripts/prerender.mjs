@@ -47,8 +47,13 @@ if (!template.includes('<div id="app">')) {
   throw new Error('prerender: could not find <div id="app"> in dist/index.html');
 }
 
-for (const { path, html, title, description } of pages) {
-  let out = template.replace(/<div id="app">\s*<\/div>/, `<div id="app">${html}</div>`);
+for (const { path, route, html, title, description } of pages) {
+  // Stamp the route so the client hydrates only when the served HTML matches the
+  // current route — the SPA fallback serves this landing HTML for /app etc. too.
+  let out = template.replace(
+    /<div id="app">\s*<\/div>/,
+    `<div id="app" data-prerendered="${route}">${html}</div>`,
+  );
   out = applyHead(out, title, description);
   const file = path === '/' ? join(dist, 'index.html') : join(dist, path.slice(1), 'index.html');
   await mkdir(dirname(file), { recursive: true });

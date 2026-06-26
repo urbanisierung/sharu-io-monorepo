@@ -95,7 +95,7 @@ importers:
         specifier: 2.10.5
         version: 2.10.5(@babel/core@7.29.7)(preact@10.29.2)(vite@8.0.16(@types/node@25.9.3)(esbuild@0.28.1))
       preact-render-to-string:
-        specifier: ^6.7.0
+        specifier: 6.7.0
         version: 6.7.0(preact@10.29.2)
       typescript:
         specifier: 6.0.3
@@ -115,9 +115,6 @@ importers:
 
   packages/crypto:
     devDependencies:
-      '@safu/sdk':
-        specifier: workspace:*
-        version: link:../sdk
       '@types/node':
         specifier: 24.13.2
         version: 24.13.2
