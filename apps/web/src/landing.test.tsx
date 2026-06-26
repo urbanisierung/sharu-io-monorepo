@@ -38,7 +38,10 @@ describe('Landing', () => {
   it('opens the backup-node docs from its section', () => {
     const onCliDocs = vi.fn();
     renderLanding({ onCliDocs });
-    fireEvent.click(screen.getByRole('button', { name: 'Read the backup-node docs' }));
+    // The label also appears in the footer nav; the section button comes first.
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Read the backup-node docs' })[0] as HTMLElement,
+    );
     expect(onCliDocs).toHaveBeenCalledOnce();
   });
 
@@ -52,21 +55,41 @@ describe('Landing', () => {
   it('opens the whitepaper from the hero link', () => {
     const onWhitepaper = vi.fn();
     renderLanding({ onWhitepaper });
-    fireEvent.click(screen.getByRole('button', { name: 'Read the whitepaper' }));
+    // Hero link first; the same label is repeated in the footer nav.
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Read the whitepaper' })[0] as HTMLElement,
+    );
     expect(onWhitepaper).toHaveBeenCalledOnce();
   });
 
   it('opens the IPFS-vs-Iroh comparison from the hero link', () => {
     const onComparison = vi.fn();
     renderLanding({ onComparison });
-    fireEvent.click(screen.getByRole('button', { name: 'IPFS vs. Iroh' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'IPFS vs. Iroh' })[0] as HTMLElement);
     expect(onComparison).toHaveBeenCalledOnce();
   });
 
   it('opens the interaction walkthrough from the hero link', () => {
     const onFlow = vi.fn();
     renderLanding({ onFlow });
-    fireEvent.click(screen.getByRole('button', { name: 'How it works' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'How it works' })[0] as HTMLElement);
     expect(onFlow).toHaveBeenCalledOnce();
+  });
+
+  it('links to the public source from the footer', () => {
+    renderLanding();
+    const source = screen.getByRole('link', { name: 'View the source' }) as HTMLAnchorElement;
+    expect(source.getAttribute('href')).toBe('https://github.com/sharu-io');
+  });
+
+  it('repeats the section links in the footer nav', () => {
+    const onWhitepaper = vi.fn();
+    renderLanding({ onWhitepaper });
+    const footer = screen.getByRole('contentinfo');
+    const links = footer.querySelectorAll('button');
+    // whitepaper, how-it-works, comparison, backup-node docs.
+    expect(links.length).toBe(4);
+    fireEvent.click(links[0] as HTMLElement);
+    expect(onWhitepaper).toHaveBeenCalledOnce();
   });
 });

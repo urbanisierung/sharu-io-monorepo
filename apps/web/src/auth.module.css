@@ -1,10 +1,13 @@
 /* The authentication surface: a centered, professional card for unlocking,
    creating, and restoring wallets. Cyberpunk theme via --cascivo-* tokens. */
 .screen {
-  min-height: 100dvh;
+  flex: 1 0 auto;
   display: grid;
   place-items: center;
-  padding: clamp(1rem, 5vw, 3rem) 1rem;
+  /* Vertical gutter scales with viewport height (not width) so the tall
+     create-wallet card still clears the navbar on a short laptop screen
+     without forcing a scrollbar. */
+  padding: clamp(0.75rem, 3vh, 1.5rem) 1rem;
 }
 
 .card {

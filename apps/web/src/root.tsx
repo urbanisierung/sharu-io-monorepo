@@ -55,13 +55,15 @@ function decideInitial(): void {
   if (only) void openWallet(only.id);
 }
 
-async function init(): Promise<void> {
+/** Bootstrap the session: load the wallet list, then resolve the first in-app
+ *  screen. Called once from the client entry (`main.tsx`) — never at import time,
+ *  so `Root` can be imported for server-side prerendering without side effects. */
+export async function init(): Promise<void> {
   await refreshWallets();
   walletsLoaded.value = true;
   if (pairCode && route.value !== 'app') navigate('app');
   if (route.value === 'app') decideInitial();
 }
-void init();
 
 /** From the landing/whitepaper CTAs: go to the app and choose a wallet. */
 function launch(): void {

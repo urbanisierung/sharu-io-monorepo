@@ -4,8 +4,10 @@
 // updates it; the back/forward buttons stay in sync via `popstate`. The
 // Cloudflare `_redirects` SPA fallback serves index.html for every path, so a
 // hard refresh on `/app` or `/whitepaper` resolves client-side.
+import { t } from '@cascivo/i18n';
 import { signal } from '@preact/signals';
 import { flushSync } from 'preact/compat';
+import { meta } from './messages/meta.js';
 
 export type Route =
   | 'landing'
@@ -38,6 +40,36 @@ export function pathOf(route: Route): string {
 
 const current = globalThis.location?.pathname ?? '/';
 export const route = signal<Route>(routeOf(current));
+
+/** Each route's document title + meta description, so the tab, bookmarks,
+ *  history and search snippets are distinct per page (not all "Sharu"). */
+const PAGE_META = {
+  landing: { title: meta.landingTitle, desc: meta.landingDesc },
+  whitepaper: { title: meta.whitepaperTitle, desc: meta.whitepaperDesc },
+  comparison: { title: meta.comparisonTitle, desc: meta.comparisonDesc },
+  'how-it-works': { title: meta.howTitle, desc: meta.howDesc },
+  'cli-docs': { title: meta.cliTitle, desc: meta.cliDesc },
+  app: { title: meta.appTitle, desc: meta.appDesc },
+  share: { title: meta.shareTitle, desc: meta.shareDesc },
+} satisfies Record<Route, unknown>;
+
+/** The resolved title + description for a route — used to set the live document
+ *  meta and to bake static meta into the prerendered pages (see prerender.tsx). */
+export function pageMeta(next: Route): { title: string; description: string } {
+  const entry = PAGE_META[next];
+  return { title: t(entry.title), description: t(entry.desc) };
+}
+
+/** Set `document.title` and the `<meta name="description">` for the route. */
+function applyDocumentMeta(next: Route): void {
+  const doc = globalThis.document;
+  if (!doc) return;
+  const { title, description } = pageMeta(next);
+  doc.title = title;
+  doc.querySelector('meta[name="description"]')?.setAttribute('content', description);
+}
+
+applyDocumentMeta(route.value);
 
 /** Honour the user's reduced-motion preference for the view transition. */
 function prefersReducedMotion(): boolean {
@@ -84,6 +116,7 @@ export function navigate(next: Route, options: { dropHash?: boolean } = {}): voi
   const changed = route.value !== next;
   const apply = () => {
     route.value = next;
+    applyDocumentMeta(next);
     syncHistory(next, options.dropHash ?? false);
     // A fresh page starts at the top. Back/forward keep the browser's restored
     // scroll position — those arrive via popstate, not here.
@@ -98,7 +131,9 @@ export function navigate(next: Route, options: { dropHash?: boolean } = {}): voi
 if (typeof window !== 'undefined') {
   window.addEventListener('popstate', () => {
     const apply = () => {
-      route.value = routeOf(window.location.pathname);
+      const next = routeOf(window.location.pathname);
+      route.value = next;
+      applyDocumentMeta(next);
     };
     const start = viewTransition();
     if (start) start(apply);

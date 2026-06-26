@@ -450,12 +450,19 @@
   color: var(--cascivo-color-muted);
 }
 
+.cliVerify {
+  margin: var(--space-md) 0 0;
+  max-width: 64ch;
+  line-height: 1.6;
+  font-size: var(--text-sm);
+  color: var(--cascivo-color-muted);
+}
+
 .footer {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
+  flex-direction: column;
+  gap: var(--space-lg);
+  margin-top: var(--space-2xl);
   padding-top: var(--space-2xl);
   border-top: 1px solid var(--cascivo-color-border);
   font-family: var(--safu-font-mono);
@@ -463,9 +470,55 @@
   color: var(--cascivo-color-muted);
 }
 
+.footerBrand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-sm) var(--space-md);
+}
+
 .footerWord {
   letter-spacing: 0.16em;
   color: var(--cascivo-color-foreground);
+}
+
+/* Footer link row: page links (buttons) + the external source link, all sharing
+   one row, wrapping on narrow screens, each a full touch target. */
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.footerLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.25rem 0;
+  font: inherit;
+  color: var(--cascivo-color-muted);
+  background: none;
+  border: 0;
+  border-radius: 2px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--dur-micro) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .footerLink:hover {
+    color: var(--cascivo-color-foreground);
+  }
+}
+
+.footerLink:focus-visible {
+  outline: 2px solid var(--cascivo-color-primary);
+  outline-offset: 2px;
+}
+
+.footerRights {
+  color: var(--cascivo-color-muted);
 }
 
 /* ---- Mobile: collapse the spec sheet, shrink the rail --------------------- */

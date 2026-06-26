@@ -20,6 +20,9 @@
   --cascivo-color-accent-2: #b15cff;
   --cascivo-color-success: #36f9a0;
   --cascivo-color-danger: #ff4d6d;
+  /* Legible amber for warnings — the old #b45309 fell to ~3.9:1 on the deep
+     background (below WCAG AA 4.5:1); this clears ~9:1. */
+  --cascivo-color-warning: #f0a850;
 
   /* Glow */
   --cascivo-glow-cyan: 0 0 0.6rem rgba(0, 234, 255, 0.55);
@@ -69,7 +72,20 @@ body {
   font-family: var(--safu-font-sans);
   color: var(--cascivo-color-foreground);
   background-color: var(--cascivo-color-bg);
-  /* Faint neon grid + radial glows for the cyberpunk backdrop. */
+  min-height: 100dvh;
+  overflow-x: clip;
+}
+
+/* Faint neon grid + radial glows for the cyberpunk backdrop. A fixed pseudo
+   layer (not body `background-attachment: fixed`, which janks/repaints on iOS
+   Safari while scrolling) — pinned to the viewport, behind all content. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--cascivo-color-bg);
   background-image:
     radial-gradient(1100px 600px at 80% -10%, rgba(255, 43, 214, 0.12), transparent 60%),
     radial-gradient(900px 600px at 0% 0%, rgba(0, 234, 255, 0.12), transparent 55%),
@@ -80,13 +96,20 @@ body {
     auto,
     44px 44px,
     44px 44px;
-  background-attachment: fixed;
-  min-height: 100dvh;
-  overflow-x: clip;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* The app mounts here. A viewport-tall flex column: the sticky navbar takes its
+   natural height and each route's full-height surface fills the rest (flex: 1),
+   so /app and the auth/booting screens don't add a second 100dvh below the bar
+   and trigger a needless scrollbar. The page still scrolls when content is tall. */
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
 }
 
 ::selection {

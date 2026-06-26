@@ -101,7 +101,9 @@ export function Comparison({ onLaunch }: ComparisonProps) {
             <tbody>
               {rows.map((row) => (
                 <tr key={row.dim.key}>
-                  <td class={styles.dimCell}>{t(row.dim)}</td>
+                  <th scope="row" class={styles.dimCell}>
+                    {t(row.dim)}
+                  </th>
                   <td class={styles.oldCell}>{t(row.old)}</td>
                   <td class={styles.newCell}>{t(row.new)}</td>
                 </tr>

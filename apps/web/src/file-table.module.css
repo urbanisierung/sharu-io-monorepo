@@ -62,7 +62,7 @@
 }
 
 .warn {
-  color: #b45309;
+  color: var(--cascivo-color-warning);
 }
 
 .search {

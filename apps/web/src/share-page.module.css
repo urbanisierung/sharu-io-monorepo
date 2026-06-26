@@ -2,16 +2,17 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 100vh;
+  flex: 1 0 auto;
   padding: 2rem 1rem;
   gap: 1rem;
+  color: var(--cascivo-color-foreground);
 }
 
 /* A mounted site fills the viewport — it is the page. */
 .site {
   width: 100%;
   flex: 1;
-  min-height: 90vh;
+  min-height: 80dvh;
   border: 0;
 }
 
@@ -28,7 +29,7 @@
 
 .hint {
   margin: 0;
-  color: var(--cascivo-muted, #666);
+  color: var(--cascivo-color-muted);
 }
 
 .file {
@@ -53,17 +54,17 @@
 }
 
 .meta {
-  color: var(--cascivo-muted, #666);
+  color: var(--cascivo-color-muted);
 }
 
 .download {
   margin-left: auto;
   padding: 0.45rem 0.9rem;
   font-weight: 600;
-  color: var(--cascivo-on-primary, #fff);
+  color: var(--cascivo-color-primary-foreground);
   text-decoration: none;
-  background: var(--cascivo-primary, #2563eb);
-  border-radius: 0.4rem;
+  background: var(--cascivo-color-primary);
+  border-radius: var(--cascivo-radius);
 }
 
 .media {
@@ -71,10 +72,12 @@
   border-radius: 0.5rem;
 }
 
+/* Flexible preview height: at least a usable band, never taller than the
+   viewport (so a short/landscape phone keeps room around it). */
 .frame {
   width: 100%;
-  height: 80vh;
-  border: 1px solid var(--cascivo-border, #ccc);
+  height: clamp(20rem, 80vh, 60rem);
+  border: 1px solid var(--cascivo-color-border);
   border-radius: 0.5rem;
 }
 
@@ -84,12 +87,14 @@
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-word;
-  background: var(--cascivo-surface, #f6f6f6);
+  color: var(--cascivo-color-foreground);
+  background: var(--cascivo-color-surface);
+  border: 1px solid var(--cascivo-color-border);
   border-radius: 0.5rem;
 }
 
 .note {
   margin: 0;
   font-size: 0.85rem;
-  color: var(--cascivo-muted, #666);
+  color: var(--cascivo-color-muted);
 }
