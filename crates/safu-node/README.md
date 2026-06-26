@@ -55,6 +55,19 @@ SHA-256, and install `safu-node` to `~/.local/bin`
 (`%LOCALAPPDATA%\safu-node\bin` on Windows). Pin a version with
 `SAFU_NODE_VERSION=0.1.0`, or change the location with `SAFU_NODE_INSTALL_DIR`.
 
+While this repository is **private**, anonymous downloads from GitHub Releases
+return `404` — pass a token with read access so the scripts fetch the asset
+through the authenticated API instead (`SAFU_NODE_TOKEN`, or `GH_TOKEN` /
+`GITHUB_TOKEN`):
+
+```sh
+curl -fsSL https://new.sharu.io/install.sh | SAFU_NODE_TOKEN="$(gh auth token)" sh
+```
+
+```powershell
+$env:SAFU_NODE_TOKEN = (gh auth token); irm https://new.sharu.io/install.ps1 | iex
+```
+
 Supported targets: `x86_64`/`aarch64` Linux (gnu), `aarch64` macOS,
 `x86_64` Windows (msvc).
 
