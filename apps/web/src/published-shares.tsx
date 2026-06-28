@@ -11,6 +11,7 @@ import styles from './published-shares.module.css';
 import { tr as t } from './reading-mode.js';
 import type { PublishedShare } from './shares-store.js';
 import { Button } from './ui/button.js';
+import { canWebShare, webShare } from './web-share.js';
 
 /** How long a "Copied" confirmation stays up before reverting. */
 const COPIED_RESET_MS = 2000;
@@ -72,6 +73,14 @@ export function PublishedShares({ shares, onUnpublish }: PublishedSharesProps) {
               >
                 {copiedRoot.value === share.root ? t(messages.shareCopied) : t(messages.shareCopy)}
               </Button>
+              {canWebShare() && (
+                <Button
+                  intent="primary"
+                  onClick={() => void webShare(share.link, t(messages.shareInvite))}
+                >
+                  {t(messages.shareSend)}
+                </Button>
+              )}
               <Button intent="neutral" onClick={() => void revoke(share.root, onUnpublish)}>
                 {unpublishing.value === share.root ? t(messages.unsharing) : t(messages.unshare)}
               </Button>

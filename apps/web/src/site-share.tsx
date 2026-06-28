@@ -9,6 +9,7 @@ import { messages } from './messages.js';
 import { tr as t } from './reading-mode.js';
 import styles from './site-share.module.css';
 import { Button } from './ui/button.js';
+import { canWebShare, webShare } from './web-share.js';
 
 /** How long a "Copied" confirmation stays up before reverting. */
 const COPIED_RESET_MS = 2000;
@@ -95,6 +96,14 @@ export function SiteShare({ onPublish }: SiteShareProps) {
           >
             {copied.value ? t(messages.shareCopied) : t(messages.shareCopy)}
           </Button>
+          {canWebShare() && (
+            <Button
+              intent="primary"
+              onClick={() => void webShare(link.value as string, t(messages.shareInvite))}
+            >
+              {t(messages.shareSend)}
+            </Button>
+          )}
         </div>
       )}
     </section>

@@ -5,10 +5,13 @@ import { defineMessages } from '@cascivo/i18n';
 export const shareView = defineMessages('safu.share', {
   loading: 'Opening the shared file…',
   loadingHint: 'Fetching it from the network and decrypting it in your browser.',
+  sharedWithYou: 'Someone shared a file with you',
   missingTitle: 'No share in this link',
   missingBody: 'This page opens a public share. The link you followed has no share data in it.',
   failedTitle: 'Couldn’t open this share',
-  failedBody: 'The link may be wrong, or the file is no longer hosted. Nothing was decrypted.',
+  failedBody:
+    'The file may be offline, or the link got cut short. If you opened this inside another app like WhatsApp, try opening it in your normal browser instead.',
+  retry: 'Try again',
   siteTitle: 'Opening the shared site…',
   siteBody: 'Decrypting its files in your browser, then loading it.',
   siteFrame: 'Shared site',
@@ -20,12 +23,14 @@ export const shareView = defineMessages('safu.share', {
 export const shareViewEli5 = defineMessages('safu.share.eli5', {
   loading: 'Opening your secret file…',
   loadingHint: 'We’re grabbing it and unlocking it right here in front of you.',
+  sharedWithYou: 'Someone sent you a file',
   missingTitle: 'There’s nothing to open',
   missingBody:
     'This page opens a secret someone shared. But the link you used doesn’t have any secret inside it.',
   failedTitle: 'We couldn’t open this',
   failedBody:
-    'Maybe the link is broken, or the file isn’t kept anywhere anymore. Don’t worry — nothing was unlocked.',
+    'Maybe the file isn’t online right now, or the link got cut off. If you tapped it inside another app like WhatsApp, try opening it in your normal web browser instead. Don’t worry — nothing was unlocked.',
+  retry: 'Try again',
   siteTitle: 'Opening the shared little website…',
   siteBody: 'Unlocking all its pieces right here, then showing it to you.',
   siteFrame: 'Shared website',
@@ -38,10 +43,13 @@ export const shareViewEli5 = defineMessages('safu.share.eli5', {
 export const shareViewMachine = defineMessages('safu.share.machine', {
   loading: 'open shared file…',
   loadingHint: 'fetch → decrypt @browser',
+  sharedWithYou: 'inbound share',
   missingTitle: 'no share in link',
   missingBody: 'page := public-share viewer. link → no share payload.',
   failedTitle: 'share open failed',
-  failedBody: 'cause := bad link | file unhosted. decrypt := none.',
+  failedBody:
+    'cause := file offline | link truncated | in-app webview. fix := retry | open in full browser.',
+  retry: 'retry',
   siteTitle: 'open shared site…',
   siteBody: 'decrypt files @browser → load',
   siteFrame: 'shared site',

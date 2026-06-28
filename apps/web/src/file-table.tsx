@@ -16,6 +16,7 @@ import { tr as t } from './reading-mode.js';
 import { AddFilesButton } from './ui/add-files-button.js';
 import { Icon } from './ui/icon.js';
 import { IconButton } from './ui/icon-button.js';
+import { canWebShare, webShare } from './web-share.js';
 
 type SortKey = 'name' | 'size' | 'modified';
 
@@ -312,6 +313,18 @@ export function FileTable({ files, onRestore, onDelete, onShare, onAddFiles }: F
                               copyShareLink(file.path, shareLinks.value[file.path] as string)
                             }
                           />
+                          {canWebShare() && (
+                            <IconButton
+                              icon="share"
+                              label={t(messages.shareSend)}
+                              onClick={() =>
+                                void webShare(
+                                  shareLinks.value[file.path] as string,
+                                  t(messages.shareInvite),
+                                )
+                              }
+                            />
+                          )}
                         </div>
                       )}
                     </td>
