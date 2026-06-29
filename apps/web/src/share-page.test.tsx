@@ -1,5 +1,5 @@
 import type { ShareManifest } from '@safu/sdk';
-import { cleanup, render, screen } from '@testing-library/preact';
+import { cleanup, fireEvent, render, screen } from '@testing-library/preact';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetShareViewer, ShareViewer } from './share-page.js';
 import type { OpenedFile, OpenedSite } from './share-viewer.js';
@@ -34,6 +34,24 @@ describe('ShareViewer', () => {
     expect(await screen.findByText('Couldn’t open this share')).toBeTruthy();
   });
 
+  it('recovers via Try again after a transient open failure', async () => {
+    const opened: OpenedFile = {
+      kind: 'file',
+      manifest: manifest(),
+      bytes: new TextEncoder().encode('hello'),
+    };
+    const open = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('relay dial failed'))
+      .mockResolvedValueOnce(opened);
+    render(<ShareViewer code="ok" open={open} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
+
+    expect(await screen.findByText('note.txt')).toBeTruthy();
+    expect(open).toHaveBeenCalledTimes(2);
+  });
+
   it('renders a text share with its name, size, a download link, and the body', async () => {
     const opened: OpenedFile = {
       kind: 'file',
@@ -43,6 +61,7 @@ describe('ShareViewer', () => {
     render(<ShareViewer code="ok" open={() => Promise.resolve(opened)} />);
 
     expect(await screen.findByText('note.txt')).toBeTruthy();
+    expect(screen.getByText('Someone shared a file with you')).toBeTruthy();
     expect(screen.getByText('5 B')).toBeTruthy();
     const link = screen.getByRole('link', { name: 'Download' });
     expect(link.getAttribute('download')).toBe('note.txt');

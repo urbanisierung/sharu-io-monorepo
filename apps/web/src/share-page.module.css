@@ -32,6 +32,19 @@
   color: var(--cascivo-color-muted);
 }
 
+.retry {
+  margin-top: 1rem;
+}
+
+/* A warm, plain-language framing above the file so a non-technical visitor
+   immediately understands what this page is. */
+.eyebrow {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--cascivo-color-muted);
+}
+
 .file {
   width: 100%;
   max-width: 56rem;
