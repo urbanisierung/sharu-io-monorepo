@@ -28,6 +28,7 @@
 //!   safu-node serve                           # run the always-on backup node
 //! ```
 
+mod brand;
 mod config;
 mod doc;
 mod identity;
@@ -337,9 +338,10 @@ fn spawn_update_check() {
 /// the data dir is the important part: an upgrade is binary-only.
 fn print_upgrade_instructions() {
     if release::target_triple().is_some() {
+        let domain = brand::domain();
         println!("To upgrade, re-run the installer, then restart the node:");
-        println!("  curl -fsSL https://new.sharu.io/install.sh | sh   # macOS / Linux");
-        println!("  irm https://new.sharu.io/install.ps1 | iex        # Windows (PowerShell)");
+        println!("  curl -fsSL https://{domain}/install.sh | sh   # macOS / Linux");
+        println!("  irm https://{domain}/install.ps1 | iex        # Windows (PowerShell)");
     } else {
         // No prebuilt asset is published for this host's os/arch.
         println!("No prebuilt binary is published for this host; build from source, then restart:");

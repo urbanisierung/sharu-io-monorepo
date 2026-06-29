@@ -1,3 +1,4 @@
+import { GITHUB_URL } from '@safu/config';
 import { cleanup, fireEvent, render, screen } from '@testing-library/preact';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Landing } from './landing.js';
@@ -79,7 +80,7 @@ describe('Landing', () => {
   it('links to the public source from the footer', () => {
     renderLanding();
     const source = screen.getByRole('link', { name: 'View the source' }) as HTMLAnchorElement;
-    expect(source.getAttribute('href')).toBe('https://github.com/sharu-io');
+    expect(source.getAttribute('href')).toBe(GITHUB_URL);
   });
 
   it('repeats the section links in the footer nav', () => {
