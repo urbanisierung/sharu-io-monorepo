@@ -85,10 +85,43 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      # Checkout first: it cleans the workspace, so it must precede the artifact
+      # download. We need the repo for the committed public key.
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           path: dist
           merge-multiple: true
+
+      # Sign every archive with minisign so `safu-node update --apply` can verify
+      # a download against the embedded public key before replacing the binary.
+      # No secret configured → publish unsigned (with a warning) rather than fail;
+      # the updater then declines to self-apply. See crates/safu-node/RELEASING.md.
+      - name: Sign assets (minisign)
+        shell: bash
+        env:
+          MINISIGN_SECRET_KEY: ${{ secrets.MINISIGN_SECRET_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${MINISIGN_SECRET_KEY:-}" ]; then
+            echo "::warning::MINISIGN_SECRET_KEY is not set — publishing UNSIGNED. Configure it to sign releases (crates/safu-node/RELEASING.md)."
+            exit 0
+          fi
+          sudo apt-get update
+          sudo apt-get install -y minisign
+          umask 077
+          keyfile="$RUNNER_TEMP/minisign.key"
+          printf '%s\n' "$MINISIGN_SECRET_KEY" > "$keyfile"
+          trap 'rm -f "$keyfile"' EXIT
+          for f in dist/safu-node-*.tar.gz dist/safu-node-*.zip; do
+            [ -e "$f" ] || continue
+            # Passwordless key → no prompt; </dev/null guards against any read.
+            minisign -S -s "$keyfile" -m "$f" </dev/null
+            echo "signed $(basename "$f") -> $(basename "$f").minisig"
+          done
+          # Publish the public key alongside the assets, for transparency.
+          cp crates/safu-node/keys/safu-node.pub dist/safu-node.pub
 
       - name: Publish to GitHub Releases
         uses: softprops/action-gh-release@v2

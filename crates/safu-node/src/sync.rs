@@ -17,15 +17,41 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use safu_transport::native::{NativeChannel, NativeEndpoint};
+use serde::Deserialize;
 use tokio::time::sleep;
 
 use crate::doc::{Delta, SyncDoc};
+use crate::identity::verify_signature;
 use crate::pairing::PairingInfo;
 use crate::store::{save_doc, FsBlockStore};
 
 /// ALPN-style protocol tags, identical to the SDK's `doc-sync.ts`.
 pub const SYNC_PROTOCOL: &str = "safu/sync/1";
 pub const BLOCK_PROTOCOL: &str = "safu/blocks/1";
+
+/// ALPN-style protocol tags for public-share hosting, identical to the SDK's
+/// `block-pin.ts`. A device pins each block of a published share to the node so
+/// the link keeps resolving while the device is offline, and unpins them when it
+/// revokes the share. These blocks live outside the allocation table, so the
+/// replication loop never auto-pulls them — this is the explicit upload path.
+pub const PIN_PROTOCOL: &str = "safu/pin/1";
+pub const UNPIN_PROTOCOL: &str = "safu/unpin/1";
+
+/// The device's ACK byte for an accepted pin/unpin, matching the SDK's `ACK_OK`.
+const ACK_OK: u8 = 1;
+/// The device's ACK byte for a rejected pin/unpin, matching the SDK's `ACK_REJECT`.
+const ACK_REJECT: u8 = 0;
+
+/// A signed pin/unpin request: the block's content address, the authoring
+/// device's signing id, and its signature over the hash. The JSON shape is
+/// byte-identical to the SDK's `PinRequest` (note the `signId` field name).
+#[derive(Deserialize)]
+struct PinRequest {
+    hash: String,
+    #[serde(rename = "signId")]
+    sign_id: String,
+    sig: String,
+}
 
 /// How long to wait before re-dialing a device that is offline or dropped.
 const RECONNECT_DELAY: Duration = Duration::from_secs(5);
@@ -99,6 +125,14 @@ impl Node {
                     .find(|d| d.id == channel.peer())
                     .cloned();
                 tokio::spawn(async move { self.handle_sync(channel, target).await });
+            }
+            PIN_PROTOCOL => {
+                let node = self.clone();
+                tokio::spawn(async move { node.accept_pin(channel).await });
+            }
+            UNPIN_PROTOCOL => {
+                let node = self.clone();
+                tokio::spawn(async move { node.accept_unpin(channel).await });
             }
             other => eprintln!("ignoring channel with unknown protocol: {other}"),
         }
@@ -234,6 +268,86 @@ impl Node {
         let _ = channel.close();
     }
 
+    /// Accept a pin (a device hosting a public-share block here), then ACK the
+    /// device with the outcome it awaits.
+    async fn accept_pin(self: Arc<Self>, mut channel: NativeChannel) {
+        let stored = self.store_pin(&mut channel).await;
+        let _ = channel.send(&[ack(stored)]).await;
+        let _ = channel.close();
+    }
+
+    /// Read a signed pin request followed by the block bytes, and store the block
+    /// iff the request is from a current writer, correctly signed, and the bytes
+    /// actually hash to the claimed address. Returns whether it was stored — the
+    /// ACK the device awaits. Mirrors `acceptPin` in the SDK's `block-pin.ts`.
+    async fn store_pin(&self, channel: &mut NativeChannel) -> bool {
+        let Ok(Some(head)) = channel.recv().await else {
+            return false;
+        };
+        let Ok(Some(body)) = channel.recv().await else {
+            return false;
+        };
+        let Some(request) = self.authorize_request(&head) else {
+            return false;
+        };
+        // Zero-knowledge: the node only ever sees ciphertext, so the one integrity
+        // check it *can* make is that the bytes hash to their claimed address.
+        if hex::encode(blake3::hash(&body).as_bytes()) != request.hash {
+            return false;
+        }
+        match self.store.put(&request.hash, &body) {
+            Ok(()) => {
+                println!(
+                    "pinned share block {} ({} held)",
+                    short(&request.hash),
+                    self.store.count()
+                );
+                true
+            }
+            Err(error) => {
+                eprintln!(
+                    "store pinned block {} failed: {error}",
+                    short(&request.hash)
+                );
+                false
+            }
+        }
+    }
+
+    /// Accept an unpin (a device revoking a public share), then ACK the outcome.
+    async fn accept_unpin(self: Arc<Self>, mut channel: NativeChannel) {
+        let dropped = self.drop_pin(&mut channel).await;
+        let _ = channel.send(&[ack(dropped)]).await;
+        let _ = channel.close();
+    }
+
+    /// Read a signed unpin request and drop the named block iff the request is
+    /// from a current writer. Mirrors `acceptUnpin` in the SDK's `block-pin.ts`.
+    async fn drop_pin(&self, channel: &mut NativeChannel) -> bool {
+        let Ok(Some(head)) = channel.recv().await else {
+            return false;
+        };
+        let Some(request) = self.authorize_request(&head) else {
+            return false;
+        };
+        match self.store.delete(&request.hash) {
+            Ok(()) => {
+                println!("unpinned share block {}", short(&request.hash));
+                true
+            }
+            Err(error) => {
+                eprintln!("drop pinned block {} failed: {error}", short(&request.hash));
+                false
+            }
+        }
+    }
+
+    /// Parse a `{hash, signId, sig}` frame under the node's current writer set.
+    fn authorize_request(&self, head: &[u8]) -> Option<PinRequest> {
+        let doc = self.doc.lock().expect("doc lock");
+        authorize_request(&doc, head)
+    }
+
     fn persist(&self) {
         let snapshot = {
             let doc = self.doc.lock().expect("doc lock");
@@ -242,6 +356,97 @@ impl Node {
         if let Err(error) = save_doc(&self.doc_path, &snapshot) {
             eprintln!("persist doc failed: {error}");
         }
+    }
+}
+
+/// The single-byte ACK a device awaits after a pin/unpin.
+fn ack(ok: bool) -> u8 {
+    if ok {
+        ACK_OK
+    } else {
+        ACK_REJECT
+    }
+}
+
+/// Parse a `{hash, signId, sig}` frame and return it only if it is well-formed,
+/// from a current writer of `doc`, and signed by that writer over the hash.
+/// Admission is by *author*, not by the transport carrier — identical to the
+/// document's model and the SDK's `authorize` in `block-pin.ts`.
+fn authorize_request(doc: &SyncDoc, head: &[u8]) -> Option<PinRequest> {
+    let request: PinRequest = serde_json::from_slice(head).ok()?;
+    if request.hash.is_empty() || request.sign_id.is_empty() || request.sig.is_empty() {
+        return None;
+    }
+    if !doc.authorized(&request.sign_id) {
+        return None;
+    }
+    if !verify_signature(&request.sign_id, request.hash.as_bytes(), &request.sig) {
+        return None;
+    }
+    Some(request)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::identity::Signer;
+
+    /// A `{hash, signId, sig}` frame as a device would send it, signed over the
+    /// hash by `signer` — the same bytes the SDK's `pushBlock` puts on the wire.
+    fn signed_request(signer: &Signer, hash: &str) -> Vec<u8> {
+        let sig = signer.sign(hash.as_bytes());
+        format!(
+            r#"{{"hash":"{hash}","signId":"{}","sig":"{sig}"}}"#,
+            signer.id()
+        )
+        .into_bytes()
+    }
+
+    /// A fresh document whose genesis owner (the returned signer's id) is the only
+    /// authorized writer.
+    fn owned_doc(seed: u8) -> (SyncDoc, Signer) {
+        let signer = Signer::from_seed([seed; 32]);
+        // `from_seed` is deterministic, so a second signer with the same seed is
+        // the same identity and can still sign once the first is moved into open.
+        let owner = Signer::from_seed([seed; 32]);
+        (SyncDoc::open(signer, None), owner)
+    }
+
+    #[test]
+    fn accepts_a_signed_pin_from_an_authorized_writer() {
+        let (doc, owner) = owned_doc(3);
+        let head = signed_request(&owner, "deadbeef");
+        let request = authorize_request(&doc, &head).expect("authorized");
+        assert_eq!(request.sign_id, owner.id());
+        assert_eq!(request.hash, "deadbeef");
+    }
+
+    #[test]
+    fn rejects_a_pin_from_an_unauthorized_signer() {
+        let (doc, _owner) = owned_doc(3);
+        // A different seed is a different identity, not in the writer set.
+        let stranger = Signer::from_seed([9u8; 32]);
+        let head = signed_request(&stranger, "deadbeef");
+        assert!(authorize_request(&doc, &head).is_none());
+    }
+
+    #[test]
+    fn rejects_a_pin_whose_signature_does_not_cover_the_hash() {
+        let (doc, owner) = owned_doc(3);
+        // Signed over a different hash than the one claimed in the frame.
+        let sig = owner.sign(b"some-other-hash");
+        let head = format!(
+            r#"{{"hash":"deadbeef","signId":"{}","sig":"{sig}"}}"#,
+            owner.id()
+        )
+        .into_bytes();
+        assert!(authorize_request(&doc, &head).is_none());
+    }
+
+    #[test]
+    fn rejects_a_malformed_frame() {
+        let (doc, _owner) = owned_doc(3);
+        assert!(authorize_request(&doc, b"not json").is_none());
     }
 }
 

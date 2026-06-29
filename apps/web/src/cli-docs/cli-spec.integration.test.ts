@@ -38,6 +38,7 @@ describe('CLI spec', () => {
       'unlink',
       'list',
       'serve',
+      'update',
       'version',
     ]);
     expect(parsed.options.map((o) => o.flag)).toEqual(['--data-dir', '--passphrase']);

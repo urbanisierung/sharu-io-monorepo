@@ -1,5 +1,6 @@
+/* Fills its container (the Files card in app.module.css owns the width). */
 .files {
-  width: min(44rem, 92vw);
+  width: 100%;
 }
 
 .toolbar {

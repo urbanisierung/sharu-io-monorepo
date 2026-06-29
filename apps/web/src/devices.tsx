@@ -3,7 +3,13 @@
 // when arriving via a pairing deep link, walk the user through the safety-number
 // check in plain language, and let them give each paired device a friendly name
 // instead of reading a raw key id. Signal-driven, no hooks; copy via i18n.
+//
+// The page is organised into Settings-style cards — Share, Link, Manage — so the
+// three jobs (hand out this device's code, paste another's, look after the ones
+// already linked) read as distinct steps. The link code is masked to its first
+// and last characters so the full secret isn't left sitting on screen.
 
+import { cn } from '@cascivo/core';
 import { type ReadonlySignal, signal } from '@preact/signals';
 import styles from './app.module.css';
 import { messages } from './messages.js';
@@ -30,8 +36,24 @@ export function resetDevicesView(): void {
   renameDraft.value = '';
 }
 
+/**
+ * Mask a code down to its first and last `visible` characters with an ellipsis
+ * between, so the full secret isn't rendered on screen. Short codes (where
+ * masking would reveal almost everything anyway) are returned untouched.
+ */
+export function maskCode(value: string, visible = 6): string {
+  if (value.length <= visible * 2 + 1) return value;
+  return `${value.slice(0, visible)}…${value.slice(-visible)}`;
+}
+
 function shortId(id: string): string {
   return id.length > 12 ? `${id.slice(0, 12)}…` : id;
+}
+
+function statusLabel(status: PeerInfo['status']): string {
+  if (status === 'verified') return t(messages.statusVerified);
+  if (status === 'rejected') return t(messages.statusRejected);
+  return t(messages.statusPending);
 }
 
 export interface DevicesProps {
@@ -63,14 +85,24 @@ export function Devices({
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
   return (
-    <section class={styles.gate}>
-      <h2>{t(messages.devicesHeading)}</h2>
+    <section class={styles.settings}>
+      <header class={styles.settingsHead}>
+        <h2 class={styles.settingsTitle}>{t(messages.devicesHeading)}</h2>
+        <p class={styles.settingsIntro}>{t(messages.devicesIntro)}</p>
+      </header>
 
       {code && (
-        <div class={styles.qrBlock}>
-          <p class={styles.muted}>{t(messages.scanPrompt)}</p>
-          <QrCode value={link} label={t(messages.qrLabel)} />
-          <span class={styles.peerActions}>
+        <article class={styles.setting}>
+          <h3 class={styles.settingTitle}>{t(messages.shareSectionTitle)}</h3>
+          <p class={styles.settingDesc}>{t(messages.shareSectionDesc)}</p>
+          <div class={styles.qrBlock}>
+            <p class={styles.muted}>{t(messages.scanPrompt)}</p>
+            <QrCode value={link} label={t(messages.qrLabel)} />
+            <code class={styles.code} title={code}>
+              {maskCode(code)}
+            </code>
+          </div>
+          <div class={styles.settingRow}>
             <Button
               intent="neutral"
               onClick={() => {
@@ -85,115 +117,138 @@ export function Devices({
                 {t(messages.shareLink)}
               </Button>
             )}
-          </span>
-          <code class={styles.code}>{code}</code>
-        </div>
+          </div>
+        </article>
       )}
 
-      {draftPeerCode.value && <p class={styles.muted}>{t(messages.incomingPair)}</p>}
-      <input
-        class={styles.input}
-        aria-label={t(messages.peerCodePlaceholder)}
-        placeholder={t(messages.peerCodePlaceholder)}
-        value={draftPeerCode.value}
-        onInput={(event) => {
-          draftPeerCode.value = (event.target as HTMLInputElement).value;
-          pairFailed.value = false;
-        }}
-      />
-      <Button
-        intent="primary"
-        onClick={() => {
-          pairFailed.value = false;
-          onPair(draftPeerCode.value).catch(() => {
-            pairFailed.value = true;
-          });
-        }}
-      >
-        {t(messages.pair)}
-      </Button>
-      {pairFailed.value && <p class={styles.warn}>{t(messages.pairError)}</p>}
+      <article class={styles.setting}>
+        <h3 class={styles.settingTitle}>{t(messages.linkSectionTitle)}</h3>
+        <p class={styles.settingDesc}>{t(messages.linkSectionDesc)}</p>
+        {draftPeerCode.value && <p class={styles.muted}>{t(messages.incomingPair)}</p>}
+        <div class={styles.settingRow}>
+          <input
+            class={styles.input}
+            aria-label={t(messages.peerCodePlaceholder)}
+            placeholder={t(messages.peerCodePlaceholder)}
+            value={draftPeerCode.value}
+            onInput={(event) => {
+              draftPeerCode.value = (event.target as HTMLInputElement).value;
+              pairFailed.value = false;
+            }}
+          />
+          <Button
+            intent="primary"
+            onClick={() => {
+              pairFailed.value = false;
+              onPair(draftPeerCode.value).catch(() => {
+                pairFailed.value = true;
+              });
+            }}
+          >
+            {t(messages.pair)}
+          </Button>
+        </div>
+        {pairFailed.value && <p class={styles.warn}>{t(messages.pairError)}</p>}
+      </article>
 
       {peers.value.length > 0 && (
-        <ul class={styles.list}>
-          {peers.value.map((peer) => (
-            <li key={peer.id} class={styles.peerRow}>
-              <span class={styles.deviceName}>{peer.name ?? t(messages.unnamedDevice)}</span>
-              <code class={styles.code}>{shortId(peer.id)}</code>
-              <span class={styles.muted}>
-                {t(messages.sasPrompt)} <strong>{peer.sas}</strong>
-              </span>
-              <span class={styles.muted}>
-                {peer.status === 'verified'
-                  ? t(messages.statusVerified)
-                  : peer.status === 'rejected'
-                    ? t(messages.statusRejected)
-                    : t(messages.statusPending)}
-              </span>
-
-              {onSetShareHost &&
-                (shareHostId?.value === peer.id ? (
-                  <span class={styles.muted}>{t(messages.hostingShares)}</span>
-                ) : (
-                  <span class={styles.peerActions}>
-                    <Button intent="neutral" onClick={() => onSetShareHost(peer.id)}>
-                      {t(messages.hostShares)}
-                    </Button>
+        <article class={styles.setting}>
+          <h3 class={styles.settingTitle}>{t(messages.manageSectionTitle)}</h3>
+          <p class={styles.settingDesc}>{t(messages.manageSectionDesc)}</p>
+          <ul class={styles.list}>
+            {peers.value.map((peer) => (
+              <li key={peer.id} class={styles.peerRow}>
+                <div class={styles.peerHead}>
+                  <span class={styles.deviceName}>{peer.name ?? t(messages.unnamedDevice)}</span>
+                  <span
+                    class={cn(
+                      styles.peerStatus,
+                      peer.status === 'verified' && styles.statusOk,
+                      peer.status === 'rejected' && styles.warn,
+                    )}
+                  >
+                    {statusLabel(peer.status)}
                   </span>
-                ))}
+                </div>
+                <code class={styles.code}>{shortId(peer.id)}</code>
+                <p class={styles.settingDesc}>
+                  {t(messages.sasPrompt)} <strong>{peer.sas}</strong>
+                </p>
 
-              {peer.status === 'pending' && onVerify && onReject && (
-                <span class={styles.peerActions}>
-                  <Button intent="primary" onClick={() => onVerify(peer.id)}>
-                    {t(messages.confirm)}
-                  </Button>
-                  <Button intent="neutral" onClick={() => onReject(peer.id)}>
-                    {t(messages.reject)}
-                  </Button>
-                </span>
-              )}
+                <div class={styles.peerActions}>
+                  {onSetShareHost &&
+                    (shareHostId?.value === peer.id ? (
+                      <p class={styles.peerActionHint}>{t(messages.hostingShares)}</p>
+                    ) : (
+                      <div class={styles.peerAction}>
+                        <Button intent="neutral" onClick={() => onSetShareHost(peer.id)}>
+                          {t(messages.hostShares)}
+                        </Button>
+                        <span class={styles.peerActionHint}>{t(messages.hostSharesHint)}</span>
+                      </div>
+                    ))}
 
-              {onRename &&
-                (renamingId.value === peer.id ? (
-                  <span class={styles.peerActions}>
-                    <input
-                      class={styles.input}
-                      aria-label={t(messages.renamePlaceholder)}
-                      placeholder={t(messages.renamePlaceholder)}
-                      value={renameDraft.value}
-                      onInput={(event) => {
-                        renameDraft.value = (event.target as HTMLInputElement).value;
-                      }}
-                    />
-                    <Button
-                      intent="primary"
-                      onClick={() => {
-                        onRename(peer.id, renameDraft.value);
-                        renamingId.value = null;
-                      }}
-                    >
-                      {t(messages.saveName)}
-                    </Button>
-                    <Button intent="neutral" onClick={() => (renamingId.value = null)}>
-                      {t(messages.cancelName)}
-                    </Button>
-                  </span>
-                ) : (
-                  <span class={styles.peerActions}>
-                    <Button
-                      intent="neutral"
-                      onClick={() => {
-                        renamingId.value = peer.id;
-                        renameDraft.value = peer.name ?? '';
-                      }}
-                    >
-                      {t(messages.renameDevice)}
-                    </Button>
-                  </span>
-                ))}
-            </li>
-          ))}
-        </ul>
+                  {peer.status === 'pending' && onVerify && onReject && (
+                    <>
+                      <div class={styles.peerAction}>
+                        <Button intent="primary" onClick={() => onVerify(peer.id)}>
+                          {t(messages.confirm)}
+                        </Button>
+                        <span class={styles.peerActionHint}>{t(messages.confirmHint)}</span>
+                      </div>
+                      <div class={styles.peerAction}>
+                        <Button intent="neutral" onClick={() => onReject(peer.id)}>
+                          {t(messages.reject)}
+                        </Button>
+                        <span class={styles.peerActionHint}>{t(messages.rejectHint)}</span>
+                      </div>
+                    </>
+                  )}
+
+                  {onRename &&
+                    (renamingId.value === peer.id ? (
+                      <div class={styles.peerRename}>
+                        <input
+                          class={styles.input}
+                          aria-label={t(messages.renamePlaceholder)}
+                          placeholder={t(messages.renamePlaceholder)}
+                          value={renameDraft.value}
+                          onInput={(event) => {
+                            renameDraft.value = (event.target as HTMLInputElement).value;
+                          }}
+                        />
+                        <Button
+                          intent="primary"
+                          onClick={() => {
+                            onRename(peer.id, renameDraft.value);
+                            renamingId.value = null;
+                          }}
+                        >
+                          {t(messages.saveName)}
+                        </Button>
+                        <Button intent="neutral" onClick={() => (renamingId.value = null)}>
+                          {t(messages.cancelName)}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div class={styles.peerAction}>
+                        <Button
+                          intent="neutral"
+                          onClick={() => {
+                            renamingId.value = peer.id;
+                            renameDraft.value = peer.name ?? '';
+                          }}
+                        >
+                          {t(messages.renameDevice)}
+                        </Button>
+                        <span class={styles.peerActionHint}>{t(messages.renameHint)}</span>
+                      </div>
+                    ))}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </article>
       )}
     </section>
   );
