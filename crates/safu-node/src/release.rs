@@ -9,8 +9,6 @@
 
 use std::time::Duration;
 
-/// The repository whose releases this binary checks (matches the install script).
-const REPO: &str = "urbanisierung/sharu-io-monorepo";
 /// Release tags are `safu-node-v<version>`, e.g. `safu-node-v0.1.0`.
 const TAG_PREFIX: &str = "safu-node-v";
 
@@ -94,7 +92,10 @@ fn http_client() -> Result<reqwest::Client, String> {
 
 /// GET the latest-release JSON. Honors a token so it works on a private repo.
 async fn fetch_release_json() -> Result<String, String> {
-    let url = format!("https://api.github.com/repos/{REPO}/releases/latest");
+    let url = format!(
+        "https://api.github.com/repos/{}/releases/latest",
+        crate::brand::github_repo()
+    );
     let mut request = http_client()?
         .get(&url)
         // GitHub rejects API requests without a User-Agent.
