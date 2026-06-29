@@ -140,7 +140,7 @@ them. The node only ever receives ciphertext.
 | `unlink <signing-id>` | Permanently revoke a device's write access and stop backing it up. |
 | `list` | List linked devices and their safety numbers. |
 | `serve` (`run`) | Run the always-on backup node & share host (Ctrl-C to stop; flushes on exit). |
-| `update` | Check the GitHub release API for a newer version and print how to upgrade. |
+| `update` | Check for a newer release; `update --apply` downloads, verifies (minisign), and installs it. |
 
 ### Configuration
 
@@ -188,17 +188,28 @@ devices again**, and shares stay pinned.
 Check whether a newer version exists:
 
 ```sh
-safu-node update
+safu-node update            # reports; --apply to install
 ```
 
 `serve` also prints a one-line notice at startup when a newer version is out
-(disable with `SAFU_NODE_NO_UPDATE_CHECK`). To apply an update, re-run the
-installer (the node does not overwrite its own running binary) and restart:
+(disable with `SAFU_NODE_NO_UPDATE_CHECK`).
+
+**Self-apply (Linux/macOS).** `update --apply` downloads the release archive for
+this host, **verifies its minisign signature against the public key embedded in
+the binary** (and its SHA-256), unpacks it, and atomically replaces the running
+executable. Any failure aborts without touching the installed binary. Then
+restart:
 
 ```sh
-curl -fsSL https://new.sharu.io/install.sh | sh   # fetches the latest release
-sudo systemctl restart safu-node                   # or your supervisor's restart
+safu-node update --apply
+sudo systemctl restart safu-node   # or your supervisor, or re-run `safu-node serve`
 ```
+
+Verification is mandatory — an unsigned or tampered release is refused, so a
+compromised release host cannot push a malicious binary. Releases are signed in
+CI; see [`RELEASING.md`](RELEASING.md) for the one-time key setup. (On Windows, or
+to upgrade by hand, re-run the installer instead — `curl -fsSL
+https://new.sharu.io/install.sh | sh` — then restart.)
 
 While the process restarts, share links pointing at this node briefly stop
 resolving and devices' syncs retry — typically sub-second. For no gap at all, run
@@ -210,11 +221,6 @@ an older dir in place; an older binary refuses a dir written by a newer one
 state. The wire protocols are independently versioned (`safu/sync/1`,
 `safu/blocks/1`, `safu/pin/1`, `safu/unpin/1`) and the document JSON is additive,
 so a node and a device on adjacent versions keep talking.
-
-> **Roadmap:** a self-applying `safu-node update` (download + verify + replace the
-> binary in place, cross-platform) will land together with **signed releases** —
-> verifying a signature against a pinned key, not just the SHA-256 the installer
-> checks today. Until then, upgrade via the installer above.
 
 ### Running as a service (systemd)
 

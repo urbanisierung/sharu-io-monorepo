@@ -37,6 +37,7 @@ mod release;
 mod sas;
 mod store;
 mod sync;
+mod update;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -86,7 +87,7 @@ async fn run() -> Result<(), String> {
         "unlink" => cmd_unlink(&args),
         "list" => cmd_list(&args),
         "serve" | "run" => cmd_serve(&args).await,
-        "update" => cmd_update().await,
+        "update" => cmd_update(&args).await,
         "version" | "--version" | "-V" => {
             println!("safu-node {}", env!("CARGO_PKG_VERSION"));
             Ok(())
@@ -264,29 +265,53 @@ async fn cmd_serve(args: &Args) -> Result<(), String> {
     Ok(())
 }
 
-async fn cmd_update() -> Result<(), String> {
+async fn cmd_update(args: &Args) -> Result<(), String> {
     let current = release::current_version();
     println!("safu-node {current}");
-    match release::latest_version().await {
-        Ok(latest) if release::is_newer(&latest, current) => {
-            println!("a newer release is available: v{latest}");
-            println!();
-            print_upgrade_instructions();
-        }
-        Ok(latest) if latest == current => {
-            println!("you are on the latest release (v{current}).");
-        }
-        Ok(latest) => {
-            // Current is newer than the latest published tag — a dev or
-            // pre-release build. Nothing to do.
-            println!("you are on v{current}; the latest published release is v{latest}.");
-        }
+
+    let release = match release::latest_release().await {
+        Ok(release) => release,
         Err(error) => {
             eprintln!("could not check for updates: {error}");
             println!();
             print_upgrade_instructions();
+            return Ok(());
         }
+    };
+
+    if !release::is_newer(&release.version, current) {
+        if release.version == current {
+            println!("you are on the latest release (v{current}).");
+        } else {
+            // Current is newer than the latest published tag — a dev build.
+            println!(
+                "you are on v{current}; the latest published release is v{}.",
+                release.version
+            );
+        }
+        return Ok(());
     }
+
+    println!("a newer release is available: v{}", release.version);
+    if !args.has_flag("--apply") {
+        println!();
+        println!("Run `safu-node update --apply` to download, verify, and install it,");
+        println!("or upgrade manually:");
+        println!();
+        print_upgrade_instructions();
+        return Ok(());
+    }
+
+    println!("downloading and verifying v{}…", release.version);
+    update::apply(&release).await?;
+    println!();
+    println!(
+        "installed v{}. Restart the node to run it:",
+        release.version
+    );
+    println!(
+        "  sudo systemctl restart safu-node   # or your supervisor, or re-run `safu-node serve`"
+    );
     Ok(())
 }
 
@@ -397,7 +422,7 @@ COMMANDS:\n\
   unlink <signing-id>  Revoke a device's write access and stop backing it up\n\
   list                 List linked devices and their safety numbers\n\
   serve                Run the always-on backup node & share host (Ctrl-C to stop)\n\
-  update               Check for a newer release and how to upgrade\n\
+  update               Check for a newer release (use --apply to install it)\n\
   version              Print the version\n\
 \n\
 OPTIONS / ENVIRONMENT:\n\
@@ -447,6 +472,12 @@ impl Args {
             data_dir: PathBuf::from(data_dir),
             passphrase,
         })
+    }
+
+    /// Whether a bare flag like `--apply` was passed after the command. (Flags
+    /// the parser does not recognize land in `positionals`.)
+    fn has_flag(&self, flag: &str) -> bool {
+        self.positionals.iter().any(|arg| arg == flag)
     }
 
     fn positional(&self, index: usize, what: &str) -> Result<&str, String> {

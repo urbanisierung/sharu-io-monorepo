@@ -50,7 +50,21 @@ data-encoding = "2"
 getrandom = "0.4"
 
 # `update` checks the GitHub Releases API for a newer version. reqwest (already
-# in the tree via iroh) does the one HTTPS GET; rustls keeps it off the system
+# in the tree via iroh) does the HTTPS GETs; rustls keeps it off the system
 # OpenSSL. semver compares the running version against the latest tag.
 reqwest = { version = "0.13", default-features = false, features = ["rustls"] }
 semver = "1"
+
+# `update --apply` self-updates: verify the download's minisign signature against
+# the embedded public key (and its SHA-256), unpack the archive, and atomically
+# replace the running binary. minisign-verify is a tiny pure-Rust verifier.
+minisign-verify = "0.2"
+sha2 = "0.10"
+flate2 = "1"
+tar = "0.4"
+self-replace = "1"
+
+[dev-dependencies]
+# Sign throwaway fixtures in-test so the signature-verification path is exercised
+# against a real minisign signature (the production key stays out of the repo).
+minisign = "0.7"

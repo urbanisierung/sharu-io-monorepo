@@ -42,7 +42,7 @@ export const cliSpec: CliSpec = {
     {
       name: 'update',
       arg: null,
-      summary: 'Check for a newer release and how to upgrade',
+      summary: 'Check for a newer release (use --apply to install it)',
     },
     {
       name: 'version',

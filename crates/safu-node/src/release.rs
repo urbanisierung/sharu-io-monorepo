@@ -63,15 +63,39 @@ fn token() -> Option<String> {
         .find_map(|var| std::env::var(var).ok().filter(|v| !v.is_empty()))
 }
 
-/// The latest released version per the GitHub Releases API, or an error string to
-/// surface. Times out quickly so it never holds up `serve` or an interactive run.
-pub async fn latest_version() -> Result<String, String> {
-    let url = format!("https://api.github.com/repos/{REPO}/releases/latest");
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(10))
+/// A downloadable release asset: its file name and the two URLs GitHub exposes —
+/// the public CDN URL and the API URL (used with a token for a private repo).
+pub struct Asset {
+    pub name: String,
+    pub download_url: String,
+    pub api_url: String,
+}
+
+/// A published release: the version (tag without prefix) and its assets.
+pub struct Release {
+    pub version: String,
+    pub assets: Vec<Asset>,
+}
+
+impl Release {
+    /// The asset with exactly this file name, if the release carries it.
+    pub fn asset(&self, name: &str) -> Option<&Asset> {
+        self.assets.iter().find(|a| a.name == name)
+    }
+}
+
+fn http_client() -> Result<reqwest::Client, String> {
+    reqwest::Client::builder()
+        // Generous enough for a binary download, short enough to never hang serve.
+        .timeout(Duration::from_secs(60))
         .build()
-        .map_err(|e| format!("http client: {e}"))?;
-    let mut request = client
+        .map_err(|e| format!("http client: {e}"))
+}
+
+/// GET the latest-release JSON. Honors a token so it works on a private repo.
+async fn fetch_release_json() -> Result<String, String> {
+    let url = format!("https://api.github.com/repos/{REPO}/releases/latest");
+    let mut request = http_client()?
         .get(&url)
         // GitHub rejects API requests without a User-Agent.
         .header(
@@ -92,14 +116,104 @@ pub async fn latest_version() -> Result<String, String> {
             response.status()
         ));
     }
-    let body = response
+    response
         .text()
         .await
-        .map_err(|e| format!("read response: {e}"))?;
+        .map_err(|e| format!("read response: {e}"))
+}
+
+/// The latest released version per the GitHub Releases API, or an error string to
+/// surface. Used for the lightweight "is a newer version out?" check.
+pub async fn latest_version() -> Result<String, String> {
+    let body = fetch_release_json().await?;
     let tag = tag_from_release_json(&body).ok_or("no tag_name in the release response")?;
     version_from_tag(&tag)
         .map(str::to_string)
         .ok_or_else(|| format!("unexpected release tag: {tag}"))
+}
+
+/// The latest release with its assets, for `update --apply`.
+pub async fn latest_release() -> Result<Release, String> {
+    parse_release(&fetch_release_json().await?)
+}
+
+/// Parse a GitHub release JSON object into a [`Release`].
+fn parse_release(body: &str) -> Result<Release, String> {
+    let value: serde_json::Value =
+        serde_json::from_str(body).map_err(|e| format!("parse release: {e}"))?;
+    let tag = value
+        .get("tag_name")
+        .and_then(serde_json::Value::as_str)
+        .ok_or("no tag_name in the release response")?;
+    let version = version_from_tag(tag)
+        .ok_or_else(|| format!("unexpected release tag: {tag}"))?
+        .to_string();
+    let assets = value
+        .get("assets")
+        .and_then(serde_json::Value::as_array)
+        .map(|array| {
+            array
+                .iter()
+                .filter_map(|asset| {
+                    Some(Asset {
+                        name: asset.get("name")?.as_str()?.to_string(),
+                        download_url: asset
+                            .get("browser_download_url")
+                            .and_then(serde_json::Value::as_str)
+                            .unwrap_or_default()
+                            .to_string(),
+                        api_url: asset
+                            .get("url")
+                            .and_then(serde_json::Value::as_str)
+                            .unwrap_or_default()
+                            .to_string(),
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    Ok(Release { version, assets })
+}
+
+/// Download an asset's bytes. With a token it goes through the API asset URL
+/// (which works for a private repo); otherwise the public CDN URL. Either way the
+/// server returns the raw bytes (after following redirects).
+pub async fn download_asset(asset: &Asset) -> Result<Vec<u8>, String> {
+    let token = token();
+    let url = if token.is_some() && !asset.api_url.is_empty() {
+        &asset.api_url
+    } else {
+        &asset.download_url
+    };
+    if url.is_empty() {
+        return Err(format!("no download url for asset {}", asset.name));
+    }
+    let mut request = http_client()?
+        .get(url)
+        .header(
+            "User-Agent",
+            concat!("safu-node/", env!("CARGO_PKG_VERSION")),
+        )
+        .header("Accept", "application/octet-stream");
+    if let Some(token) = token {
+        request = request.header("Authorization", format!("Bearer {token}"));
+    }
+    let response = request
+        .send()
+        .await
+        .map_err(|e| format!("download {}: {e}", asset.name))?;
+    if !response.status().is_success() {
+        return Err(format!(
+            "download {} returned {}",
+            asset.name,
+            response.status()
+        ));
+    }
+    Ok(response
+        .bytes()
+        .await
+        .map_err(|e| format!("read {}: {e}", asset.name))?
+        .to_vec())
 }
 
 #[cfg(test)]
@@ -137,5 +251,32 @@ mod tests {
         // On a published host this is Some; on an exotic one, None — either is a
         // valid answer, but it must never panic.
         let _ = target_triple();
+    }
+
+    #[test]
+    fn parses_a_release_with_its_assets() {
+        let body = r#"{
+            "tag_name": "safu-node-v0.2.0",
+            "assets": [
+                {
+                    "name": "safu-node-x86_64-unknown-linux-gnu.tar.gz",
+                    "browser_download_url": "https://cdn/safu-node.tar.gz",
+                    "url": "https://api/assets/1"
+                },
+                {
+                    "name": "safu-node-x86_64-unknown-linux-gnu.tar.gz.minisig",
+                    "browser_download_url": "https://cdn/safu-node.tar.gz.minisig",
+                    "url": "https://api/assets/2"
+                }
+            ]
+        }"#;
+        let release = parse_release(body).unwrap();
+        assert_eq!(release.version, "0.2.0");
+        let archive = release
+            .asset("safu-node-x86_64-unknown-linux-gnu.tar.gz")
+            .unwrap();
+        assert_eq!(archive.download_url, "https://cdn/safu-node.tar.gz");
+        assert_eq!(archive.api_url, "https://api/assets/1");
+        assert!(release.asset("nope").is_none());
     }
 }
