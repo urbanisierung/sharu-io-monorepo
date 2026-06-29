@@ -141,6 +141,23 @@ export const messages = defineMessages('safu', {
   statusPending: 'Unverified',
   statusVerified: 'Verified',
   statusRejected: 'Blocked — this device can no longer make changes',
+  devicesIntro:
+    'Link your phones and computers so they back each other up. Share this device’s code to connect a new one, then verify and name it.',
+  shareSectionTitle: 'Share',
+  shareSectionDesc:
+    'Let another device join this wallet. Scan the code with its camera, or copy the link and send it over.',
+  linkSectionTitle: 'Link',
+  linkSectionDesc: 'Already have a code from your other device? Paste it here to connect the two.',
+  manageSectionTitle: 'Manage',
+  manageSectionDesc:
+    'Your linked devices. Verify each one’s safety number, give it a friendly name, and choose which device hosts your public shares.',
+  hostSharesHint:
+    'Pick the always-on device (like a home server) that keeps your public links reachable.',
+  confirmHint:
+    'Tap only when both devices show the exact same safety number — it confirms no one is intercepting the link.',
+  rejectHint:
+    'Tap if the numbers differ. The device is blocked and can no longer change your files.',
+  renameHint: 'Give this device a name you’ll recognise, like “Mom’s phone”, instead of a code.',
   watchHeading: 'Watched folders',
   watchPlaceholder: 'Folder path to auto-back-up',
   watch: 'Watch folder',
@@ -286,6 +303,23 @@ export const messagesEli5 = defineMessages('safu.eli5', {
   statusPending: 'Not checked yet',
   statusVerified: 'Checked',
   statusRejected: 'Blocked — this gadget can’t change things anymore',
+  devicesIntro:
+    'Connect your phones and computers so they keep copies for each other. Show this gadget’s code to add a new one, then check it and give it a name.',
+  shareSectionTitle: 'Share',
+  shareSectionDesc:
+    'Let another gadget join. Point its camera at the code, or copy the link and send it.',
+  linkSectionTitle: 'Join',
+  linkSectionDesc: 'Got a code from your other gadget? Paste it here to connect them.',
+  manageSectionTitle: 'Manage',
+  manageSectionDesc:
+    'Your connected gadgets. Check each one’s safety number, give it a name, and pick which gadget shows your public stuff.',
+  hostSharesHint:
+    'Pick the gadget that’s always on (like a home box) so your shared links keep working.',
+  confirmHint:
+    'Only tap this when both gadgets show the very same safety number — it means nobody is sneaking in.',
+  rejectHint:
+    'Tap this if the numbers aren’t the same. The gadget gets blocked and can’t change your stuff.',
+  renameHint: 'Give this gadget a name you’ll know, like “Mom’s phone”, instead of a code.',
   watchHeading: 'Folders we watch',
   watchPlaceholder: 'Folder to keep safe by itself',
   watch: 'Watch folder',
@@ -425,6 +459,18 @@ export const messagesMachine = defineMessages('safu.machine', {
   statusPending: 'unverified',
   statusVerified: 'verified',
   statusRejected: 'blocked — device write disabled',
+  devicesIntro:
+    'link devices for mutual backup. share this device code to add a peer, then verify sas + assign name.',
+  shareSectionTitle: 'share',
+  shareSectionDesc: 'admit a peer to this wallet. scan code w/ peer cam, or copy link + send.',
+  linkSectionTitle: 'link',
+  linkSectionDesc: 'have peer code? paste here to connect.',
+  manageSectionTitle: 'manage',
+  manageSectionDesc: 'linked devices. verify sas, set name, select public-share host.',
+  hostSharesHint: 'select always-on node (e.g. home server) to keep public links reachable.',
+  confirmHint: 'tap only when both devices show identical sas — confirms no mitm.',
+  rejectHint: 'tap on sas mismatch. device blocked, write disabled.',
+  renameHint: 'assign human-readable name (e.g. “mom’s phone”) instead of id.',
   watchHeading: 'watched folders',
   watchPlaceholder: 'folder path for auto-backup',
   watch: 'watch',

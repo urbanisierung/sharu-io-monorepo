@@ -183,16 +183,72 @@
 
 .peerRow {
   display: grid;
-  gap: 0.25rem;
-  padding: 0.5rem 0;
+  gap: 0.3rem;
+  padding: 0.7rem 0;
   border-top: 1px solid var(--cascivo-color-border, #d4d4d8);
 }
 
-.peerActions {
+.peerRow:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+/* Device name and its verification status, sitting on one baseline. */
+.peerHead {
   display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
   gap: 0.5rem;
+}
+
+.peerStatus {
+  font-size: 0.78rem;
+  color: var(--cascivo-color-muted);
+}
+
+.statusOk {
+  color: var(--cascivo-color-primary);
+}
+
+/* One stacked column of actions. Each action is a fixed-width button next to a
+   short hint, so the buttons line up regardless of how long their labels run. */
+.peerActions {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.2rem;
+}
+
+.peerAction {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.peerAction button {
+  width: 100%;
+}
+
+.peerActionHint {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--cascivo-color-muted);
+}
+
+/* Inline rename editor: the field and its Save/Cancel buttons wrap together. */
+.peerRename {
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
+  gap: 0.5rem;
+}
+
+@media (max-width: 30rem) {
+  .peerAction {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
 }
 
 .qrBlock {

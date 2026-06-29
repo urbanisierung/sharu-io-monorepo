@@ -1,7 +1,7 @@
 import { signal } from '@preact/signals';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/preact';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Devices, resetDevicesView } from './devices.js';
+import { Devices, maskCode, resetDevicesView } from './devices.js';
 import type { PeerInfo } from './runtime.js';
 
 const code = signal('LINKCODE');
@@ -10,10 +10,35 @@ const noPeers = signal<readonly PeerInfo[]>([]);
 beforeEach(resetDevicesView);
 afterEach(cleanup);
 
+describe('maskCode', () => {
+  it('shows only the first and last characters with an ellipsis between', () => {
+    expect(maskCode('ABCDEFGHIJKLMNOPQRSTUVWXYZ')).toBe('ABCDEF…UVWXYZ');
+  });
+
+  it('leaves short codes untouched', () => {
+    expect(maskCode('SHORT')).toBe('SHORT');
+  });
+});
+
 describe('Devices', () => {
   it('shows a scannable QR for this device’s link', () => {
     render(<Devices connectionCode={code} peers={noPeers} onPair={async () => {}} />);
     expect(screen.getByRole('img', { name: /link another device/i })).toBeTruthy();
+  });
+
+  it('groups the page into Share, Link and Manage sections', () => {
+    const peers = signal<readonly PeerInfo[]>([{ id: 'PEER1', sas: '123456', status: 'verified' }]);
+    render(<Devices connectionCode={code} peers={peers} onPair={async () => {}} />);
+    expect(screen.getByRole('heading', { name: 'Share' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Link' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Manage' })).toBeTruthy();
+  });
+
+  it('masks this device’s link code instead of rendering it in full', () => {
+    const longCode = signal('ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+    render(<Devices connectionCode={longCode} peers={noPeers} onPair={async () => {}} />);
+    expect(screen.getByText('ABCDEF…UVWXYZ')).toBeTruthy();
+    expect(screen.queryByText('ABCDEFGHIJKLMNOPQRSTUVWXYZ')).toBeNull();
   });
 
   it('pairs with the entered link code', () => {
