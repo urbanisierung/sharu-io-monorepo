@@ -5,12 +5,20 @@ import type { CliSpec } from './spec.js';
 export const cliSpec: CliSpec = {
   binary: 'safu-node',
   version: '0.1.0',
-  tagline: 'safu-node — headless zero-knowledge backup node',
+  tagline: 'safu-node — headless zero-knowledge backup node & public-share host',
   usage: 'safu-node <command> [options]',
   dataDirDefault: './safu-node-data',
   commands: [
-    { name: 'init', arg: null, summary: "Create this node's identity and data dir" },
-    { name: 'info', arg: null, summary: "Print this node's signing id, address, and pairing code" },
+    {
+      name: 'init',
+      arg: null,
+      summary: "Create this node's identity and data dir",
+    },
+    {
+      name: 'info',
+      arg: null,
+      summary: "Print this node's signing id, address, and pairing code",
+    },
     {
       name: 'link',
       arg: '<code>',
@@ -21,9 +29,21 @@ export const cliSpec: CliSpec = {
       arg: '<signing-id>',
       summary: "Revoke a device's write access and stop backing it up",
     },
-    { name: 'list', arg: null, summary: 'List linked devices' },
-    { name: 'serve', arg: null, summary: 'Run the always-on backup node (Ctrl-C to stop)' },
-    { name: 'version', arg: null, summary: 'Print the version' },
+    {
+      name: 'list',
+      arg: null,
+      summary: 'List linked devices and their safety numbers',
+    },
+    {
+      name: 'serve',
+      arg: null,
+      summary: 'Run the always-on backup node & share host (Ctrl-C to stop)',
+    },
+    {
+      name: 'version',
+      arg: null,
+      summary: 'Print the version',
+    },
   ],
   options: [
     {

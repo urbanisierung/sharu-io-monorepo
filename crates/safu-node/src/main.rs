@@ -6,6 +6,12 @@
 //! of everything they back up — the equivalent of an IPFS pinning node, but
 //! zero-knowledge (only ciphertext is ever stored) and over Iroh (no DHT).
 //!
+//! It is also the **public-share host**: the always-on node a device selects
+//! under "Host shares here" and pins its public shares to, so a share link keeps
+//! resolving while the device is offline (`safu/pin/1` + `safu/unpin/1`). Pairing
+//! shows a 6-digit **safety number** to match against the device's screen, so a
+//! relay that swapped a key in transit is caught before the device is trusted.
+//!
 //! It reuses the native Iroh core already built for the desktop runtime
 //! (`safu_transport::native`, direct UDP hole-punching with relay fallback) and
 //! speaks the exact same wire protocol, signed CRDT, and identity derivation as
@@ -26,6 +32,7 @@ mod config;
 mod doc;
 mod identity;
 mod pairing;
+mod sas;
 mod store;
 mod sync;
 
@@ -40,8 +47,9 @@ use crate::config::Devices;
 use crate::doc::SyncDoc;
 use crate::identity::{load_or_create_signer, Signer};
 use crate::pairing::PairingInfo;
+use crate::sas::safety_number;
 use crate::store::{load_doc, save_doc, FsBlockStore};
-use crate::sync::{Node, BLOCK_PROTOCOL, SYNC_PROTOCOL};
+use crate::sync::{Node, BLOCK_PROTOCOL, PIN_PROTOCOL, SYNC_PROTOCOL, UNPIN_PROTOCOL};
 
 const DEFAULT_DATA_DIR: &str = "./safu-node-data";
 const ONLINE_TIMEOUT: Duration = Duration::from_secs(15);
@@ -122,6 +130,7 @@ fn cmd_link(args: &Args) -> Result<(), String> {
     if info.sign_id == signer.id() {
         return Err("that code is this node's own — link a *device*, not yourself".into());
     }
+    let node_id = signer.id().to_string();
 
     // Authorize the device's signing id in the document (so its signed entries
     // are accepted), and remember its transport address so `serve` can dial it.
@@ -134,6 +143,10 @@ fn cmd_link(args: &Args) -> Result<(), String> {
     devices.add(info)?;
 
     println!("linked device {sign_id}");
+    println!(
+        "  safety number: {} — confirm it matches the one shown on the device",
+        safety_number(&node_id, &sign_id)
+    );
     println!("run `safu-node serve` to start backing it up.");
     Ok(())
 }
@@ -163,12 +176,19 @@ fn cmd_list(args: &Args) -> Result<(), String> {
         println!("no linked devices — run `safu-node link <code>` to add one");
         return Ok(());
     }
+    // The safety number binds this node's identity to each device's, so showing
+    // it needs the node's signing id — hence the passphrase, as for `serve`.
+    let signer = signer(args)?;
     println!("linked devices:");
     for device in devices.list() {
-        println!("  signing id:   {}", device.sign_id);
-        println!("  transport id: {}", device.id);
+        println!("  signing id:    {}", device.sign_id);
         println!(
-            "  relay:        {}",
+            "  safety number: {}",
+            safety_number(signer.id(), &device.sign_id)
+        );
+        println!("  transport id:  {}", device.id);
+        println!(
+            "  relay:         {}",
             device.relay_url.as_deref().unwrap_or("(none)")
         );
         println!();
@@ -186,15 +206,24 @@ async fn cmd_serve(args: &Args) -> Result<(), String> {
     let endpoint = Arc::new(bind_endpoint().await?);
     let relay = online(&endpoint).await;
 
-    println!("safu node online");
+    println!("safu node online — backup replica + public-share host");
     println!("  signing id:    {sign_id}");
     println!("  transport id:  {}", endpoint.id());
     match &relay {
         Some(url) => println!("  home relay:    {url}"),
         None => println!("  home relay:    (offline — waiting for a relay)"),
     }
-    println!("  linked devices: {}", devices.len());
     println!("  blocks held:    {}", store.count());
+    println!("  linked devices: {}", devices.len());
+    for device in &devices {
+        // Match each safety number against the one the device shows, the same
+        // out-of-band check as the web app's Devices screen.
+        println!(
+            "    {} — safety number {}",
+            short(&device.sign_id),
+            safety_number(&sign_id, &device.sign_id)
+        );
+    }
     println!();
     println!(
         "  pairing code:  {}",
@@ -206,6 +235,8 @@ async fn cmd_serve(args: &Args) -> Result<(), String> {
         .encode()
     );
     println!();
+    println!("Select this node under \"Host shares here\" on a device to publish its");
+    println!("public shares through it; they stay reachable while the device is offline.");
     if devices.is_empty() {
         println!("no linked devices yet — `safu-node link <code>` then restart to back them up.");
     }
@@ -236,9 +267,18 @@ fn open_doc(args: &Args, signer: Signer) -> Result<SyncDoc, String> {
 }
 
 async fn bind_endpoint() -> Result<NativeEndpoint, String> {
-    NativeEndpoint::bind(&[SYNC_PROTOCOL, BLOCK_PROTOCOL])
+    // Serve replication (sync + blocks) and public-share hosting (pin + unpin):
+    // the node is both an always-on backup replica and the "Host shares here"
+    // target a device pins its public shares to.
+    NativeEndpoint::bind(&[SYNC_PROTOCOL, BLOCK_PROTOCOL, PIN_PROTOCOL, UNPIN_PROTOCOL])
         .await
         .map_err(|e| format!("bind transport: {e}"))
+}
+
+/// A short, log-friendly prefix of a long hex id (ids are ASCII, so byte-slicing
+/// never splits a character).
+fn short(id: &str) -> &str {
+    &id[..id.len().min(12)]
 }
 
 /// Wait (briefly) for the endpoint to select a home relay so its address is
@@ -268,7 +308,7 @@ async fn wait_for_shutdown() {
 
 fn print_usage() {
     println!(
-        "safu-node — headless zero-knowledge backup node\n\
+        "safu-node — headless zero-knowledge backup node & public-share host\n\
 \n\
 USAGE:\n\
   safu-node <command> [options]\n\
@@ -278,8 +318,8 @@ COMMANDS:\n\
   info                 Print this node's signing id, address, and pairing code\n\
   link <code>          Authorize a device (its connection code) and remember it\n\
   unlink <signing-id>  Revoke a device's write access and stop backing it up\n\
-  list                 List linked devices\n\
-  serve                Run the always-on backup node (Ctrl-C to stop)\n\
+  list                 List linked devices and their safety numbers\n\
+  serve                Run the always-on backup node & share host (Ctrl-C to stop)\n\
   version              Print the version\n\
 \n\
 OPTIONS / ENVIRONMENT:\n\

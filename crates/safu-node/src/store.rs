@@ -39,6 +39,20 @@ impl FsBlockStore {
         fs::write(&path, block).map_err(|e| format!("write block {hash}: {e}"))
     }
 
+    /// Drop a block — the unpin path, used when a device revokes a public share.
+    /// An already-absent block is success: unpinning is idempotent, so a repeated
+    /// revoke (or one racing replication) is not an error.
+    pub fn delete(&self, hash: &str) -> Result<(), String> {
+        let Some(path) = self.path(hash) else {
+            return Err(format!("invalid block hash: {hash}"));
+        };
+        match fs::remove_file(&path) {
+            Ok(()) => Ok(()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(e) => Err(format!("delete block {hash}: {e}")),
+        }
+    }
+
     /// The count of blocks currently held, for status output.
     pub fn count(&self) -> usize {
         fs::read_dir(&self.dir)
