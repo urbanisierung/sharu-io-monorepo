@@ -40,6 +40,11 @@ export const cliSpec: CliSpec = {
       summary: 'Run the always-on backup node & share host (Ctrl-C to stop)',
     },
     {
+      name: 'update',
+      arg: null,
+      summary: 'Check for a newer release and how to upgrade',
+    },
+    {
       name: 'version',
       arg: null,
       summary: 'Print the version',

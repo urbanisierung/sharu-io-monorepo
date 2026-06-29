@@ -31,7 +31,9 @@
 mod config;
 mod doc;
 mod identity;
+mod meta;
 mod pairing;
+mod release;
 mod sas;
 mod store;
 mod sync;
@@ -67,13 +69,24 @@ async fn main() -> ExitCode {
 
 async fn run() -> Result<(), String> {
     let args = Args::parse(std::env::args().skip(1).collect())?;
-    match args.command.as_str() {
+    let command = args.command.as_str();
+    // Every command that opens the data dir must first see a compatible on-disk
+    // format — checked here, before dispatch, so no command's early returns can
+    // skip it. `update`/`version`/`help` don't touch the data dir.
+    if matches!(
+        command,
+        "init" | "info" | "link" | "unlink" | "list" | "serve" | "run"
+    ) {
+        meta::ensure(&args.data_dir)?;
+    }
+    match command {
         "init" => cmd_init(&args),
         "info" => cmd_info(&args).await,
         "link" => cmd_link(&args),
         "unlink" => cmd_unlink(&args),
         "list" => cmd_list(&args),
         "serve" | "run" => cmd_serve(&args).await,
+        "update" => cmd_update().await,
         "version" | "--version" | "-V" => {
             println!("safu-node {}", env!("CARGO_PKG_VERSION"));
             Ok(())
@@ -240,6 +253,7 @@ async fn cmd_serve(args: &Args) -> Result<(), String> {
     if devices.is_empty() {
         println!("no linked devices yet — `safu-node link <code>` then restart to back them up.");
     }
+    spawn_update_check();
 
     let node = Node::new(endpoint, document, store, doc_path(args), devices);
     node.serve();
@@ -248,6 +262,69 @@ async fn cmd_serve(args: &Args) -> Result<(), String> {
     println!("\nshutting down — flushing document snapshot");
     node.flush();
     Ok(())
+}
+
+async fn cmd_update() -> Result<(), String> {
+    let current = release::current_version();
+    println!("safu-node {current}");
+    match release::latest_version().await {
+        Ok(latest) if release::is_newer(&latest, current) => {
+            println!("a newer release is available: v{latest}");
+            println!();
+            print_upgrade_instructions();
+        }
+        Ok(latest) if latest == current => {
+            println!("you are on the latest release (v{current}).");
+        }
+        Ok(latest) => {
+            // Current is newer than the latest published tag — a dev or
+            // pre-release build. Nothing to do.
+            println!("you are on v{current}; the latest published release is v{latest}.");
+        }
+        Err(error) => {
+            eprintln!("could not check for updates: {error}");
+            println!();
+            print_upgrade_instructions();
+        }
+    }
+    Ok(())
+}
+
+/// Best-effort, non-blocking "a newer version exists" notice at `serve` startup.
+/// Opt out with `SAFU_NODE_NO_UPDATE_CHECK`. Never fatal and never delays the
+/// node: a failed or slow check (offline, private repo without a token) is simply
+/// silent.
+fn spawn_update_check() {
+    if std::env::var_os("SAFU_NODE_NO_UPDATE_CHECK").is_some() {
+        return;
+    }
+    tokio::spawn(async {
+        if let Ok(latest) = release::latest_version().await {
+            if release::is_newer(&latest, release::current_version()) {
+                println!("update available: v{latest} — run `safu-node update` for how to upgrade");
+            }
+        }
+    });
+}
+
+/// How to upgrade: re-run the installer (which the node does not do itself — it
+/// won't overwrite its own running binary), then restart. The reassurance about
+/// the data dir is the important part: an upgrade is binary-only.
+fn print_upgrade_instructions() {
+    if release::target_triple().is_some() {
+        println!("To upgrade, re-run the installer, then restart the node:");
+        println!("  curl -fsSL https://new.sharu.io/install.sh | sh   # macOS / Linux");
+        println!("  irm https://new.sharu.io/install.ps1 | iex        # Windows (PowerShell)");
+    } else {
+        // No prebuilt asset is published for this host's os/arch.
+        println!("No prebuilt binary is published for this host; build from source, then restart:");
+        println!("  cargo build --release -p safu-node");
+    }
+    println!();
+    println!("The upgrade is binary-only: your data dir — identity, linked devices,");
+    println!("and stored blocks — carries over untouched, so there is no need to link");
+    println!("devices again. Under a service manager, `systemctl restart safu-node`");
+    println!("(or your supervisor's restart) applies it with a momentary blip only.");
 }
 
 // --- helpers ----------------------------------------------------------------
@@ -320,6 +397,7 @@ COMMANDS:\n\
   unlink <signing-id>  Revoke a device's write access and stop backing it up\n\
   list                 List linked devices and their safety numbers\n\
   serve                Run the always-on backup node & share host (Ctrl-C to stop)\n\
+  update               Check for a newer release and how to upgrade\n\
   version              Print the version\n\
 \n\
 OPTIONS / ENVIRONMENT:\n\

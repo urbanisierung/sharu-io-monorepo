@@ -85,17 +85,39 @@ pub fn load_doc(path: &Path) -> Result<Option<DocSnapshot>, String> {
 }
 
 /// Persist the document snapshot to `path` (creating parent dirs).
+///
+/// Written atomically — to a sibling temp file, then renamed into place — so a
+/// crash or kill mid-write (e.g. an updater stopping the node) can never leave a
+/// torn `doc.json`. A reader always sees either the whole old snapshot or the
+/// whole new one, never a half-written file.
 pub fn save_doc(path: &Path, snapshot: &DocSnapshot) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|e| format!("create {}: {e}", parent.display()))?;
     }
     let text = serde_json::to_string(snapshot).map_err(|e| format!("serialize doc: {e}"))?;
-    fs::write(path, text).map_err(|e| format!("write {}: {e}", path.display()))
+    let name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("doc.json");
+    let tmp = path.with_file_name(format!("{name}.tmp"));
+    fs::write(&tmp, text).map_err(|e| format!("write {}: {e}", tmp.display()))?;
+    fs::rename(&tmp, path).map_err(|e| format!("replace {}: {e}", path.display()))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    static COUNTER: AtomicU32 = AtomicU32::new(0);
+
+    /// A fresh, empty temp directory unique to this test run.
+    fn temp_dir() -> PathBuf {
+        let n = COUNTER.fetch_add(1, Ordering::Relaxed);
+        let dir = std::env::temp_dir().join(format!("safu-store-{}-{n}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        dir
+    }
 
     #[test]
     fn rejects_non_hex_hashes() {
@@ -104,5 +126,28 @@ mod tests {
         assert!(store.path("ABCDEF").is_none()); // uppercase rejected
         assert!(store.path("deadbeef").is_some());
         assert!(!store.has("../escape"));
+    }
+
+    #[test]
+    fn put_then_get_and_delete_round_trip() {
+        let store = FsBlockStore::new(temp_dir().join("blocks"));
+        store.put("deadbeef", b"ciphertext").unwrap();
+        assert!(store.has("deadbeef"));
+        assert_eq!(store.get("deadbeef").as_deref(), Some(&b"ciphertext"[..]));
+        store.delete("deadbeef").unwrap();
+        assert!(!store.has("deadbeef"));
+        // Unpinning is idempotent: dropping an absent block is not an error.
+        store.delete("deadbeef").unwrap();
+    }
+
+    #[test]
+    fn save_doc_is_atomic_and_round_trips() {
+        let dir = temp_dir();
+        let path = dir.join("doc.json");
+        save_doc(&path, &DocSnapshot::default()).unwrap();
+        assert!(path.exists());
+        // The temp file is renamed into place, never left behind.
+        assert!(!dir.join("doc.json.tmp").exists());
+        assert!(load_doc(&path).unwrap().is_some());
     }
 }

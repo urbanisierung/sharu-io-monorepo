@@ -48,3 +48,9 @@ hex = "0.4"
 data-encoding = "2"
 # A single 16-byte identity salt is the only randomness the node needs.
 getrandom = "0.4"
+
+# `update` checks the GitHub Releases API for a newer version. reqwest (already
+# in the tree via iroh) does the one HTTPS GET; rustls keeps it off the system
+# OpenSSL. semver compares the running version against the latest tag.
+reqwest = { version = "0.13", default-features = false, features = ["rustls"] }
+semver = "1"

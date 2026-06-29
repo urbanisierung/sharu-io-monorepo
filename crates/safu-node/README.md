@@ -140,6 +140,7 @@ them. The node only ever receives ciphertext.
 | `unlink <signing-id>` | Permanently revoke a device's write access and stop backing it up. |
 | `list` | List linked devices and their safety numbers. |
 | `serve` (`run`) | Run the always-on backup node & share host (Ctrl-C to stop; flushes on exit). |
+| `update` | Check the GitHub release API for a newer version and print how to upgrade. |
 
 ### Configuration
 
@@ -147,6 +148,8 @@ them. The node only ever receives ciphertext.
 | --- | --- | --- |
 | `SAFU_NODE_PASSPHRASE` | `--passphrase` | Derives the node's signing identity (**required**). Prefer the env var to keep it out of shell history. |
 | `SAFU_NODE_DATA_DIR` | `--data-dir` | Directory the node owns (default `./safu-node-data`). |
+| `SAFU_NODE_NO_UPDATE_CHECK` | — | Set to disable the one-line "newer version available" notice at `serve` startup. |
+| `SAFU_NODE_TOKEN` (`GH_TOKEN` / `GITHUB_TOKEN`) | — | GitHub read token for the update check while the repo is private. |
 
 ### Running multiple nodes
 
@@ -163,6 +166,7 @@ SAFU_NODE_DATA_DIR=/srv/safu-b SAFU_NODE_PASSPHRASE=… safu-node serve
 
 ```
 <data-dir>/
+├─ meta.json              # on-disk format version (for safe upgrades/migrations)
 ├─ identity/signer.salt   # 16-byte salt; the secret key is never persisted
 ├─ doc.json               # the replicated document snapshot (DocSnapshot)
 ├─ devices.json           # linked devices: signing id + dial address
@@ -170,4 +174,51 @@ SAFU_NODE_DATA_DIR=/srv/safu-b SAFU_NODE_PASSPHRASE=… safu-node serve
 ```
 
 The salt layout matches the TS peer, so a node and a TS peer sharing a data dir
-and passphrase derive the same identity.
+and passphrase derive the same identity. `doc.json` is written atomically (temp
+file + rename), so an interrupted write — including an upgrade stopping the node
+— never leaves a torn snapshot.
+
+## Updating
+
+An update is **binary-only**: nothing in the data dir changes. Identity,
+authorized devices, and stored blocks all live under `--data-dir` and are keyed
+to your passphrase, not to the binary — so after an update **you do not link
+devices again**, and shares stay pinned.
+
+Check whether a newer version exists:
+
+```sh
+safu-node update
+```
+
+`serve` also prints a one-line notice at startup when a newer version is out
+(disable with `SAFU_NODE_NO_UPDATE_CHECK`). To apply an update, re-run the
+installer (the node does not overwrite its own running binary) and restart:
+
+```sh
+curl -fsSL https://new.sharu.io/install.sh | sh   # fetches the latest release
+sudo systemctl restart safu-node                   # or your supervisor's restart
+```
+
+While the process restarts, share links pointing at this node briefly stop
+resolving and devices' syncs retry — typically sub-second. For no gap at all, run
+more than one node (see "Running multiple nodes") and update them one at a time.
+
+`meta.json` records the data-dir **format version**. A newer binary can migrate
+an older dir in place; an older binary refuses a dir written by a newer one
+(rather than misreading it), so a version skew fails loudly instead of corrupting
+state. The wire protocols are independently versioned (`safu/sync/1`,
+`safu/blocks/1`, `safu/pin/1`, `safu/unpin/1`) and the document JSON is additive,
+so a node and a device on adjacent versions keep talking.
+
+> **Roadmap:** a self-applying `safu-node update` (download + verify + replace the
+> binary in place, cross-platform) will land together with **signed releases** —
+> verifying a signature against a pinned key, not just the SHA-256 the installer
+> checks today. Until then, upgrade via the installer above.
+
+### Running as a service (systemd)
+
+A sample unit lives at [`deploy/safu-node.service`](deploy/safu-node.service).
+It runs `serve` under a dedicated user, restarts on failure, and stops cleanly
+(SIGTERM → flush) so updates are a one-liner: install the new binary, then
+`systemctl restart safu-node`.
