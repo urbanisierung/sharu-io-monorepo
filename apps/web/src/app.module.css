@@ -136,11 +136,28 @@
   min-width: 0;
 }
 
+/* The Files view: a column of cards (the file list, then public sharing), the
+   same shape as the Settings and Devices views — just a little wider so the
+   table has room to breathe. */
+.filesView {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: min(46rem, 92vw);
+}
+
+/* The file list's card gets a touch more breathing room than a plain setting
+   card, since it holds a whole table, its progress and the reset control. */
+.fileCard {
+  gap: 0.75rem;
+  padding: 0.85rem;
+}
+
 /* The file list's surface: a positioned wrapper so the drag-only drop overlay
-   can fill exactly the file area. */
+   can fill exactly the file area. It now fills its card, which owns the width. */
 .fileSurface {
   position: relative;
-  width: min(44rem, 92vw);
+  width: 100%;
 }
 
 .revealRow {

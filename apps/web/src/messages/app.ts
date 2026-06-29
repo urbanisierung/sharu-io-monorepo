@@ -112,6 +112,9 @@ export const messages = defineMessages('safu', {
   publishSite: 'Share a folder as a site',
   publishSitePublishing: 'Publishing site…',
   publishSiteHint: 'Publish a static website (HTML/CSS/JS) as one zero-knowledge link.',
+  sharingTitle: 'Public sharing',
+  sharingHint:
+    'Publish files or a whole folder as zero-knowledge links anyone can open — no account needed. Manage or revoke them here.',
   publishedHeading: 'Your public shares',
   publishedEmpty: 'Nothing published yet.',
   unshare: 'Revoke',
@@ -274,6 +277,9 @@ export const messagesEli5 = defineMessages('safu.eli5', {
   publishSite: 'Show a folder as a webpage',
   publishSitePublishing: 'Putting the webpage up…',
   publishSiteHint: 'Put up a little website (HTML/CSS/JS) as one super-secret link.',
+  sharingTitle: 'Sharing with everyone',
+  sharingHint:
+    'Put files or a whole folder online as secret links anyone can open — no sign-up. Change or take them down here.',
   publishedHeading: 'Stuff you’re showing everyone',
   publishedEmpty: 'Nothing put up yet.',
   unshare: 'Take it down',
@@ -430,6 +436,8 @@ export const messagesMachine = defineMessages('safu.machine', {
   publishSite: 'pub folder -> site',
   publishSitePublishing: 'pub site…',
   publishSiteHint: 'pub static site (HTML/CSS/JS) as one zero-knowledge link.',
+  sharingTitle: 'public sharing',
+  sharingHint: 'publish files|folder as zero-knowledge links. manage|revoke here.',
   publishedHeading: 'public shares',
   publishedEmpty: 'none published.',
   unshare: 'revoke',

@@ -99,55 +99,64 @@ export function App({
     <div class={styles.app}>
       <main class={styles.content}>
         {view === 'files' && (
-          <>
-            {/* The file list leads — it is the whole point of the app. A drag
+          <section class={styles.filesView}>
+            {/* The file list leads — it is the whole point of the app. It sits in
+                its own card to match the Devices and Settings views. A drag
                 anywhere over this surface reveals the drop overlay; the rest of
                 the time the space belongs to the files, with "Add files" always
                 at hand in the table toolbar / empty state. */}
-            <section
-              class={styles.fileSurface}
-              aria-label={t(messages.filesHeading)}
-              onDragOver={(event) => {
-                // dragover fires continuously (including on entry), so this alone
-                // both reveals and tracks the overlay — no separate dragenter.
-                event.preventDefault();
-                controller.dragOver((event.dataTransfer?.types ?? []).includes('Files'));
-              }}
-              onDragLeave={(event) => {
-                const next = event.relatedTarget as Node | null;
-                if (!next || !(event.currentTarget as HTMLElement).contains(next)) {
-                  controller.dragLeave();
-                }
-              }}
-            >
-              <FileTable
-                files={files}
-                onRestore={onRestore}
-                onDelete={onDelete}
-                onShare={onShare}
-                onAddFiles={(picked) => void controller.drop(picked)}
-              />
-              {phase.kind === 'drag' && (
-                <DropZone
-                  phase={phase}
-                  overlay
-                  onDragValidity={(valid) => controller.dragOver(valid)}
-                  onLeave={() => controller.dragLeave()}
-                  onFiles={(dropped) => void controller.drop(dropped)}
+            <article class={cn(styles.setting, styles.fileCard)}>
+              <section
+                class={styles.fileSurface}
+                aria-label={t(messages.filesHeading)}
+                onDragOver={(event) => {
+                  // dragover fires continuously (including on entry), so this alone
+                  // both reveals and tracks the overlay — no separate dragenter.
+                  event.preventDefault();
+                  controller.dragOver((event.dataTransfer?.types ?? []).includes('Files'));
+                }}
+                onDragLeave={(event) => {
+                  const next = event.relatedTarget as Node | null;
+                  if (!next || !(event.currentTarget as HTMLElement).contains(next)) {
+                    controller.dragLeave();
+                  }
+                }}
+              >
+                <FileTable
+                  files={files}
+                  onRestore={onRestore}
+                  onDelete={onDelete}
+                  onShare={onShare}
+                  onAddFiles={(picked) => void controller.drop(picked)}
                 />
+                {phase.kind === 'drag' && (
+                  <DropZone
+                    phase={phase}
+                    overlay
+                    onDragValidity={(valid) => controller.dragOver(valid)}
+                    onLeave={() => controller.dragLeave()}
+                    onFiles={(dropped) => void controller.drop(dropped)}
+                  />
+                )}
+              </section>
+
+              <IngestProgress progress={controller.progress} />
+              {(phase.kind === 'success' || phase.kind === 'error') && (
+                <Button intent="neutral" onClick={() => controller.reset()}>
+                  {phase.kind === 'success' ? t(messages.addMore) : t(messages.retry)}
+                </Button>
               )}
-            </section>
+            </article>
 
-            <IngestProgress progress={controller.progress} />
-            {(phase.kind === 'success' || phase.kind === 'error') && (
-              <Button intent="neutral" onClick={() => controller.reset()}>
-                {phase.kind === 'success' ? t(messages.addMore) : t(messages.retry)}
-              </Button>
-            )}
-
-            {onPublishSite && <SiteShare onPublish={onPublishSite} />}
-            {publishedShares && onUnpublish && (
-              <PublishedShares shares={publishedShares} onUnpublish={onUnpublish} />
+            {(onPublishSite || (publishedShares && onUnpublish)) && (
+              <article class={styles.setting}>
+                <h3 class={styles.settingTitle}>{t(messages.sharingTitle)}</h3>
+                <p class={styles.settingDesc}>{t(messages.sharingHint)}</p>
+                {onPublishSite && <SiteShare onPublish={onPublishSite} />}
+                {publishedShares && onUnpublish && (
+                  <PublishedShares shares={publishedShares} onUnpublish={onUnpublish} />
+                )}
+              </article>
             )}
 
             <StatusBanner files={files} peers={peers} />
@@ -156,7 +165,7 @@ export function App({
                 ? t(messages.noPeers)
                 : t(messages.peersOnline, { count: peers.value.length })}
             </p>
-          </>
+          </section>
         )}
 
         {view === 'devices' && onPair && (

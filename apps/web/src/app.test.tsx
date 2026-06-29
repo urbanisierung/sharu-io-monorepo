@@ -65,6 +65,14 @@ describe('App shell (plan §2.4)', () => {
     expect(screen.queryByRole('button', { name: 'Back up this wallet' })).toBeNull();
   });
 
+  it('groups public sharing into its own card on the Files view', async () => {
+    const { controller } = renderApp({ onPublishSite: async () => 'link' });
+    controller.unlock('p');
+    // The card's title and its publish control both live in the sharing section.
+    expect(await screen.findByRole('heading', { name: 'Public sharing' })).toBeTruthy();
+    expect(screen.getByLabelText('Share a folder as a site')).toBeTruthy();
+  });
+
   it('shows the zero-peer hint and the empty-files state once unlocked', async () => {
     const { controller } = renderApp();
     controller.unlock('p');
