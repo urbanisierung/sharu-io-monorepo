@@ -20,15 +20,18 @@ import { navigate, route } from './router.js';
 import { createRuntime, type Runtime } from './runtime.js';
 import { ShareViewer } from './share-page.js';
 import { UnlockGate } from './unlock-gate.js';
+import { activeView } from './view-state.js';
 import type { Wallet, WalletMeta } from './wallet.js';
 import { createWallet, getWallet, importWallet, listWallets, removeWallet } from './wallet.js';
 import { backupFilename, serializeWalletBackup, type WalletBackup } from './wallet-backup.js';
 import { WalletPicker } from './wallet-picker.js';
 import { Whitepaper } from './whitepaper.js';
 
-// A pairing code carried in the URL hash (`/app#pair=…`). Read once at load,
-// then cleared after we auto-link, so a refresh doesn't re-trigger it.
-const pairCode = readPairingFromHash(globalThis.location?.hash ?? '');
+// A pairing code waiting to be auto-linked on unlock. Seeded from the URL hash
+// (`/app#pair=…`) at load, and also set in-session when the `/link` onboarding
+// view hands a node code over without a reload (`linkNode`). Cleared after we
+// auto-link, so a refresh doesn't re-trigger it.
+const pairCode = signal(readPairingFromHash(globalThis.location?.hash ?? ''));
 
 const runtime = signal<Runtime | null>(null);
 const booting = signal(false);
@@ -49,7 +52,7 @@ function decideInitial(): void {
     return;
   }
   // A pairing link: let the user open (or create) a wallet, then auto-link.
-  if (pairCode) return;
+  if (pairCode.value) return;
   // A single wallet opens straight away; the card's "use another wallet" link
   // still reaches the picker. More than one always asks.
   const only = wallets.value.length === 1 ? wallets.value[0] : undefined;
@@ -62,13 +65,30 @@ function decideInitial(): void {
 export async function init(): Promise<void> {
   await refreshWallets();
   walletsLoaded.value = true;
-  if (pairCode && route.value !== 'app') navigate('app');
+  if (pairCode.value && route.value !== 'app') navigate('app');
   if (route.value === 'app') decideInitial();
 }
 
 /** From the landing/whitepaper CTAs: go to the app and choose a wallet. */
 function launch(): void {
   navigate('app');
+  if (walletsLoaded.value) decideInitial();
+}
+
+/** Continue from the `/link` onboarding view into the app and link the node —
+ *  a soft SPA transition, no reload. If a wallet is already unlocked, link the
+ *  node right away and surface it under Devices; otherwise stash the code so the
+ *  next unlock auto-links it (the same path a `#pair=` deep link takes). The hash
+ *  is dropped because the code now lives in the signal, not the URL. */
+function linkNode(code: string): void {
+  const rt = runtime.value;
+  if (rt) {
+    void rt.pairWithCode(code).catch(() => {});
+    activeView.value = 'devices';
+  } else {
+    pairCode.value = code;
+  }
+  navigate('app', { dropHash: true });
   if (walletsLoaded.value) decideInitial();
 }
 
@@ -90,10 +110,12 @@ async function unlockInto(wallet: Wallet, password: string): Promise<void> {
   runtime.value = rt;
   pending.value = null;
   creating.value = false;
-  if (pairCode) {
+  const code = pairCode.value;
+  if (code) {
     // Best-effort: if the code is malformed the Devices panel still has it
     // prefilled for a manual retry, so never block entering the app.
-    await rt.pairWithCode(pairCode).catch(() => {});
+    await rt.pairWithCode(code).catch(() => {});
+    pairCode.value = undefined;
     clearPairHash();
   }
   await refreshWallets();
@@ -217,7 +239,7 @@ function AppScreen() {
     return (
       <UnlockGate
         mode="create"
-        pairing={Boolean(pairCode)}
+        pairing={Boolean(pairCode.value)}
         onSubmit={submitCreate}
         onBack={wallets.value.length > 0 ? backToPicker : undefined}
       />
@@ -230,7 +252,7 @@ function AppScreen() {
       <UnlockGate
         mode={target.returning ? 'unlock' : 'create'}
         walletName={target.wallet.name}
-        pairing={Boolean(pairCode) && !target.returning}
+        pairing={Boolean(pairCode.value) && !target.returning}
         onSubmit={(password) => submitUnlock(password)}
         onBack={backToPicker}
       />
@@ -275,15 +297,9 @@ function RouteContent() {
   }
   // The backup-node onboarding companion: opened from the deep link
   // `safu-node serve` prints. Continuing hands the node code to the app's
-  // existing auto-link-on-unlock path via a full navigation, so root re-reads it
-  // from `#pair=` on load (the module-level `pairCode` is captured once).
+  // auto-link-on-unlock path as a soft SPA transition (see `linkNode`).
   if (view === 'link') {
-    return (
-      <NodeOnboarding
-        onContinue={(code) => globalThis.location?.assign(`/app#pair=${encodeURIComponent(code)}`)}
-        onCliDocs={() => navigate('cli-docs')}
-      />
-    );
+    return <NodeOnboarding onContinue={linkNode} onCliDocs={() => navigate('cli-docs')} />;
   }
   // The keyless share viewer renders with no wallet/unlock — the runtime is
   // never created here, so opening a public link stays instant and anonymous.
