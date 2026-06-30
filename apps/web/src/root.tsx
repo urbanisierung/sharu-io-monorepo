@@ -77,17 +77,19 @@ function launch(): void {
 
 /** Continue from the `/link` onboarding view into the app and link the node —
  *  a soft SPA transition, no reload. If a wallet is already unlocked, link the
- *  node right away and surface it under Devices; otherwise stash the code so the
- *  next unlock auto-links it (the same path a `#pair=` deep link takes). The hash
+ *  node right away; otherwise stash the code so the next unlock auto-links it
+ *  (the same path a `#pair=` deep link takes). Either way we land on Devices so
+ *  the operator sees the node appear and can copy *this* device's code back to
+ *  the CLI to finish the round trip — landing on Files would hide both. The hash
  *  is dropped because the code now lives in the signal, not the URL. */
-function linkNode(code: string): void {
+export function linkNode(code: string): void {
   const rt = runtime.value;
   if (rt) {
     void rt.pairWithCode(code).catch(() => {});
-    activeView.value = 'devices';
   } else {
     pairCode.value = code;
   }
+  activeView.value = 'devices';
   navigate('app', { dropHash: true });
   if (walletsLoaded.value) decideInitial();
 }

@@ -4,7 +4,7 @@ import type { CliSpec } from './spec.js';
 
 export const cliSpec: CliSpec = {
   binary: 'safu-node',
-  version: '0.0.4',
+  version: '0.0.5',
   tagline: 'safu-node — headless zero-knowledge backup node & public-share host',
   usage: 'safu-node <command> [options]',
   dataDirDefault: './safu-node-data',
