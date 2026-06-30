@@ -7,7 +7,7 @@
 // across runtimes — the TypeScript apps import it here, and the Rust node embeds
 // the same file (see `crates/safu-node/src/brand.rs`).
 
-import projectConfig from '../../../project.config.json';
+import projectConfig from '../../../project.config.json' with { type: 'json' };
 
 /** The canonical domain the Safu web app is served from. */
 export const DOMAIN = projectConfig.domain;
