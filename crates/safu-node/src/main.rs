@@ -42,6 +42,7 @@ mod store;
 mod sync;
 mod update;
 
+use std::fs;
 use std::io::{self, IsTerminal, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -92,6 +93,7 @@ async fn run() -> Result<(), String> {
         "list" => cmd_list(&args),
         "files" => cmd_files(&args),
         "status" => cmd_status(&args),
+        "reset" => cmd_reset(&args),
         "serve" | "run" => cmd_serve(&args).await,
         "update" => cmd_update(&args).await,
         "version" | "--version" | "-V" => {
@@ -326,6 +328,73 @@ fn cmd_status(args: &Args) -> Result<(), String> {
         "`info` for this node's pairing code (paste it into the web app's \"Host shares here\")."
     );
     Ok(())
+}
+
+/// Wipe this node's state so the operator can start from scratch: delete the
+/// identity, replicated document, linked-device list, format marker, and every
+/// stored ciphertext block. Irreversible and not gated on the on-disk format
+/// (so it can recover a dir a newer binary wrote), it requires confirmation —
+/// an interactive "type reset" prompt, or `--force` for non-interactive use.
+fn cmd_reset(args: &Args) -> Result<(), String> {
+    let dir = &args.data_dir;
+    if !dir.exists() {
+        println!("nothing to reset — {} does not exist", dir.display());
+        return Ok(());
+    }
+
+    if !args.has_flag("--force") {
+        if !io::stdin().is_terminal() {
+            return Err(
+                "reset is irreversible; re-run with --force to confirm (no terminal to prompt)"
+                    .into(),
+            );
+        }
+        println!("This permanently deletes this node's identity, linked devices, and every");
+        println!("stored ciphertext block under:");
+        println!("  {}", dir.display());
+        println!();
+        println!("Every device will have to be paired again. This cannot be undone.");
+        let confirmed =
+            prompt("Type \"reset\" to confirm: ")?.is_some_and(|answer| answer == "reset");
+        if !confirmed {
+            println!("aborted — nothing was deleted.");
+            return Ok(());
+        }
+    }
+
+    let removed = reset_data_dir(dir)?;
+    if removed == 0 {
+        println!("nothing to reset — no node data found in {}", dir.display());
+    } else {
+        println!("reset complete — removed node data from {}", dir.display());
+        println!("run `safu-node serve` to set the node up again from scratch.");
+    }
+    Ok(())
+}
+
+/// Delete every artifact this node writes under `dir` (identity, document,
+/// linked devices, format marker, and the block store), leaving the directory
+/// itself and any unrelated contents in place. Returns how many existed, so the
+/// caller can tell a real reset from a no-op. Absent artifacts are not an error.
+fn reset_data_dir(dir: &Path) -> Result<usize, String> {
+    let mut removed = 0;
+    for name in ["doc.json", "doc.json.tmp", "devices.json", "meta.json"] {
+        let path = dir.join(name);
+        match fs::remove_file(&path) {
+            Ok(()) => removed += 1,
+            Err(e) if e.kind() == io::ErrorKind::NotFound => {}
+            Err(e) => return Err(format!("remove {}: {e}", path.display())),
+        }
+    }
+    for name in ["identity", "blocks"] {
+        let path = dir.join(name);
+        match fs::remove_dir_all(&path) {
+            Ok(()) => removed += 1,
+            Err(e) if e.kind() == io::ErrorKind::NotFound => {}
+            Err(e) => return Err(format!("remove {}: {e}", path.display())),
+        }
+    }
+    Ok(removed)
 }
 
 async fn cmd_serve(args: &Args) -> Result<(), String> {
@@ -656,6 +725,7 @@ COMMANDS:\n\
   list                 List linked devices and their safety numbers\n\
   files                List the files held in this node's backup replica\n\
   status               Print a snapshot: files, blocks held, share pins, devices\n\
+  reset                Delete all node data (identity, devices, blocks) and start over\n\
   serve                Run the node; first run on a terminal guides pairing (Ctrl-C to stop)\n\
   update               Check for a newer release (use --apply to install it)\n\
   version              Print the version\n\
@@ -771,5 +841,32 @@ mod tests {
         assert_eq!(human_size(2048), "2.0 KB");
         assert_eq!(human_size(5 * 1024 * 1024), "5.0 MB");
         assert_eq!(human_size(1024 * 1024 * 1024), "1.0 GB");
+    }
+
+    #[test]
+    fn reset_removes_node_artifacts_keeps_unrelated_and_is_idempotent() {
+        use std::fs;
+        let dir = std::env::temp_dir().join(format!("safu-reset-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(dir.join("identity")).unwrap();
+        fs::create_dir_all(dir.join("blocks")).unwrap();
+        fs::write(dir.join("identity/signer.salt"), b"salt").unwrap();
+        fs::write(dir.join("blocks/deadbeef"), b"ciphertext").unwrap();
+        fs::write(dir.join("doc.json"), "{}").unwrap();
+        fs::write(dir.join("devices.json"), "[]").unwrap();
+        fs::write(dir.join("meta.json"), r#"{"format":1}"#).unwrap();
+        fs::write(dir.join("unrelated.txt"), b"keep me").unwrap();
+
+        // doc.json, devices.json, meta.json, identity/, blocks/ = 5 artifacts.
+        assert_eq!(super::reset_data_dir(&dir).unwrap(), 5);
+        assert!(!dir.join("doc.json").exists());
+        assert!(!dir.join("identity").exists());
+        assert!(!dir.join("blocks").exists());
+        // Unrelated content (and the dir itself) is left untouched.
+        assert!(dir.join("unrelated.txt").exists());
+        // A second reset finds nothing to remove.
+        assert_eq!(super::reset_data_dir(&dir).unwrap(), 0);
+
+        let _ = fs::remove_dir_all(&dir);
     }
 }

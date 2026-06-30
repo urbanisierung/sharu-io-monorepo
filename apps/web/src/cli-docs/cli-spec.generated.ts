@@ -4,7 +4,7 @@ import type { CliSpec } from './spec.js';
 
 export const cliSpec: CliSpec = {
   binary: 'safu-node',
-  version: '0.1.0',
+  version: '0.0.4',
   tagline: 'safu-node — headless zero-knowledge backup node & public-share host',
   usage: 'safu-node <command> [options]',
   dataDirDefault: './safu-node-data',
@@ -43,6 +43,11 @@ export const cliSpec: CliSpec = {
       name: 'status',
       arg: null,
       summary: 'Print a snapshot: files, blocks held, share pins, devices',
+    },
+    {
+      name: 'reset',
+      arg: null,
+      summary: 'Delete all node data (identity, devices, blocks) and start over',
     },
     {
       name: 'serve',

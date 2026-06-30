@@ -159,6 +159,23 @@ public-share blocks devices have pinned here (the blocks that keep share links
 resolving while a device is offline). Neither command needs the passphrase or the
 network — they only read the data dir.
 
+### Starting over
+
+To wipe a node and set it up again from scratch — a new identity, no linked
+devices, no stored blocks — run `reset`:
+
+```sh
+safu-node reset            # prompts for confirmation
+safu-node reset --force    # skip the prompt (for scripts / no terminal)
+```
+
+It deletes this node's `identity/`, `doc.json`, `devices.json`, `meta.json`, and
+the `blocks/` store under `--data-dir`, leaving any unrelated files in place. It
+is **irreversible**: every device must be paired again afterwards, and any public
+shares pinned only to this node stop resolving. Because the wipe doesn't depend on
+the on-disk format, it also recovers a data dir written by a newer binary. Without
+a terminal to prompt, `reset` refuses unless `--force` is given.
+
 ### Matching safety numbers
 
 `link`, `list`, and `serve` print a 6-digit **safety number** for each device —
@@ -187,6 +204,7 @@ them. The node only ever receives ciphertext.
 | `list` | List linked devices and their safety numbers. |
 | `files` | List the files held in this node's backup replica (paths, sizes, block counts). |
 | `status` | Print an offline snapshot: backed-up files, replication progress, public-share pins, and linked devices. |
+| `reset` | Permanently delete all node data (identity, linked devices, stored blocks) and start from scratch. Prompts for confirmation, or pass `--force`. |
 | `serve` (`run`) | Run the always-on backup node & share host. First run on a terminal guides device pairing; headless (no TTY) it serves straight away. Ctrl-C to stop; flushes on exit. |
 | `update` | Check for a newer release; `update --apply` downloads, verifies (minisign), and installs it. |
 
