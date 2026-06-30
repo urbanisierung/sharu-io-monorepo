@@ -4,7 +4,7 @@ import type { CliSpec } from './spec.js';
 
 export const cliSpec: CliSpec = {
   binary: 'safu-node',
-  version: '0.1.0',
+  version: '0.0.4',
   tagline: 'safu-node — headless zero-knowledge backup node & public-share host',
   usage: 'safu-node <command> [options]',
   dataDirDefault: './safu-node-data',
@@ -35,9 +35,24 @@ export const cliSpec: CliSpec = {
       summary: 'List linked devices and their safety numbers',
     },
     {
+      name: 'files',
+      arg: null,
+      summary: "List the files held in this node's backup replica",
+    },
+    {
+      name: 'status',
+      arg: null,
+      summary: 'Print a snapshot: files, blocks held, share pins, devices',
+    },
+    {
+      name: 'reset',
+      arg: null,
+      summary: 'Delete all node data (identity, devices, blocks) and start over',
+    },
+    {
       name: 'serve',
       arg: null,
-      summary: 'Run the always-on backup node & share host (Ctrl-C to stop)',
+      summary: 'Run the node; first run on a terminal guides pairing (Ctrl-C to stop)',
     },
     {
       name: 'update',

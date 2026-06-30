@@ -18,15 +18,17 @@
 //! the web app and the headless TS peer — so a device backs up to it with no
 //! protocol change, and you can run as many independent nodes as you like.
 //!
-//! Configure entirely from the terminal:
+//! Configure entirely from the terminal. The quickest start is a single command:
+//! on a terminal, `serve` creates the identity if needed, prints this node's
+//! pairing code, walks you through linking each device, then runs.
 //!
 //! ```text
-//!   export SAFU_NODE_PASSPHRASE=…            # derives this node's identity
-//!   safu-node init                            # one-time: create the identity
-//!   safu-node info                            # print this node's pairing code
-//!   safu-node link <device-connection-code>   # authorize + remember a device
-//!   safu-node serve                           # run the always-on backup node
+//!   export SAFU_NODE_PASSPHRASE=…   # derives this node's identity
+//!   safu-node serve                 # guided first run, then always-on
 //! ```
+//!
+//! The individual steps remain available for scripting or headless setups:
+//! `init`, `info`, `link <device-connection-code>`, `list`, `files`, `status`.
 
 mod brand;
 mod config;
@@ -40,7 +42,9 @@ mod store;
 mod sync;
 mod update;
 
-use std::path::PathBuf;
+use std::fs;
+use std::io::{self, IsTerminal, Write};
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::sync::Arc;
 use std::time::Duration;
@@ -48,7 +52,7 @@ use std::time::Duration;
 use safu_transport::native::NativeEndpoint;
 
 use crate::config::Devices;
-use crate::doc::SyncDoc;
+use crate::doc::{StampedEntry, SyncDoc};
 use crate::identity::{load_or_create_signer, Signer};
 use crate::pairing::PairingInfo;
 use crate::sas::safety_number;
@@ -77,7 +81,7 @@ async fn run() -> Result<(), String> {
     // skip it. `update`/`version`/`help` don't touch the data dir.
     if matches!(
         command,
-        "init" | "info" | "link" | "unlink" | "list" | "serve" | "run"
+        "init" | "info" | "link" | "unlink" | "list" | "files" | "status" | "serve" | "run"
     ) {
         meta::ensure(&args.data_dir)?;
     }
@@ -87,6 +91,9 @@ async fn run() -> Result<(), String> {
         "link" => cmd_link(&args),
         "unlink" => cmd_unlink(&args),
         "list" => cmd_list(&args),
+        "files" => cmd_files(&args),
+        "status" => cmd_status(&args),
+        "reset" => cmd_reset(&args),
         "serve" | "run" => cmd_serve(&args).await,
         "update" => cmd_update(&args).await,
         "version" | "--version" | "-V" => {
@@ -211,15 +218,216 @@ fn cmd_list(args: &Args) -> Result<(), String> {
     Ok(())
 }
 
+/// List the files this node holds in its backup replica — the live (non-deleted)
+/// entries of the synced allocation table. Read-only and network-free: it reads
+/// the on-disk `doc.json` (kept fresh by `serve`, which persists on every applied
+/// delta), so it can be run in a second terminal to confirm what a running node
+/// has actually synced. No passphrase needed — the table holds only plaintext
+/// metadata (paths, sizes), never block contents.
+fn cmd_files(args: &Args) -> Result<(), String> {
+    let snapshot = load_doc(&doc_path(args))?.unwrap_or_default();
+    let mut live: Vec<&StampedEntry> = snapshot
+        .entries
+        .iter()
+        .filter(|e| !e.entry.deleted)
+        .collect();
+    live.sort_by(|a, b| a.path.cmp(&b.path));
+    let tombstones = snapshot.entries.len() - live.len();
+
+    if live.is_empty() {
+        println!("no files backed up yet — pair a device, back something up, then re-run.");
+        if tombstones > 0 {
+            println!("({tombstones} deleted file(s) tracked as tombstones)");
+        }
+        return Ok(());
+    }
+
+    let total: i64 = live.iter().map(|e| e.entry.size).sum();
+    println!("backed-up files ({}, {}):", live.len(), human_size(total));
+    for entry in &live {
+        println!(
+            "  {:>10}  {:>3} block(s)  {}",
+            human_size(entry.entry.size),
+            entry.entry.blocks.len(),
+            entry.path,
+        );
+    }
+    if tombstones > 0 {
+        println!();
+        println!("{tombstones} deleted file(s) tracked as tombstones (not shown).");
+    }
+    Ok(())
+}
+
+/// Print an offline snapshot of what this node holds: backed-up files, how much
+/// of the referenced ciphertext has been replicated locally, how many extra
+/// blocks are hosted as public-share pins, and the linked devices. Like `files`
+/// it reads the data dir without binding the network, so it answers "is this node
+/// actually syncing?" at a glance while `serve` runs elsewhere.
+fn cmd_status(args: &Args) -> Result<(), String> {
+    let snapshot = load_doc(&doc_path(args))?.unwrap_or_default();
+    let store = FsBlockStore::new(args.data_dir.join("blocks"));
+    let devices = Devices::load(&args.data_dir)?;
+
+    let live: Vec<&StampedEntry> = snapshot
+        .entries
+        .iter()
+        .filter(|e| !e.entry.deleted)
+        .collect();
+    let total_size: i64 = live.iter().map(|e| e.entry.size).sum();
+
+    // Distinct blocks the live allocation table references — what a full replica
+    // must hold. `serve` auto-pulls these from the authoring devices.
+    let mut referenced = std::collections::HashSet::new();
+    for entry in &live {
+        for hash in &entry.entry.blocks {
+            referenced.insert(hash.as_str());
+        }
+    }
+    let mut present_referenced = 0usize;
+    for hash in &referenced {
+        if store.has(hash) {
+            present_referenced += 1;
+        }
+    }
+    let missing = referenced.len() - present_referenced;
+    let held = store.count();
+    // Blocks held that the table does not reference are public-share pins (they
+    // live outside the allocation table — see `block-pin.ts` / sync.rs).
+    let pins = held.saturating_sub(present_referenced);
+
+    println!(
+        "safu node status — offline snapshot of {}",
+        args.data_dir.display()
+    );
+    println!(
+        "  backed-up files:    {} ({})",
+        live.len(),
+        human_size(total_size)
+    );
+    println!(
+        "  referenced blocks:  {} ({present_referenced} present, {missing} still replicating)",
+        referenced.len(),
+    );
+    println!("  share-pin blocks:   {pins} (public-share blocks hosted for offline links)");
+    println!("  total blocks held:  {held}");
+    println!("  linked devices:     {}", devices.list().len());
+    for device in devices.list() {
+        println!(
+            "    {} — relay {}",
+            short(&device.sign_id),
+            device.relay_url.as_deref().unwrap_or("(none)"),
+        );
+    }
+    if devices.list().is_empty() {
+        println!("    none — run `safu-node link <code>` to add one");
+    }
+    println!();
+    println!("Run `safu-node files` for the file list, `list` for device safety numbers, or");
+    println!(
+        "`info` for this node's pairing code (paste it into the web app's \"Host shares here\")."
+    );
+    Ok(())
+}
+
+/// Wipe this node's state so the operator can start from scratch: delete the
+/// identity, replicated document, linked-device list, format marker, and every
+/// stored ciphertext block. Irreversible and not gated on the on-disk format
+/// (so it can recover a dir a newer binary wrote), it requires confirmation —
+/// an interactive "type reset" prompt, or `--force` for non-interactive use.
+fn cmd_reset(args: &Args) -> Result<(), String> {
+    let dir = &args.data_dir;
+    if !dir.exists() {
+        println!("nothing to reset — {} does not exist", dir.display());
+        return Ok(());
+    }
+
+    if !args.has_flag("--force") {
+        if !io::stdin().is_terminal() {
+            return Err(
+                "reset is irreversible; re-run with --force to confirm (no terminal to prompt)"
+                    .into(),
+            );
+        }
+        println!("This permanently deletes this node's identity, linked devices, and every");
+        println!("stored ciphertext block under:");
+        println!("  {}", dir.display());
+        println!();
+        println!("Every device will have to be paired again. This cannot be undone.");
+        let confirmed =
+            prompt("Type \"reset\" to confirm: ")?.is_some_and(|answer| answer == "reset");
+        if !confirmed {
+            println!("aborted — nothing was deleted.");
+            return Ok(());
+        }
+    }
+
+    let removed = reset_data_dir(dir)?;
+    if removed == 0 {
+        println!("nothing to reset — no node data found in {}", dir.display());
+    } else {
+        println!("reset complete — removed node data from {}", dir.display());
+        println!("run `safu-node serve` to set the node up again from scratch.");
+    }
+    Ok(())
+}
+
+/// Delete every artifact this node writes under `dir` (identity, document,
+/// linked devices, format marker, and the block store), leaving the directory
+/// itself and any unrelated contents in place. Returns how many existed, so the
+/// caller can tell a real reset from a no-op. Absent artifacts are not an error.
+fn reset_data_dir(dir: &Path) -> Result<usize, String> {
+    let mut removed = 0;
+    for name in ["doc.json", "doc.json.tmp", "devices.json", "meta.json"] {
+        let path = dir.join(name);
+        match fs::remove_file(&path) {
+            Ok(()) => removed += 1,
+            Err(e) if e.kind() == io::ErrorKind::NotFound => {}
+            Err(e) => return Err(format!("remove {}: {e}", path.display())),
+        }
+    }
+    for name in ["identity", "blocks"] {
+        let path = dir.join(name);
+        match fs::remove_dir_all(&path) {
+            Ok(()) => removed += 1,
+            Err(e) if e.kind() == io::ErrorKind::NotFound => {}
+            Err(e) => return Err(format!("remove {}: {e}", path.display())),
+        }
+    }
+    Ok(removed)
+}
+
 async fn cmd_serve(args: &Args) -> Result<(), String> {
     let signer = signer(args)?;
     let sign_id = signer.id().to_string();
-    let document = open_doc(args, signer)?;
+    let mut document = open_doc(args, signer)?;
     let store = FsBlockStore::new(args.data_dir.join("blocks"));
-    let devices = Devices::load(&args.data_dir)?.list().to_vec();
+    let mut devices = Devices::load(&args.data_dir)?;
 
     let endpoint = Arc::new(bind_endpoint().await?);
     let relay = online(&endpoint).await;
+    let pairing_code = PairingInfo {
+        id: endpoint.id(),
+        relay_url: relay.clone(),
+        sign_id: sign_id.clone(),
+    }
+    .encode();
+
+    // First-run onboarding: when attached to a terminal and nothing is linked
+    // yet, walk the operator through pairing before serving — print the node's
+    // code to paste into the web app, then prompt for each device's code and
+    // confirm its safety number. Under a service manager (no TTY) this is skipped
+    // entirely, so a headless `serve` behaves exactly as before.
+    if io::stdin().is_terminal() && devices.list().is_empty() {
+        onboard(
+            &mut document,
+            &mut devices,
+            &doc_path(args),
+            &sign_id,
+            &pairing_code,
+        )?;
+    }
+    let devices = devices.list().to_vec();
 
     println!("safu node online — backup replica + public-share host");
     println!("  signing id:    {sign_id}");
@@ -240,15 +448,7 @@ async fn cmd_serve(args: &Args) -> Result<(), String> {
         );
     }
     println!();
-    println!(
-        "  pairing code:  {}",
-        PairingInfo {
-            id: endpoint.id(),
-            relay_url: relay,
-            sign_id,
-        }
-        .encode()
-    );
+    println!("  pairing code:  {pairing_code}");
     println!();
     println!("Select this node under \"Host shares here\" on a device to publish its");
     println!("public shares through it; they stay reachable while the device is offline.");
@@ -264,6 +464,89 @@ async fn cmd_serve(args: &Args) -> Result<(), String> {
     println!("\nshutting down — flushing document snapshot");
     node.flush();
     Ok(())
+}
+
+/// Interactive first-run pairing, run by `serve` on a terminal when no device is
+/// linked yet. Prints the node's pairing code to paste into the web app, then
+/// reads device connection codes from stdin and links each one the operator
+/// confirms by safety number — mutating `document`/`devices` and persisting as it
+/// goes, so the node then serves already paired. An empty line (or Ctrl-D) ends
+/// the loop and starts serving.
+fn onboard(
+    document: &mut SyncDoc,
+    devices: &mut Devices,
+    doc_path: &Path,
+    node_id: &str,
+    pairing_code: &str,
+) -> Result<(), String> {
+    println!("Welcome — let's pair this node with your devices before it starts serving.\n");
+    println!("1. In the web app, open Devices › Link and paste this node's code:\n");
+    println!("     {pairing_code}\n");
+    println!("2. Then copy the code from the web app's \"This device\" card and paste it");
+    println!("   here. Link as many devices as you like; press Enter when you're done.\n");
+
+    loop {
+        let Some(code) = prompt("Device code (Enter to start serving): ")? else {
+            break; // Ctrl-D
+        };
+        if code.is_empty() {
+            break;
+        }
+        match prepare_link(node_id, &code) {
+            Err(reason) => println!("  {reason}\n"),
+            Ok((info, sas)) => {
+                println!("  safety number: {sas}");
+                let confirmed =
+                    prompt("  Does this match the number shown on the device? [y/N]: ")?
+                        .is_some_and(|answer| {
+                            matches!(answer.to_ascii_lowercase().as_str(), "y" | "yes")
+                        });
+                if confirmed {
+                    let label = short(&info.sign_id).to_string();
+                    document.add_writer(&info.sign_id);
+                    devices.add(info)?;
+                    save_doc(doc_path, &document.serialize())?;
+                    println!("  linked device {label}\n");
+                } else {
+                    println!("  skipped — codes must match to link safely\n");
+                }
+            }
+        }
+    }
+    if devices.list().is_empty() {
+        println!("No devices linked — you can add one anytime with `safu-node link <code>`.\n");
+    }
+    Ok(())
+}
+
+/// Print `label` without a trailing newline, flush it, and read one trimmed line
+/// from stdin. `Ok(None)` signals end-of-input (Ctrl-D); `Ok(Some(_))` is the
+/// trimmed line (possibly empty if the user just pressed Enter).
+fn prompt(label: &str) -> Result<Option<String>, String> {
+    print!("{label}");
+    io::stdout()
+        .flush()
+        .map_err(|e| format!("flush stdout: {e}"))?;
+    let mut line = String::new();
+    let read = io::stdin()
+        .read_line(&mut line)
+        .map_err(|e| format!("read stdin: {e}"))?;
+    if read == 0 {
+        return Ok(None);
+    }
+    Ok(Some(line.trim().to_string()))
+}
+
+/// Validate a pasted device connection code for linking: decode it, reject this
+/// node's own code, and return it alongside the safety number to confirm out of
+/// band. Pure (no IO), so the onboarding flow's core decision is unit-testable.
+fn prepare_link(node_id: &str, code: &str) -> Result<(PairingInfo, String), String> {
+    let info = PairingInfo::decode(code)?;
+    if info.sign_id == node_id {
+        return Err("that's this node's own code — paste a *device's* code instead".into());
+    }
+    let sas = safety_number(node_id, &info.sign_id).to_string();
+    Ok((info, sas))
 }
 
 async fn cmd_update(args: &Args) -> Result<(), String> {
@@ -385,6 +668,23 @@ fn short(id: &str) -> &str {
     &id[..id.len().min(12)]
 }
 
+/// A compact, human-readable byte size (e.g. `3.4 MB`) for status/file listings.
+/// Exact bytes below 1 KiB; one decimal place above.
+fn human_size(bytes: i64) -> String {
+    const UNITS: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
+    let mut size = bytes as f64;
+    let mut unit = 0;
+    while size >= 1024.0 && unit < UNITS.len() - 1 {
+        size /= 1024.0;
+        unit += 1;
+    }
+    if unit == 0 {
+        format!("{bytes} {}", UNITS[0])
+    } else {
+        format!("{size:.1} {}", UNITS[unit])
+    }
+}
+
 /// Wait (briefly) for the endpoint to select a home relay so its address is
 /// dialable; returns `None` if no relay is reachable in time. Local features
 /// keep working without it — only dialing peers needs the relay.
@@ -423,7 +723,10 @@ COMMANDS:\n\
   link <code>          Authorize a device (its connection code) and remember it\n\
   unlink <signing-id>  Revoke a device's write access and stop backing it up\n\
   list                 List linked devices and their safety numbers\n\
-  serve                Run the always-on backup node & share host (Ctrl-C to stop)\n\
+  files                List the files held in this node's backup replica\n\
+  status               Print a snapshot: files, blocks held, share pins, devices\n\
+  reset                Delete all node data (identity, devices, blocks) and start over\n\
+  serve                Run the node; first run on a terminal guides pairing (Ctrl-C to stop)\n\
   update               Check for a newer release (use --apply to install it)\n\
   version              Print the version\n\
 \n\
@@ -494,5 +797,76 @@ impl Args {
             .clone()
             .filter(|p| !p.is_empty())
             .ok_or_else(|| "SAFU_NODE_PASSPHRASE (or --passphrase) is required".into())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{human_size, prepare_link, safety_number, PairingInfo};
+
+    fn code(sign_id: &str) -> String {
+        PairingInfo {
+            id: "transport-endpoint-id".into(),
+            relay_url: Some("https://relay.example/".into()),
+            sign_id: sign_id.into(),
+        }
+        .encode()
+    }
+
+    #[test]
+    fn prepare_link_accepts_a_foreign_code_and_returns_its_safety_number() {
+        let (info, sas) = prepare_link("node-sign-id", &code("device-sign-id")).expect("linkable");
+        assert_eq!(info.sign_id, "device-sign-id");
+        assert_eq!(
+            sas,
+            safety_number("node-sign-id", "device-sign-id").to_string()
+        );
+    }
+
+    #[test]
+    fn prepare_link_rejects_this_nodes_own_code() {
+        assert!(prepare_link("node-sign-id", &code("node-sign-id")).is_err());
+    }
+
+    #[test]
+    fn prepare_link_rejects_a_malformed_code() {
+        assert!(prepare_link("node-sign-id", "not-a-pairing-code!!").is_err());
+    }
+
+    #[test]
+    fn human_size_is_exact_bytes_below_a_kib_and_scales_above() {
+        assert_eq!(human_size(0), "0 B");
+        assert_eq!(human_size(512), "512 B");
+        assert_eq!(human_size(1024), "1.0 KB");
+        assert_eq!(human_size(2048), "2.0 KB");
+        assert_eq!(human_size(5 * 1024 * 1024), "5.0 MB");
+        assert_eq!(human_size(1024 * 1024 * 1024), "1.0 GB");
+    }
+
+    #[test]
+    fn reset_removes_node_artifacts_keeps_unrelated_and_is_idempotent() {
+        use std::fs;
+        let dir = std::env::temp_dir().join(format!("safu-reset-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(dir.join("identity")).unwrap();
+        fs::create_dir_all(dir.join("blocks")).unwrap();
+        fs::write(dir.join("identity/signer.salt"), b"salt").unwrap();
+        fs::write(dir.join("blocks/deadbeef"), b"ciphertext").unwrap();
+        fs::write(dir.join("doc.json"), "{}").unwrap();
+        fs::write(dir.join("devices.json"), "[]").unwrap();
+        fs::write(dir.join("meta.json"), r#"{"format":1}"#).unwrap();
+        fs::write(dir.join("unrelated.txt"), b"keep me").unwrap();
+
+        // doc.json, devices.json, meta.json, identity/, blocks/ = 5 artifacts.
+        assert_eq!(super::reset_data_dir(&dir).unwrap(), 5);
+        assert!(!dir.join("doc.json").exists());
+        assert!(!dir.join("identity").exists());
+        assert!(!dir.join("blocks").exists());
+        // Unrelated content (and the dir itself) is left untouched.
+        assert!(dir.join("unrelated.txt").exists());
+        // A second reset finds nothing to remove.
+        assert_eq!(super::reset_data_dir(&dir).unwrap(), 0);
+
+        let _ = fs::remove_dir_all(&dir);
     }
 }

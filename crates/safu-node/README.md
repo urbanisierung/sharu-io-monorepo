@@ -95,23 +95,86 @@ tag as input.
 
 ## Usage
 
+The quickest start is **one command**. On a terminal, `serve` creates the
+identity on first run, prints this node's pairing code, walks you through linking
+each device, then runs:
+
 ```sh
 cargo build --release -p safu-node      # or build from source: target/release/safu-node
 
 export SAFU_NODE_PASSPHRASE="…"          # derives this node's signing identity
 export SAFU_NODE_DATA_DIR="/srv/safu"    # the directory this node owns
 
+safu-node serve                          # guided first run, then always-on
+```
+
+The guided run does the pairing handshake for you:
+
+1. It prints this node's **pairing code** — paste it into the web app under
+   **Devices › Link**.
+2. Copy the code from the web app's **"This device"** card and paste it back at
+   the prompt. The node shows the **safety number**; confirm it matches the one
+   on the device, and the link is saved. Link as many devices as you like, then
+   press Enter to start serving.
+
+This works because pairing is mutual: the device authorizes the node (step 1) and
+the node authorizes the device (step 2). Both directions are required — the node
+only replicates entries and accepts share pins from devices it has authorized.
+
+### Headless / scripted setup
+
+Under a service manager (no terminal) `serve` skips the wizard and runs straight
+away, so the individual steps stay available for scripting:
+
+```sh
 safu-node init                            # one-time: create the identity
 safu-node info                            # print this node's pairing code
 safu-node link <device-connection-code>   # authorize + remember a device
 safu-node serve                           # run the always-on backup node
 ```
 
-To link a device, copy the **connection code** the web app shows ("link a
-device") and run `safu-node link <code>`. The node authorizes that device's
-signing id and remembers its address, then `serve` dials it, syncs the
-allocation table, and replicates its ciphertext blocks. To let the web app show
-this node back, paste the node's own `info` pairing code into the app.
+Copy the **connection code** the web app shows and run `safu-node link <code>`:
+the node authorizes that device's signing id and remembers its address, then
+`serve` dials it, syncs the allocation table, and replicates its ciphertext
+blocks. (Link devices **before** `serve`, or restart it afterwards — `serve`
+loads the linked-device set once at startup.) To let the web app show this node
+back, paste the node's own `info` pairing code into the app.
+
+### Inspecting a running node
+
+`serve` is headless, but it persists its document snapshot to `doc.json` on every
+applied change, so you can inspect a running node from a **second terminal**
+without stopping it — point the read-only commands at the same `--data-dir`:
+
+```sh
+safu-node files    # the files this node has synced into its backup replica
+safu-node status   # files, replication progress, public-share pins, linked devices
+```
+
+`status` is the quickest "is this node actually working?" check. Its
+`referenced blocks: N (X present, Y still replicating)` line shows how much of the
+ciphertext the synced allocation table references has been pulled locally; once a
+device finishes backing up, `Y` reaches `0`. `share-pin blocks` counts the
+public-share blocks devices have pinned here (the blocks that keep share links
+resolving while a device is offline). Neither command needs the passphrase or the
+network — they only read the data dir.
+
+### Starting over
+
+To wipe a node and set it up again from scratch — a new identity, no linked
+devices, no stored blocks — run `reset`:
+
+```sh
+safu-node reset            # prompts for confirmation
+safu-node reset --force    # skip the prompt (for scripts / no terminal)
+```
+
+It deletes this node's `identity/`, `doc.json`, `devices.json`, `meta.json`, and
+the `blocks/` store under `--data-dir`, leaving any unrelated files in place. It
+is **irreversible**: every device must be paired again afterwards, and any public
+shares pinned only to this node stop resolving. Because the wipe doesn't depend on
+the on-disk format, it also recovers a data dir written by a newer binary. Without
+a terminal to prompt, `reset` refuses unless `--force` is given.
 
 ### Matching safety numbers
 
@@ -139,7 +202,10 @@ them. The node only ever receives ciphertext.
 | `link <code>` | Authorize a device (its connection code) and remember its address. |
 | `unlink <signing-id>` | Permanently revoke a device's write access and stop backing it up. |
 | `list` | List linked devices and their safety numbers. |
-| `serve` (`run`) | Run the always-on backup node & share host (Ctrl-C to stop; flushes on exit). |
+| `files` | List the files held in this node's backup replica (paths, sizes, block counts). |
+| `status` | Print an offline snapshot: backed-up files, replication progress, public-share pins, and linked devices. |
+| `reset` | Permanently delete all node data (identity, linked devices, stored blocks) and start from scratch. Prompts for confirmation, or pass `--force`. |
+| `serve` (`run`) | Run the always-on backup node & share host. First run on a terminal guides device pairing; headless (no TTY) it serves straight away. Ctrl-C to stop; flushes on exit. |
 | `update` | Check for a newer release; `update --apply` downloads, verifies (minisign), and installs it. |
 
 ### Configuration

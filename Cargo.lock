@@ -3019,7 +3019,7 @@ dependencies = [
 
 [[package]]
 name = "safu-node"
-version = "0.1.0"
+version = "0.0.4"
 dependencies = [
  "argon2",
  "blake3",
