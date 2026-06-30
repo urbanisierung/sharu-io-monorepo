@@ -47,7 +47,7 @@ export const cliSpec: CliSpec = {
     {
       name: 'serve',
       arg: null,
-      summary: 'Run the always-on backup node & share host (Ctrl-C to stop)',
+      summary: 'Run the node; first run on a terminal guides pairing (Ctrl-C to stop)',
     },
     {
       name: 'update',

@@ -18,15 +18,17 @@
 //! the web app and the headless TS peer — so a device backs up to it with no
 //! protocol change, and you can run as many independent nodes as you like.
 //!
-//! Configure entirely from the terminal:
+//! Configure entirely from the terminal. The quickest start is a single command:
+//! on a terminal, `serve` creates the identity if needed, prints this node's
+//! pairing code, walks you through linking each device, then runs.
 //!
 //! ```text
-//!   export SAFU_NODE_PASSPHRASE=…            # derives this node's identity
-//!   safu-node init                            # one-time: create the identity
-//!   safu-node info                            # print this node's pairing code
-//!   safu-node link <device-connection-code>   # authorize + remember a device
-//!   safu-node serve                           # run the always-on backup node
+//!   export SAFU_NODE_PASSPHRASE=…   # derives this node's identity
+//!   safu-node serve                 # guided first run, then always-on
 //! ```
+//!
+//! The individual steps remain available for scripting or headless setups:
+//! `init`, `info`, `link <device-connection-code>`, `list`, `files`, `status`.
 
 mod brand;
 mod config;
@@ -40,7 +42,8 @@ mod store;
 mod sync;
 mod update;
 
-use std::path::PathBuf;
+use std::io::{self, IsTerminal, Write};
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::sync::Arc;
 use std::time::Duration;
@@ -328,12 +331,34 @@ fn cmd_status(args: &Args) -> Result<(), String> {
 async fn cmd_serve(args: &Args) -> Result<(), String> {
     let signer = signer(args)?;
     let sign_id = signer.id().to_string();
-    let document = open_doc(args, signer)?;
+    let mut document = open_doc(args, signer)?;
     let store = FsBlockStore::new(args.data_dir.join("blocks"));
-    let devices = Devices::load(&args.data_dir)?.list().to_vec();
+    let mut devices = Devices::load(&args.data_dir)?;
 
     let endpoint = Arc::new(bind_endpoint().await?);
     let relay = online(&endpoint).await;
+    let pairing_code = PairingInfo {
+        id: endpoint.id(),
+        relay_url: relay.clone(),
+        sign_id: sign_id.clone(),
+    }
+    .encode();
+
+    // First-run onboarding: when attached to a terminal and nothing is linked
+    // yet, walk the operator through pairing before serving — print the node's
+    // code to paste into the web app, then prompt for each device's code and
+    // confirm its safety number. Under a service manager (no TTY) this is skipped
+    // entirely, so a headless `serve` behaves exactly as before.
+    if io::stdin().is_terminal() && devices.list().is_empty() {
+        onboard(
+            &mut document,
+            &mut devices,
+            &doc_path(args),
+            &sign_id,
+            &pairing_code,
+        )?;
+    }
+    let devices = devices.list().to_vec();
 
     println!("safu node online — backup replica + public-share host");
     println!("  signing id:    {sign_id}");
@@ -354,15 +379,7 @@ async fn cmd_serve(args: &Args) -> Result<(), String> {
         );
     }
     println!();
-    println!(
-        "  pairing code:  {}",
-        PairingInfo {
-            id: endpoint.id(),
-            relay_url: relay,
-            sign_id,
-        }
-        .encode()
-    );
+    println!("  pairing code:  {pairing_code}");
     println!();
     println!("Select this node under \"Host shares here\" on a device to publish its");
     println!("public shares through it; they stay reachable while the device is offline.");
@@ -378,6 +395,89 @@ async fn cmd_serve(args: &Args) -> Result<(), String> {
     println!("\nshutting down — flushing document snapshot");
     node.flush();
     Ok(())
+}
+
+/// Interactive first-run pairing, run by `serve` on a terminal when no device is
+/// linked yet. Prints the node's pairing code to paste into the web app, then
+/// reads device connection codes from stdin and links each one the operator
+/// confirms by safety number — mutating `document`/`devices` and persisting as it
+/// goes, so the node then serves already paired. An empty line (or Ctrl-D) ends
+/// the loop and starts serving.
+fn onboard(
+    document: &mut SyncDoc,
+    devices: &mut Devices,
+    doc_path: &Path,
+    node_id: &str,
+    pairing_code: &str,
+) -> Result<(), String> {
+    println!("Welcome — let's pair this node with your devices before it starts serving.\n");
+    println!("1. In the web app, open Devices › Link and paste this node's code:\n");
+    println!("     {pairing_code}\n");
+    println!("2. Then copy the code from the web app's \"This device\" card and paste it");
+    println!("   here. Link as many devices as you like; press Enter when you're done.\n");
+
+    loop {
+        let Some(code) = prompt("Device code (Enter to start serving): ")? else {
+            break; // Ctrl-D
+        };
+        if code.is_empty() {
+            break;
+        }
+        match prepare_link(node_id, &code) {
+            Err(reason) => println!("  {reason}\n"),
+            Ok((info, sas)) => {
+                println!("  safety number: {sas}");
+                let confirmed =
+                    prompt("  Does this match the number shown on the device? [y/N]: ")?
+                        .is_some_and(|answer| {
+                            matches!(answer.to_ascii_lowercase().as_str(), "y" | "yes")
+                        });
+                if confirmed {
+                    let label = short(&info.sign_id).to_string();
+                    document.add_writer(&info.sign_id);
+                    devices.add(info)?;
+                    save_doc(doc_path, &document.serialize())?;
+                    println!("  linked device {label}\n");
+                } else {
+                    println!("  skipped — codes must match to link safely\n");
+                }
+            }
+        }
+    }
+    if devices.list().is_empty() {
+        println!("No devices linked — you can add one anytime with `safu-node link <code>`.\n");
+    }
+    Ok(())
+}
+
+/// Print `label` without a trailing newline, flush it, and read one trimmed line
+/// from stdin. `Ok(None)` signals end-of-input (Ctrl-D); `Ok(Some(_))` is the
+/// trimmed line (possibly empty if the user just pressed Enter).
+fn prompt(label: &str) -> Result<Option<String>, String> {
+    print!("{label}");
+    io::stdout()
+        .flush()
+        .map_err(|e| format!("flush stdout: {e}"))?;
+    let mut line = String::new();
+    let read = io::stdin()
+        .read_line(&mut line)
+        .map_err(|e| format!("read stdin: {e}"))?;
+    if read == 0 {
+        return Ok(None);
+    }
+    Ok(Some(line.trim().to_string()))
+}
+
+/// Validate a pasted device connection code for linking: decode it, reject this
+/// node's own code, and return it alongside the safety number to confirm out of
+/// band. Pure (no IO), so the onboarding flow's core decision is unit-testable.
+fn prepare_link(node_id: &str, code: &str) -> Result<(PairingInfo, String), String> {
+    let info = PairingInfo::decode(code)?;
+    if info.sign_id == node_id {
+        return Err("that's this node's own code — paste a *device's* code instead".into());
+    }
+    let sas = safety_number(node_id, &info.sign_id).to_string();
+    Ok((info, sas))
 }
 
 async fn cmd_update(args: &Args) -> Result<(), String> {
@@ -556,7 +656,7 @@ COMMANDS:\n\
   list                 List linked devices and their safety numbers\n\
   files                List the files held in this node's backup replica\n\
   status               Print a snapshot: files, blocks held, share pins, devices\n\
-  serve                Run the always-on backup node & share host (Ctrl-C to stop)\n\
+  serve                Run the node; first run on a terminal guides pairing (Ctrl-C to stop)\n\
   update               Check for a newer release (use --apply to install it)\n\
   version              Print the version\n\
 \n\
@@ -632,7 +732,36 @@ impl Args {
 
 #[cfg(test)]
 mod tests {
-    use super::human_size;
+    use super::{human_size, prepare_link, safety_number, PairingInfo};
+
+    fn code(sign_id: &str) -> String {
+        PairingInfo {
+            id: "transport-endpoint-id".into(),
+            relay_url: Some("https://relay.example/".into()),
+            sign_id: sign_id.into(),
+        }
+        .encode()
+    }
+
+    #[test]
+    fn prepare_link_accepts_a_foreign_code_and_returns_its_safety_number() {
+        let (info, sas) = prepare_link("node-sign-id", &code("device-sign-id")).expect("linkable");
+        assert_eq!(info.sign_id, "device-sign-id");
+        assert_eq!(
+            sas,
+            safety_number("node-sign-id", "device-sign-id").to_string()
+        );
+    }
+
+    #[test]
+    fn prepare_link_rejects_this_nodes_own_code() {
+        assert!(prepare_link("node-sign-id", &code("node-sign-id")).is_err());
+    }
+
+    #[test]
+    fn prepare_link_rejects_a_malformed_code() {
+        assert!(prepare_link("node-sign-id", "not-a-pairing-code!!").is_err());
+    }
 
     #[test]
     fn human_size_is_exact_bytes_below_a_kib_and_scales_above() {

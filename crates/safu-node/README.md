@@ -95,23 +95,50 @@ tag as input.
 
 ## Usage
 
+The quickest start is **one command**. On a terminal, `serve` creates the
+identity on first run, prints this node's pairing code, walks you through linking
+each device, then runs:
+
 ```sh
 cargo build --release -p safu-node      # or build from source: target/release/safu-node
 
 export SAFU_NODE_PASSPHRASE="…"          # derives this node's signing identity
 export SAFU_NODE_DATA_DIR="/srv/safu"    # the directory this node owns
 
+safu-node serve                          # guided first run, then always-on
+```
+
+The guided run does the pairing handshake for you:
+
+1. It prints this node's **pairing code** — paste it into the web app under
+   **Devices › Link**.
+2. Copy the code from the web app's **"This device"** card and paste it back at
+   the prompt. The node shows the **safety number**; confirm it matches the one
+   on the device, and the link is saved. Link as many devices as you like, then
+   press Enter to start serving.
+
+This works because pairing is mutual: the device authorizes the node (step 1) and
+the node authorizes the device (step 2). Both directions are required — the node
+only replicates entries and accepts share pins from devices it has authorized.
+
+### Headless / scripted setup
+
+Under a service manager (no terminal) `serve` skips the wizard and runs straight
+away, so the individual steps stay available for scripting:
+
+```sh
 safu-node init                            # one-time: create the identity
 safu-node info                            # print this node's pairing code
 safu-node link <device-connection-code>   # authorize + remember a device
 safu-node serve                           # run the always-on backup node
 ```
 
-To link a device, copy the **connection code** the web app shows ("link a
-device") and run `safu-node link <code>`. The node authorizes that device's
-signing id and remembers its address, then `serve` dials it, syncs the
-allocation table, and replicates its ciphertext blocks. To let the web app show
-this node back, paste the node's own `info` pairing code into the app.
+Copy the **connection code** the web app shows and run `safu-node link <code>`:
+the node authorizes that device's signing id and remembers its address, then
+`serve` dials it, syncs the allocation table, and replicates its ciphertext
+blocks. (Link devices **before** `serve`, or restart it afterwards — `serve`
+loads the linked-device set once at startup.) To let the web app show this node
+back, paste the node's own `info` pairing code into the app.
 
 ### Inspecting a running node
 
@@ -160,7 +187,7 @@ them. The node only ever receives ciphertext.
 | `list` | List linked devices and their safety numbers. |
 | `files` | List the files held in this node's backup replica (paths, sizes, block counts). |
 | `status` | Print an offline snapshot: backed-up files, replication progress, public-share pins, and linked devices. |
-| `serve` (`run`) | Run the always-on backup node & share host (Ctrl-C to stop; flushes on exit). |
+| `serve` (`run`) | Run the always-on backup node & share host. First run on a terminal guides device pairing; headless (no TTY) it serves straight away. Ctrl-C to stop; flushes on exit. |
 | `update` | Check for a newer release; `update --apply` downloads, verifies (minisign), and installs it. |
 
 ### Configuration
