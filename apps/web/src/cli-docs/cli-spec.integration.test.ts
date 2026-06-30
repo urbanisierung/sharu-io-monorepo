@@ -39,6 +39,7 @@ describe('CLI spec', () => {
       'list',
       'files',
       'status',
+      'tui',
       'reset',
       'serve',
       'update',

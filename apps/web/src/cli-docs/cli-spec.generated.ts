@@ -45,6 +45,11 @@ export const cliSpec: CliSpec = {
       summary: 'Print a snapshot: files, blocks held, share pins, devices',
     },
     {
+      name: 'tui',
+      arg: null,
+      summary: 'Live full-screen dashboard of the node (refreshes; q to quit)',
+    },
+    {
       name: 'reset',
       arg: null,
       summary: 'Delete all node data (identity, devices, blocks) and start over',

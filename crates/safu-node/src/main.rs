@@ -40,6 +40,7 @@ mod release;
 mod sas;
 mod store;
 mod sync;
+mod tui;
 mod update;
 
 use std::fs;
@@ -81,7 +82,7 @@ async fn run() -> Result<(), String> {
     // skip it. `update`/`version`/`help` don't touch the data dir.
     if matches!(
         command,
-        "init" | "info" | "link" | "unlink" | "list" | "files" | "status" | "serve" | "run"
+        "init" | "info" | "link" | "unlink" | "list" | "files" | "status" | "tui" | "serve" | "run"
     ) {
         meta::ensure(&args.data_dir)?;
     }
@@ -93,6 +94,7 @@ async fn run() -> Result<(), String> {
         "list" => cmd_list(&args),
         "files" => cmd_files(&args),
         "status" => cmd_status(&args),
+        "tui" => cmd_tui(&args),
         "reset" => cmd_reset(&args),
         "serve" | "run" => cmd_serve(&args).await,
         "update" => cmd_update(&args).await,
@@ -340,6 +342,14 @@ fn cmd_status(args: &Args) -> Result<(), String> {
         "`info` for this node's pairing code (paste it into the web app's \"Host shares here\")."
     );
     Ok(())
+}
+
+/// Run the live full-screen dashboard (see `tui.rs`): the refreshing,
+/// terminal-native counterpart of `status`/`files`. It needs this node's signing
+/// id to show each device's safety number, hence the passphrase, as for `serve`.
+fn cmd_tui(args: &Args) -> Result<(), String> {
+    let signer = signer(args)?;
+    tui::run(&args.data_dir, signer.id())
 }
 
 /// Wipe this node's state so the operator can start from scratch: delete the
@@ -740,6 +750,7 @@ COMMANDS:\n\
   list                 List linked devices and their safety numbers\n\
   files                List the files held in this node's backup replica\n\
   status               Print a snapshot: files, blocks held, share pins, devices\n\
+  tui                  Live full-screen dashboard of the node (refreshes; q to quit)\n\
   reset                Delete all node data (identity, devices, blocks) and start over\n\
   serve                Run the node; first run on a terminal guides pairing (Ctrl-C to stop)\n\
   update               Check for a newer release (use --apply to install it)\n\
