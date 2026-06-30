@@ -51,6 +51,31 @@ jobs:
         with:
           key: ${{ matrix.target }}
 
+      # The binary bakes its version from CARGO_PKG_VERSION, but the release
+      # *tag* is the source of truth (`safu-node-v<version>`). Stamp the tag's
+      # version into Cargo.toml before building so the published binary reports
+      # the version it was released as — keeping `safu-node version` honest and
+      # stopping the updater from nagging about the release it already is.
+      # Editing the manifest invalidates the crate's build fingerprint, so a
+      # cached target dir never carries a stale baked-in version.
+      - name: Stamp version from release tag
+        shell: bash
+        working-directory: crates/safu-node
+        run: |
+          set -euo pipefail
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          version="${tag#safu-node-v}"
+          if [ "$version" = "$tag" ] || [ -z "$version" ]; then
+            echo "::error::'$tag' is not a safu-node-v<version> release tag"
+            exit 1
+          fi
+          # Only the [package] version sits at the start of a line; dependency
+          # versions are inside `{ … }`, so the anchored match never touches them.
+          sed -i.bak -E "s/^version = \"[^\"]*\"/version = \"$version\"/" Cargo.toml
+          rm -f Cargo.toml.bak
+          echo "stamped safu-node version = $version"
+          grep -E '^version = ' Cargo.toml
+
       - name: Build
         run: cargo build --release -p safu-node --target ${{ matrix.target }}
 
