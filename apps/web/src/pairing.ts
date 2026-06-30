@@ -56,11 +56,31 @@ export function pairingLink(code: string, origin: string): string {
 /** Extract a pairing code from a URL hash (`#pair=…`), or undefined if absent.
  *  Lets a freshly-opened tab prefill the "link a device" field automatically. */
 export function readPairingFromHash(hash: string): string | undefined {
-  const match = /[#&]pair=([^&]+)/.exec(hash);
+  return readHashCode(hash, 'pair');
+}
+
+/** Extract a backup-node code from a URL hash (`#node=…`), or undefined if
+ *  absent. The `safu-node serve` deep link (`/link#node=…`) carries the node's
+ *  pairing code here so the browser onboarding view can pick it up. Kept distinct
+ *  from `#pair=` so the node link lands on the guided view, not the app's silent
+ *  auto-link. */
+export function readNodeFromHash(hash: string): string | undefined {
+  return readHashCode(hash, 'node');
+}
+
+function readHashCode(hash: string, key: 'pair' | 'node'): string | undefined {
+  const match = new RegExp(`[#&]${key}=([^&]+)`).exec(hash);
   if (!match?.[1]) return undefined;
   try {
     return decodeURIComponent(match[1]);
   } catch {
     return undefined;
   }
+}
+
+/** The deep link `safu-node serve` prints for its pairing code: it opens the
+ *  browser onboarding view (`/link`) with the node code in the hash, which never
+ *  leaves the device. Mirrors `pairingLink` but targets the guided node flow. */
+export function nodeLink(code: string, origin: string): string {
+  return `${origin}/link#node=${encodeURIComponent(code)}`;
 }

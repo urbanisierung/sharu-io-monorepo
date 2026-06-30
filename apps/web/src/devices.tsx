@@ -24,6 +24,7 @@ import { Button } from './ui/button.js';
 const draftPeerCode = signal(readPairingFromHash(globalThis.location?.hash ?? '') ?? '');
 const pairFailed = signal(false);
 const copied = signal(false);
+const codeCopied = signal(false);
 const idCopied = signal(false);
 const renamingId = signal<string | null>(null);
 const renameDraft = signal('');
@@ -33,6 +34,7 @@ export function resetDevicesView(): void {
   draftPeerCode.value = readPairingFromHash(globalThis.location?.hash ?? '') ?? '';
   pairFailed.value = false;
   copied.value = false;
+  codeCopied.value = false;
   idCopied.value = false;
   renamingId.value = null;
   renameDraft.value = '';
@@ -169,6 +171,15 @@ export function Devices({
               }}
             >
               {copied.value ? t(messages.copied) : t(messages.copyLink)}
+            </Button>
+            <Button
+              intent="neutral"
+              onClick={() => {
+                void navigator.clipboard?.writeText(code);
+                codeCopied.value = true;
+              }}
+            >
+              {codeCopied.value ? t(messages.copied) : t(messages.copyCode)}
             </Button>
             {canShare && (
               <Button intent="neutral" onClick={() => void navigator.share({ url: link })}>

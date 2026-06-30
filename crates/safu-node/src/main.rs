@@ -40,6 +40,7 @@ mod release;
 mod sas;
 mod store;
 mod sync;
+mod tui;
 mod update;
 
 use std::fs;
@@ -81,7 +82,7 @@ async fn run() -> Result<(), String> {
     // skip it. `update`/`version`/`help` don't touch the data dir.
     if matches!(
         command,
-        "init" | "info" | "link" | "unlink" | "list" | "files" | "status" | "serve" | "run"
+        "init" | "info" | "link" | "unlink" | "list" | "files" | "status" | "tui" | "serve" | "run"
     ) {
         meta::ensure(&args.data_dir)?;
     }
@@ -93,6 +94,7 @@ async fn run() -> Result<(), String> {
         "list" => cmd_list(&args),
         "files" => cmd_files(&args),
         "status" => cmd_status(&args),
+        "tui" => cmd_tui(&args),
         "reset" => cmd_reset(&args),
         "serve" | "run" => cmd_serve(&args).await,
         "update" => cmd_update(&args).await,
@@ -139,10 +141,22 @@ async fn cmd_info(args: &Args) -> Result<(), String> {
         Some(url) => println!("home relay:    {url}"),
         None => println!("home relay:    (offline — could not reach a relay)"),
     }
+    let code = info.encode();
     println!();
-    println!("pairing code (paste into the web app to link this node back):");
-    println!("{}", info.encode());
+    println!("Open this link in a browser to pair step by step:");
+    println!("  {}", web_link(&code));
+    println!();
+    println!("…or paste this node's code into the web app's Devices › Link field:");
+    println!("  {code}");
     Ok(())
+}
+
+/// The browser onboarding deep link for a node pairing code: it opens the web
+/// app's guided `/link` view (see `apps/web/src/node-onboarding.tsx`) with the
+/// code in the URL hash. The code is URL-safe base64, so it needs no escaping;
+/// the hash never leaves the browser. Mirrors `pairing.ts` `nodeLink`.
+fn web_link(code: &str) -> String {
+    format!("https://{}/link#node={code}", brand::domain())
 }
 
 fn cmd_link(args: &Args) -> Result<(), String> {
@@ -330,6 +344,14 @@ fn cmd_status(args: &Args) -> Result<(), String> {
     Ok(())
 }
 
+/// Run the live full-screen dashboard (see `tui.rs`): the refreshing,
+/// terminal-native counterpart of `status`/`files`. It needs this node's signing
+/// id to show each device's safety number, hence the passphrase, as for `serve`.
+fn cmd_tui(args: &Args) -> Result<(), String> {
+    let signer = signer(args)?;
+    tui::run(&args.data_dir, signer.id())
+}
+
 /// Wipe this node's state so the operator can start from scratch: delete the
 /// identity, replicated document, linked-device list, format marker, and every
 /// stored ciphertext block. Irreversible and not gated on the on-disk format
@@ -449,6 +471,7 @@ async fn cmd_serve(args: &Args) -> Result<(), String> {
     }
     println!();
     println!("  pairing code:  {pairing_code}");
+    println!("  browser link:  {}", web_link(&pairing_code));
     println!();
     println!("Select this node under \"Host shares here\" on a device to publish its");
     println!("public shares through it; they stay reachable while the device is offline.");
@@ -480,9 +503,11 @@ fn onboard(
     pairing_code: &str,
 ) -> Result<(), String> {
     println!("Welcome — let's pair this node with your devices before it starts serving.\n");
-    println!("1. In the web app, open Devices › Link and paste this node's code:\n");
+    println!("1. Open this link in a browser to pair step by step:\n");
+    println!("     {}\n", web_link(pairing_code));
+    println!("   (or paste this node's code into the web app's Devices › Link field:)\n");
     println!("     {pairing_code}\n");
-    println!("2. Then copy the code from the web app's \"This device\" card and paste it");
+    println!("2. Then use \"Copy code\" in the web app's Devices view and paste it");
     println!("   here. Link as many devices as you like; press Enter when you're done.\n");
 
     loop {
@@ -725,6 +750,7 @@ COMMANDS:\n\
   list                 List linked devices and their safety numbers\n\
   files                List the files held in this node's backup replica\n\
   status               Print a snapshot: files, blocks held, share pins, devices\n\
+  tui                  Live full-screen dashboard of the node (refreshes; q to quit)\n\
   reset                Delete all node data (identity, devices, blocks) and start over\n\
   serve                Run the node; first run on a terminal guides pairing (Ctrl-C to stop)\n\
   update               Check for a newer release (use --apply to install it)\n\
@@ -831,6 +857,15 @@ mod tests {
     #[test]
     fn prepare_link_rejects_a_malformed_code() {
         assert!(prepare_link("node-sign-id", "not-a-pairing-code!!").is_err());
+    }
+
+    #[test]
+    fn web_link_wraps_a_code_in_the_browser_onboarding_deep_link() {
+        let url = super::web_link("ABC-123_code");
+        assert!(url.starts_with("https://"));
+        assert!(url.contains(super::brand::domain()));
+        // The code is URL-safe base64, so it rides the hash verbatim — no escaping.
+        assert!(url.ends_with("/link#node=ABC-123_code"));
     }
 
     #[test]

@@ -64,6 +64,14 @@ flate2 = "1"
 tar = "0.4"
 self-replace = "1"
 
+# The optional `tui` dashboard — a live, read-only, full-screen view of what the
+# node holds, the terminal-native counterpart of `status`/`files`. ratatui is the
+# de-facto Rust TUI library; it re-exports the crossterm backend it needs, so this
+# is a single dependency that pulls its own terminal layer (no separate crossterm).
+# Justified per the blueprint's "add a dependency only when truly needed": a
+# refreshing full-screen layout is not something to hand-roll over raw ANSI.
+ratatui = "0.29"
+
 [dev-dependencies]
 # Sign throwaway fixtures in-test so the signature-verification path is exercised
 # against a real minisign signature (the production key stays out of the repo).
