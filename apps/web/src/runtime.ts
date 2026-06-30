@@ -54,6 +54,9 @@ export interface PeerInfo {
   name?: string;
   sas: string;
   status: 'pending' | 'verified' | 'rejected';
+  /** The peer's dialable transport address (id + home relay), if we remember it
+   *  from pairing. Surfaced read-only in the Devices view for transparency. */
+  addr?: PeerAddr;
 }
 
 export interface Runtime {
@@ -223,6 +226,8 @@ export async function createRuntime(wallet: Wallet): Promise<Runtime> {
       const writerIds = ready.writers.value;
       const isVerified = verified.value;
       const names = deviceNames.value;
+      // Remembered dial addresses (id + relay), surfaced read-only in the UI.
+      const addrs = loadPeerAddrs(wallet.id);
       void (async () => {
         const list: PeerInfo[] = [];
         for (const peerId of writerIds) {
@@ -236,7 +241,7 @@ export async function createRuntime(wallet: Wallet): Promise<Runtime> {
             : isVerified.has(peerId)
               ? 'verified'
               : 'pending';
-          list.push({ id: peerId, name: names[peerId], sas, status });
+          list.push({ id: peerId, name: names[peerId], sas, status, addr: addrs[peerId] });
         }
         peers.value = list;
       })();

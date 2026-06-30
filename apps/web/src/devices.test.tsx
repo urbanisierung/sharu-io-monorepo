@@ -2,6 +2,7 @@ import { signal } from '@preact/signals';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/preact';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Devices, maskCode, resetDevicesView } from './devices.js';
+import { encodePairingCode } from './pairing.js';
 import type { PeerInfo } from './runtime.js';
 
 const code = signal('LINKCODE');
@@ -105,6 +106,48 @@ describe('Devices', () => {
     ]);
     render(<Devices connectionCode={code} peers={peers} onPair={async () => {}} />);
     expect(screen.getByText('Mom’s phone')).toBeTruthy();
+  });
+
+  it('renders a "This device" card with the decoded signing id, transport and relay', () => {
+    const realCode = signal(
+      encodePairingCode({
+        addr: { id: 'TRANSPORT-ID', relayUrl: 'https://relay.example' },
+        signId: 'SIGNING-ID',
+      }),
+    );
+    render(<Devices connectionCode={realCode} peers={noPeers} onPair={async () => {}} />);
+    const card = screen.getByRole('heading', { name: 'This device' }).closest('article');
+    expect(card).toBeTruthy();
+    expect(within(card as HTMLElement).getByText('SIGNING-ID')).toBeTruthy();
+    expect(within(card as HTMLElement).getByText('TRANSPORT-ID')).toBeTruthy();
+    expect(within(card as HTMLElement).getByText('https://relay.example')).toBeTruthy();
+  });
+
+  it('omits the "This device" card when the connection code is not yet derivable', () => {
+    render(<Devices connectionCode={signal('')} peers={noPeers} onPair={async () => {}} />);
+    expect(screen.queryByRole('heading', { name: 'This device' })).toBeNull();
+  });
+
+  it('shows a linked peer’s transport address and relay when known', () => {
+    const peers = signal<readonly PeerInfo[]>([
+      {
+        id: 'PEER-FULL-ID',
+        sas: '123456',
+        status: 'verified',
+        addr: { id: 'PEER-TRANSPORT', relayUrl: 'https://peer-relay.example' },
+      },
+    ]);
+    render(<Devices connectionCode={code} peers={peers} onPair={async () => {}} />);
+    expect(screen.getByText('PEER-TRANSPORT')).toBeTruthy();
+    expect(screen.getByText('https://peer-relay.example')).toBeTruthy();
+  });
+
+  it('falls back to a "no relay yet" note for a peer with no remembered relay', () => {
+    const peers = signal<readonly PeerInfo[]>([
+      { id: 'PEER1', sas: '123456', status: 'verified', addr: { id: 'PEER-TRANSPORT' } },
+    ]);
+    render(<Devices connectionCode={code} peers={peers} onPair={async () => {}} />);
+    expect(screen.getByText('Not connected to a relay yet')).toBeTruthy();
   });
 
   it('walks through the safety-number check for a pending peer', () => {

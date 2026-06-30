@@ -13,7 +13,7 @@ import { cn } from '@cascivo/core';
 import { type ReadonlySignal, signal } from '@preact/signals';
 import styles from './app.module.css';
 import { messages } from './messages.js';
-import { pairingLink, readPairingFromHash } from './pairing.js';
+import { decodePairingCode, pairingLink, readPairingFromHash } from './pairing.js';
 import { QrCode } from './qr-code.js';
 import { tr as t } from './reading-mode.js';
 import type { PeerInfo } from './runtime.js';
@@ -24,6 +24,7 @@ import { Button } from './ui/button.js';
 const draftPeerCode = signal(readPairingFromHash(globalThis.location?.hash ?? '') ?? '');
 const pairFailed = signal(false);
 const copied = signal(false);
+const idCopied = signal(false);
 const renamingId = signal<string | null>(null);
 const renameDraft = signal('');
 
@@ -32,8 +33,22 @@ export function resetDevicesView(): void {
   draftPeerCode.value = readPairingFromHash(globalThis.location?.hash ?? '') ?? '';
   pairFailed.value = false;
   copied.value = false;
+  idCopied.value = false;
   renamingId.value = null;
   renameDraft.value = '';
+}
+
+/** Decode this device's own identity (signing id + transport address) from its
+ *  connection code, for the read-only "This device" card. Returns undefined for
+ *  an empty or unparseable code rather than throwing, so the card simply hides. */
+function selfIdentity(code: string): { signId: string; id: string; relayUrl?: string } | undefined {
+  if (!code) return undefined;
+  try {
+    const { addr, signId } = decodePairingCode(code);
+    return { signId, id: addr.id, relayUrl: addr.relayUrl };
+  } catch {
+    return undefined;
+  }
 }
 
 /**
@@ -83,6 +98,7 @@ export function Devices({
   const origin = globalThis.location?.origin ?? '';
   const link = code ? pairingLink(code, origin) : '';
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+  const self = selfIdentity(code);
 
   return (
     <section class={styles.settings}>
@@ -90,6 +106,48 @@ export function Devices({
         <h2 class={styles.settingsTitle}>{t(messages.devicesHeading)}</h2>
         <p class={styles.settingsIntro}>{t(messages.devicesIntro)}</p>
       </header>
+
+      {self && (
+        <article class={styles.setting}>
+          <h3 class={styles.settingTitle}>{t(messages.identityTitle)}</h3>
+          <p class={styles.settingDesc}>{t(messages.identityDesc)}</p>
+          <dl class={styles.identityList}>
+            <div class={styles.identityRow}>
+              <dt class={styles.identityLabel}>{t(messages.signingIdLabel)}</dt>
+              <dd class={styles.identityValue}>
+                <code class={styles.code} title={self.signId}>
+                  {self.signId}
+                </code>
+                <Button
+                  intent="neutral"
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(self.signId);
+                    idCopied.value = true;
+                  }}
+                >
+                  {idCopied.value ? t(messages.copied) : t(messages.copy)}
+                </Button>
+              </dd>
+            </div>
+            <div class={styles.identityRow}>
+              <dt class={styles.identityLabel}>{t(messages.transportIdLabel)}</dt>
+              <dd class={styles.identityValue}>
+                <code class={styles.code}>{self.id}</code>
+              </dd>
+            </div>
+            <div class={styles.identityRow}>
+              <dt class={styles.identityLabel}>{t(messages.relayLabel)}</dt>
+              <dd class={styles.identityValue}>
+                {self.relayUrl ? (
+                  <code class={styles.code}>{self.relayUrl}</code>
+                ) : (
+                  <span class={styles.muted}>{t(messages.relayUnknown)}</span>
+                )}
+              </dd>
+            </div>
+          </dl>
+        </article>
+      )}
 
       {code && (
         <article class={styles.setting}>
@@ -174,6 +232,37 @@ export function Devices({
                 <p class={styles.settingDesc}>
                   {t(messages.sasPrompt)} <strong>{peer.sas}</strong>
                 </p>
+
+                <dl class={styles.identityList}>
+                  <div class={styles.identityRow}>
+                    <dt class={styles.identityLabel}>{t(messages.signingIdLabel)}</dt>
+                    <dd class={styles.identityValue}>
+                      <code class={styles.code} title={peer.id}>
+                        {peer.id}
+                      </code>
+                    </dd>
+                  </div>
+                  {peer.addr && (
+                    <>
+                      <div class={styles.identityRow}>
+                        <dt class={styles.identityLabel}>{t(messages.transportIdLabel)}</dt>
+                        <dd class={styles.identityValue}>
+                          <code class={styles.code}>{peer.addr.id}</code>
+                        </dd>
+                      </div>
+                      <div class={styles.identityRow}>
+                        <dt class={styles.identityLabel}>{t(messages.relayLabel)}</dt>
+                        <dd class={styles.identityValue}>
+                          {peer.addr.relayUrl ? (
+                            <code class={styles.code}>{peer.addr.relayUrl}</code>
+                          ) : (
+                            <span class={styles.muted}>{t(messages.relayUnknown)}</span>
+                          )}
+                        </dd>
+                      </div>
+                    </>
+                  )}
+                </dl>
 
                 <div class={styles.peerActions}>
                   {onSetShareHost &&

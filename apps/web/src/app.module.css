@@ -198,6 +198,35 @@
   color: var(--cascivo-color-primary);
 }
 
+/* A labelled key/value list for device details (signing id, transport, relay),
+ * used both by the "This device" card and each linked peer's row. */
+.identityList {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.2rem 0 0;
+}
+
+.identityRow {
+  display: grid;
+  grid-template-columns: minmax(7rem, max-content) 1fr;
+  gap: 0.2rem 0.75rem;
+  align-items: baseline;
+}
+
+.identityLabel {
+  font-size: 0.78rem;
+  color: var(--cascivo-color-muted);
+}
+
+.identityValue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  min-width: 0;
+}
+
 .peerRow {
   display: grid;
   gap: 0.3rem;
