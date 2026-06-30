@@ -20,6 +20,9 @@ export const meta = defineMessages('safu.meta', {
   cliTitle: 'Backup node (CLI) · Sharu',
   cliDesc:
     'Run safu-node on a server, NAS, or Raspberry Pi to keep an always-on, zero-knowledge ciphertext replica of everything your devices back up.',
+  linkTitle: 'Link your backup node · Sharu',
+  linkDesc:
+    'Finish pairing the safu-node backup node you started from your terminal: link it to this device, confirm the safety number, and send your device code back.',
   appTitle: 'Your files · Sharu',
   appDesc:
     'Sharu is a zero-knowledge, local-first backup & sync platform — your files, encrypted on your device and synced across your own machines.',

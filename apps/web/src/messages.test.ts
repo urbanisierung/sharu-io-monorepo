@@ -9,6 +9,7 @@ type Namespace = Record<string, Message>;
 // would substitute nothing in a variant that dropped the token.
 const TRIPLES: Record<string, [Namespace, Namespace, Namespace]> = {
   landing: [m.landing, m.landingEli5, m.landingMachine],
+  link: [m.link, m.linkEli5, m.linkMachine],
   whitepaper: [m.whitepaper, m.whitepaperEli5, m.whitepaperMachine],
   comparison: [m.comparison, m.comparisonEli5, m.comparisonMachine],
   cliDocs: [m.cliDocs, m.cliDocsEli5, m.cliDocsMachine],

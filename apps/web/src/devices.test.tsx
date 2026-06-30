@@ -27,6 +27,14 @@ describe('Devices', () => {
     expect(screen.getByRole('img', { name: /link another device/i })).toBeTruthy();
   });
 
+  it('copies the raw connection code (not the URL) with Copy code', () => {
+    const writeText = vi.fn();
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    render(<Devices connectionCode={code} peers={noPeers} onPair={async () => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Copy code' }));
+    expect(writeText).toHaveBeenCalledWith('LINKCODE');
+  });
+
   it('groups the page into Share, Link and Manage sections', () => {
     const peers = signal<readonly PeerInfo[]>([{ id: 'PEER1', sas: '123456', status: 'verified' }]);
     render(<Devices connectionCode={code} peers={peers} onPair={async () => {}} />);

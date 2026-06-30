@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   decodePairingCode,
   encodePairingCode,
+  nodeLink,
   pairingLink,
+  readNodeFromHash,
   readPairingFromHash,
 } from './pairing.js';
 
@@ -51,5 +53,25 @@ describe('pairing deep link', () => {
   it('returns undefined when no pair param is present', () => {
     expect(readPairingFromHash('#other=1')).toBeUndefined();
     expect(readPairingFromHash('')).toBeUndefined();
+  });
+});
+
+describe('node deep link', () => {
+  it('builds a /link#node= link and reads the code back from the hash', () => {
+    const link = nodeLink('CODE-123', 'https://safu.app');
+    expect(link).toBe('https://safu.app/link#node=CODE-123');
+    expect(readNodeFromHash(new URL(link).hash)).toBe('CODE-123');
+  });
+
+  it('keeps #node= and #pair= distinct so the node link lands on the guided view', () => {
+    expect(readNodeFromHash('#pair=ABC')).toBeUndefined();
+    expect(readPairingFromHash('#node=ABC')).toBeUndefined();
+    expect(readNodeFromHash('#node=ABC')).toBe('ABC');
+  });
+
+  it('round-trips codes that need URL-encoding', () => {
+    const code = 'a b/c+d';
+    const hash = new URL(nodeLink(code, 'https://x')).hash;
+    expect(readNodeFromHash(hash)).toBe(code);
   });
 });

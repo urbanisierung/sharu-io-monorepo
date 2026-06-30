@@ -13,6 +13,7 @@ import { FlowPage } from './flow.js';
 import { Landing } from './landing.js';
 import { messages } from './messages.js';
 import { Navbar } from './navbar.js';
+import { NodeOnboarding } from './node-onboarding.js';
 import { readPairingFromHash } from './pairing.js';
 import { tr as t } from './reading-mode.js';
 import { navigate, route } from './router.js';
@@ -271,6 +272,18 @@ function RouteContent() {
   }
   if (view === 'cli-docs') {
     return <CliDocs onLaunch={launch} />;
+  }
+  // The backup-node onboarding companion: opened from the deep link
+  // `safu-node serve` prints. Continuing hands the node code to the app's
+  // existing auto-link-on-unlock path via a full navigation, so root re-reads it
+  // from `#pair=` on load (the module-level `pairCode` is captured once).
+  if (view === 'link') {
+    return (
+      <NodeOnboarding
+        onContinue={(code) => globalThis.location?.assign(`/app#pair=${encodeURIComponent(code)}`)}
+        onCliDocs={() => navigate('cli-docs')}
+      />
+    );
   }
   // The keyless share viewer renders with no wallet/unlock — the runtime is
   // never created here, so opening a public link stays instant and anonymous.

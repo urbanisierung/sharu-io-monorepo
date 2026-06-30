@@ -15,6 +15,7 @@ export type Route =
   | 'comparison'
   | 'how-it-works'
   | 'cli-docs'
+  | 'link'
   | 'app'
   | 'share';
 
@@ -27,6 +28,7 @@ export function routeOf(pathname: string): Route {
   if (pathname === '/comparison') return 'comparison';
   if (pathname === '/how-it-works' || pathname === '/flow') return 'how-it-works';
   if (pathname === '/cli-docs') return 'cli-docs';
+  if (pathname === '/link') return 'link';
   if (pathname === '/s') return 'share';
   return 'landing';
 }
@@ -49,6 +51,7 @@ const PAGE_META = {
   comparison: { title: meta.comparisonTitle, desc: meta.comparisonDesc },
   'how-it-works': { title: meta.howTitle, desc: meta.howDesc },
   'cli-docs': { title: meta.cliTitle, desc: meta.cliDesc },
+  link: { title: meta.linkTitle, desc: meta.linkDesc },
   app: { title: meta.appTitle, desc: meta.appDesc },
   share: { title: meta.shareTitle, desc: meta.shareDesc },
 } satisfies Record<Route, unknown>;

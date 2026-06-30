@@ -13,6 +13,7 @@ describe('router', () => {
     expect(routeOf('/comparison')).toBe('comparison');
     expect(routeOf('/how-it-works')).toBe('how-it-works');
     expect(routeOf('/cli-docs')).toBe('cli-docs');
+    expect(routeOf('/link')).toBe('link');
     expect(routeOf('/app')).toBe('app');
     expect(routeOf('/app/anything')).toBe('app');
     expect(routeOf('/s')).toBe('share');
@@ -32,6 +33,8 @@ describe('router', () => {
     expect(pathOf('comparison')).toBe('/comparison');
     expect(pathOf('how-it-works')).toBe('/how-it-works');
     expect(pathOf('cli-docs')).toBe('/cli-docs');
+    expect(pathOf('link')).toBe('/link');
+    expect(routeOf(pathOf('link'))).toBe('link');
     expect(pathOf('app')).toBe('/app');
     expect(pathOf('share')).toBe('/s');
     expect(routeOf(pathOf('app'))).toBe('app');
