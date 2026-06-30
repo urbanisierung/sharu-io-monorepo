@@ -37,6 +37,8 @@ describe('CLI spec', () => {
       'link',
       'unlink',
       'list',
+      'files',
+      'status',
       'serve',
       'update',
       'version',

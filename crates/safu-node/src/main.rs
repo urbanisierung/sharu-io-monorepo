@@ -48,7 +48,7 @@ use std::time::Duration;
 use safu_transport::native::NativeEndpoint;
 
 use crate::config::Devices;
-use crate::doc::SyncDoc;
+use crate::doc::{StampedEntry, SyncDoc};
 use crate::identity::{load_or_create_signer, Signer};
 use crate::pairing::PairingInfo;
 use crate::sas::safety_number;
@@ -77,7 +77,7 @@ async fn run() -> Result<(), String> {
     // skip it. `update`/`version`/`help` don't touch the data dir.
     if matches!(
         command,
-        "init" | "info" | "link" | "unlink" | "list" | "serve" | "run"
+        "init" | "info" | "link" | "unlink" | "list" | "files" | "status" | "serve" | "run"
     ) {
         meta::ensure(&args.data_dir)?;
     }
@@ -87,6 +87,8 @@ async fn run() -> Result<(), String> {
         "link" => cmd_link(&args),
         "unlink" => cmd_unlink(&args),
         "list" => cmd_list(&args),
+        "files" => cmd_files(&args),
+        "status" => cmd_status(&args),
         "serve" | "run" => cmd_serve(&args).await,
         "update" => cmd_update(&args).await,
         "version" | "--version" | "-V" => {
@@ -208,6 +210,118 @@ fn cmd_list(args: &Args) -> Result<(), String> {
         );
         println!();
     }
+    Ok(())
+}
+
+/// List the files this node holds in its backup replica — the live (non-deleted)
+/// entries of the synced allocation table. Read-only and network-free: it reads
+/// the on-disk `doc.json` (kept fresh by `serve`, which persists on every applied
+/// delta), so it can be run in a second terminal to confirm what a running node
+/// has actually synced. No passphrase needed — the table holds only plaintext
+/// metadata (paths, sizes), never block contents.
+fn cmd_files(args: &Args) -> Result<(), String> {
+    let snapshot = load_doc(&doc_path(args))?.unwrap_or_default();
+    let mut live: Vec<&StampedEntry> = snapshot
+        .entries
+        .iter()
+        .filter(|e| !e.entry.deleted)
+        .collect();
+    live.sort_by(|a, b| a.path.cmp(&b.path));
+    let tombstones = snapshot.entries.len() - live.len();
+
+    if live.is_empty() {
+        println!("no files backed up yet — pair a device, back something up, then re-run.");
+        if tombstones > 0 {
+            println!("({tombstones} deleted file(s) tracked as tombstones)");
+        }
+        return Ok(());
+    }
+
+    let total: i64 = live.iter().map(|e| e.entry.size).sum();
+    println!("backed-up files ({}, {}):", live.len(), human_size(total));
+    for entry in &live {
+        println!(
+            "  {:>10}  {:>3} block(s)  {}",
+            human_size(entry.entry.size),
+            entry.entry.blocks.len(),
+            entry.path,
+        );
+    }
+    if tombstones > 0 {
+        println!();
+        println!("{tombstones} deleted file(s) tracked as tombstones (not shown).");
+    }
+    Ok(())
+}
+
+/// Print an offline snapshot of what this node holds: backed-up files, how much
+/// of the referenced ciphertext has been replicated locally, how many extra
+/// blocks are hosted as public-share pins, and the linked devices. Like `files`
+/// it reads the data dir without binding the network, so it answers "is this node
+/// actually syncing?" at a glance while `serve` runs elsewhere.
+fn cmd_status(args: &Args) -> Result<(), String> {
+    let snapshot = load_doc(&doc_path(args))?.unwrap_or_default();
+    let store = FsBlockStore::new(args.data_dir.join("blocks"));
+    let devices = Devices::load(&args.data_dir)?;
+
+    let live: Vec<&StampedEntry> = snapshot
+        .entries
+        .iter()
+        .filter(|e| !e.entry.deleted)
+        .collect();
+    let total_size: i64 = live.iter().map(|e| e.entry.size).sum();
+
+    // Distinct blocks the live allocation table references — what a full replica
+    // must hold. `serve` auto-pulls these from the authoring devices.
+    let mut referenced = std::collections::HashSet::new();
+    for entry in &live {
+        for hash in &entry.entry.blocks {
+            referenced.insert(hash.as_str());
+        }
+    }
+    let mut present_referenced = 0usize;
+    for hash in &referenced {
+        if store.has(hash) {
+            present_referenced += 1;
+        }
+    }
+    let missing = referenced.len() - present_referenced;
+    let held = store.count();
+    // Blocks held that the table does not reference are public-share pins (they
+    // live outside the allocation table — see `block-pin.ts` / sync.rs).
+    let pins = held.saturating_sub(present_referenced);
+
+    println!(
+        "safu node status — offline snapshot of {}",
+        args.data_dir.display()
+    );
+    println!(
+        "  backed-up files:    {} ({})",
+        live.len(),
+        human_size(total_size)
+    );
+    println!(
+        "  referenced blocks:  {} ({present_referenced} present, {missing} still replicating)",
+        referenced.len(),
+    );
+    println!("  share-pin blocks:   {pins} (public-share blocks hosted for offline links)");
+    println!("  total blocks held:  {held}");
+    println!("  linked devices:     {}", devices.list().len());
+    for device in devices.list() {
+        println!(
+            "    {} — relay {}",
+            short(&device.sign_id),
+            device.relay_url.as_deref().unwrap_or("(none)"),
+        );
+    }
+    if devices.list().is_empty() {
+        println!("    none — run `safu-node link <code>` to add one");
+    }
+    println!();
+    println!("Run `safu-node files` for the file list, `list` for device safety numbers, or");
+    println!(
+        "`info` for this node's pairing code (paste it into the web app's \"Host shares here\")."
+    );
     Ok(())
 }
 
@@ -385,6 +499,23 @@ fn short(id: &str) -> &str {
     &id[..id.len().min(12)]
 }
 
+/// A compact, human-readable byte size (e.g. `3.4 MB`) for status/file listings.
+/// Exact bytes below 1 KiB; one decimal place above.
+fn human_size(bytes: i64) -> String {
+    const UNITS: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
+    let mut size = bytes as f64;
+    let mut unit = 0;
+    while size >= 1024.0 && unit < UNITS.len() - 1 {
+        size /= 1024.0;
+        unit += 1;
+    }
+    if unit == 0 {
+        format!("{bytes} {}", UNITS[0])
+    } else {
+        format!("{size:.1} {}", UNITS[unit])
+    }
+}
+
 /// Wait (briefly) for the endpoint to select a home relay so its address is
 /// dialable; returns `None` if no relay is reachable in time. Local features
 /// keep working without it — only dialing peers needs the relay.
@@ -423,6 +554,8 @@ COMMANDS:\n\
   link <code>          Authorize a device (its connection code) and remember it\n\
   unlink <signing-id>  Revoke a device's write access and stop backing it up\n\
   list                 List linked devices and their safety numbers\n\
+  files                List the files held in this node's backup replica\n\
+  status               Print a snapshot: files, blocks held, share pins, devices\n\
   serve                Run the always-on backup node & share host (Ctrl-C to stop)\n\
   update               Check for a newer release (use --apply to install it)\n\
   version              Print the version\n\
@@ -494,5 +627,20 @@ impl Args {
             .clone()
             .filter(|p| !p.is_empty())
             .ok_or_else(|| "SAFU_NODE_PASSPHRASE (or --passphrase) is required".into())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::human_size;
+
+    #[test]
+    fn human_size_is_exact_bytes_below_a_kib_and_scales_above() {
+        assert_eq!(human_size(0), "0 B");
+        assert_eq!(human_size(512), "512 B");
+        assert_eq!(human_size(1024), "1.0 KB");
+        assert_eq!(human_size(2048), "2.0 KB");
+        assert_eq!(human_size(5 * 1024 * 1024), "5.0 MB");
+        assert_eq!(human_size(1024 * 1024 * 1024), "1.0 GB");
     }
 }

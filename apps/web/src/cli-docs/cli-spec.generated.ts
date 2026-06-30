@@ -35,6 +35,16 @@ export const cliSpec: CliSpec = {
       summary: 'List linked devices and their safety numbers',
     },
     {
+      name: 'files',
+      arg: null,
+      summary: "List the files held in this node's backup replica",
+    },
+    {
+      name: 'status',
+      arg: null,
+      summary: 'Print a snapshot: files, blocks held, share pins, devices',
+    },
+    {
       name: 'serve',
       arg: null,
       summary: 'Run the always-on backup node & share host (Ctrl-C to stop)',

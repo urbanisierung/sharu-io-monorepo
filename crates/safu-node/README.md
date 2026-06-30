@@ -113,6 +113,25 @@ signing id and remembers its address, then `serve` dials it, syncs the
 allocation table, and replicates its ciphertext blocks. To let the web app show
 this node back, paste the node's own `info` pairing code into the app.
 
+### Inspecting a running node
+
+`serve` is headless, but it persists its document snapshot to `doc.json` on every
+applied change, so you can inspect a running node from a **second terminal**
+without stopping it — point the read-only commands at the same `--data-dir`:
+
+```sh
+safu-node files    # the files this node has synced into its backup replica
+safu-node status   # files, replication progress, public-share pins, linked devices
+```
+
+`status` is the quickest "is this node actually working?" check. Its
+`referenced blocks: N (X present, Y still replicating)` line shows how much of the
+ciphertext the synced allocation table references has been pulled locally; once a
+device finishes backing up, `Y` reaches `0`. `share-pin blocks` counts the
+public-share blocks devices have pinned here (the blocks that keep share links
+resolving while a device is offline). Neither command needs the passphrase or the
+network — they only read the data dir.
+
 ### Matching safety numbers
 
 `link`, `list`, and `serve` print a 6-digit **safety number** for each device —
@@ -139,6 +158,8 @@ them. The node only ever receives ciphertext.
 | `link <code>` | Authorize a device (its connection code) and remember its address. |
 | `unlink <signing-id>` | Permanently revoke a device's write access and stop backing it up. |
 | `list` | List linked devices and their safety numbers. |
+| `files` | List the files held in this node's backup replica (paths, sizes, block counts). |
+| `status` | Print an offline snapshot: backed-up files, replication progress, public-share pins, and linked devices. |
 | `serve` (`run`) | Run the always-on backup node & share host (Ctrl-C to stop; flushes on exit). |
 | `update` | Check for a newer release; `update --apply` downloads, verifies (minisign), and installs it. |
 
