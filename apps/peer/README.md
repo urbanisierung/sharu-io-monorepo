@@ -45,7 +45,7 @@ restart.
 On start it logs its own signing id and transport address; pair a device against
 those (and authorize the device's id here) and the node begins replicating.
 
-> **Already shipped natively:** `crates/safu-node` is a self-contained Rust CLI
+> **Already shipped natively:** `crates/sharu` is a self-contained Rust CLI
 > that realizes the "Native binding (recommended)" wiring below — an always-on,
 > wire-compatible backup node over `safu_transport::native`, with no Node or
 > browser. If you want a headless node today, use it.
@@ -66,7 +66,7 @@ ciphertext) rather than hole-punching directly. For best NAT traversal on a
 NAS / VPS / Raspberry Pi, prefer:
 
 - **A. Native binding (best NAT traversal).** Already realized by the self-contained
-  Rust CLI `crates/safu-node` over `safu_transport::native` (direct UDP
+  Rust CLI `crates/sharu` over `safu_transport::native` (direct UDP
   hole-punching, no Node or browser). Use it where direct connectivity matters.
 
 `main.ts` is now a runnable always-on node. (Running the CLI needs a TypeScript-aware

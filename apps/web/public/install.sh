@@ -1,21 +1,21 @@
 #!/bin/sh
-# Install the safu-node CLI on Linux or macOS.
+# Install the sharu CLI on Linux or macOS.
 #
 #   curl -fsSL https://new.sharu.io/install.sh | sh
 #
 # Environment overrides:
-#   SAFU_NODE_VERSION   release version without the tag prefix (e.g. 0.1.0).
+#   SHARU_VERSION   release version without the tag prefix (e.g. 0.1.0).
 #                       Defaults to the latest release.
-#   SAFU_NODE_INSTALL_DIR  install directory (default: $HOME/.local/bin).
-#   SAFU_NODE_REPO      owner/repo to download from
+#   SHARU_INSTALL_DIR  install directory (default: $HOME/.local/bin).
+#   SHARU_REPO      owner/repo to download from
 #                       (default: urbanisierung/sharu-io-monorepo).
-#   SAFU_NODE_TOKEN     GitHub token with read access, for installing from a
+#   SHARU_TOKEN     GitHub token with read access, for installing from a
 #                       private repo (also honours GH_TOKEN / GITHUB_TOKEN).
 set -eu
 
-REPO="${SAFU_NODE_REPO:-urbanisierung/sharu-io-monorepo}"
-INSTALL_DIR="${SAFU_NODE_INSTALL_DIR:-$HOME/.local/bin}"
-BIN="safu-node"
+REPO="${SHARU_REPO:-urbanisierung/sharu-io-monorepo}"
+INSTALL_DIR="${SHARU_INSTALL_DIR:-$HOME/.local/bin}"
+BIN="sharu"
 
 err() {
   echo "error: $*" >&2
@@ -36,7 +36,7 @@ case "$os" in
   Darwin)
     case "$arch" in
       arm64 | aarch64) target="aarch64-apple-darwin" ;;
-      x86_64 | amd64) err "Intel macOS (x86_64) is no longer pre-built; build from source with 'cargo build --release -p safu-node'" ;;
+      x86_64 | amd64) err "Intel macOS (x86_64) is no longer pre-built; build from source with 'cargo build --release -p sharu'" ;;
       *) err "unsupported macOS architecture: $arch" ;;
     esac
     ;;
@@ -49,11 +49,11 @@ asset="${BIN}-${target}.tar.gz"
 
 # A token unlocks release downloads from a private repo (and dodges anonymous
 # rate limits). It is optional — public releases install with no token at all.
-TOKEN="${SAFU_NODE_TOKEN:-${GH_TOKEN:-${GITHUB_TOKEN:-}}}"
+TOKEN="${SHARU_TOKEN:-${GH_TOKEN:-${GITHUB_TOKEN:-}}}"
 
-if [ -n "${SAFU_NODE_VERSION:-}" ]; then
-  release_api="https://api.github.com/repos/${REPO}/releases/tags/safu-node-v${SAFU_NODE_VERSION}"
-  public_base="https://github.com/${REPO}/releases/download/safu-node-v${SAFU_NODE_VERSION}"
+if [ -n "${SHARU_VERSION:-}" ]; then
+  release_api="https://api.github.com/repos/${REPO}/releases/tags/sharu-v${SHARU_VERSION}"
+  public_base="https://github.com/${REPO}/releases/download/sharu-v${SHARU_VERSION}"
 else
   release_api="https://api.github.com/repos/${REPO}/releases/latest"
   public_base="https://github.com/${REPO}/releases/latest/download"
@@ -116,7 +116,7 @@ if ! download "$asset" "$tmp/$asset"; then
   else
     err "could not download ${asset}.
 If ${REPO} is private, supply a GitHub token with read access and re-run, e.g.:
-  curl -fsSL https://new.sharu.io/install.sh | SAFU_NODE_TOKEN=\"\$(gh auth token)\" sh"
+  curl -fsSL https://new.sharu.io/install.sh | SHARU_TOKEN=\"\$(gh auth token)\" sh"
   fi
 fi
 

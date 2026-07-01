@@ -45,7 +45,7 @@ It is **not** a second app, and it does **not** reuse the wallet key. Publishing
 and revoking are features *of* the existing wallet. The only genuinely new
 surface is a keyless viewer route; the only new infrastructure is an always-on
 node to keep shared blocks reachable — which the blueprint already anticipates
-(`safu-node`, the zero-knowledge ciphertext replica).
+(`sharu`, the zero-knowledge ciphertext replica).
 
 ## Data shapes
 
@@ -116,7 +116,7 @@ transport carrier (`sync-doc.ts`). Its mirror `safu/unpin/1` (`unpinBlock` /
 
 - **Who serves the blocks?** The publishing browser is neither always-on nor
   dial-in-able. So publishing **pins `root` + every block to an always-on Iroh
-  node** — the `safu-node` ciphertext replica — via `safu/pin/1`. The `peer` in
+  node** — the `sharu` ciphertext replica — via `safu/pin/1`. The `peer` in
   the link is that node, not the laptop.
 - **Which node? (MVP)** The runtime pins to, and embeds, the first paired peer
   (`peer-addrs.ts` remembers paired addresses across reloads). A device/node
@@ -132,7 +132,7 @@ transport carrier (`sync-doc.ts`). Its mirror `safu/unpin/1` (`unpinBlock` /
   Node and advertises `SYNC_PROTOCOL`, `BLOCK_PROTOCOL`, `PIN_PROTOCOL`, and
   `UNPIN_PROTOCOL` — so the always-on TS peer can pin/serve/unpin public shares
   over real Iroh, not just loopback. For direct hole-punching prefer the native
-  Rust node `crates/safu-node`.
+  Rust node `crates/sharu`.
 
 ## Phases
 

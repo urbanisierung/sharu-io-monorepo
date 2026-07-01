@@ -53,6 +53,26 @@ describe('SyncDoc persistence', () => {
     expect(reopened.files.value.map((f) => f.path)).toEqual(['remote.txt']);
   });
 
+  it('records and persists when each peer was linked (from the grant stamp)', async () => {
+    const store = new MemoryDocStore();
+    const doc = await SyncDoc.open('OWNER', store);
+    // A grant carries the authoring device's wall-clock in its HLC stamp; that
+    // is when the peer was linked. Feed one as a remote op so the time is fixed.
+    doc.applyRemote('OWNER', {
+      entries: [],
+      writers: [
+        { kind: 'add', peer: 'B', stamp: { wall: 1705276800000, counter: 0, peer: 'OWNER' } },
+      ],
+    });
+    expect(doc.linkedAt('B')).toBe(1705276800000);
+    await doc.flush();
+
+    const reopened = await SyncDoc.open('OWNER', store);
+    expect(reopened.linkedAt('B')).toBe(1705276800000);
+    // Self is authorized from genesis, not linked, so it has no link time.
+    expect(reopened.linkedAt('OWNER')).toBeUndefined();
+  });
+
   it('recovers the file list after reopening from the store', async () => {
     const store = new MemoryDocStore();
     const first = await SyncDoc.open('A', store);

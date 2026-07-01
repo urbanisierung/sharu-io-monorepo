@@ -13,9 +13,9 @@ use sha2::{Digest, Sha256};
 use crate::release::{self, Release};
 
 /// The release-signing public key, pinned at build time. Replace
-/// `keys/safu-node.pub` and configure the matching secret to sign releases
+/// `keys/sharu.pub` and configure the matching secret to sign releases
 /// (see RELEASING.md); until then this is a placeholder and `apply` refuses.
-const PUBLIC_KEY: &str = include_str!("../keys/safu-node.pub");
+const PUBLIC_KEY: &str = include_str!("../keys/sharu.pub");
 
 /// Download, verify, and install the newer `release`, replacing this binary. On
 /// success the caller tells the user to restart. Any failure leaves the installed
@@ -31,7 +31,7 @@ pub async fn apply(release: &Release) -> Result<(), String> {
             "self-apply is not yet supported on this platform — re-run the installer".into(),
         );
     }
-    let archive_name = format!("safu-node-{target}.tar.gz");
+    let archive_name = format!("sharu-{target}.tar.gz");
 
     let archive_asset = release
         .asset(&archive_name)
@@ -95,7 +95,7 @@ fn verify_sha256(data: &[u8], sidecar: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Pull the `safu-node` binary out of a `.tar.gz` archive.
+/// Pull the `sharu` binary out of a `.tar.gz` archive.
 #[cfg(unix)]
 fn extract_binary(archive: &[u8]) -> Result<Vec<u8>, String> {
     use std::io::Read;
@@ -108,7 +108,7 @@ fn extract_binary(archive: &[u8]) -> Result<Vec<u8>, String> {
             .map_err(|e| format!("entry path: {e}"))?
             .file_name()
             .and_then(|n| n.to_str())
-            == Some("safu-node");
+            == Some("sharu");
         if is_binary {
             let mut bytes = Vec::new();
             entry
@@ -117,7 +117,7 @@ fn extract_binary(archive: &[u8]) -> Result<Vec<u8>, String> {
             return Ok(bytes);
         }
     }
-    Err("archive did not contain the safu-node binary".into())
+    Err("archive did not contain the sharu binary".into())
 }
 
 #[cfg(not(unix))]
@@ -134,7 +134,7 @@ fn install_binary(binary: &[u8]) -> Result<(), String> {
 
     let exe = std::env::current_exe().map_err(|e| format!("locate current binary: {e}"))?;
     let dir = exe.parent().unwrap_or_else(|| std::path::Path::new("."));
-    let staged = dir.join(format!(".safu-node-update-{}", std::process::id()));
+    let staged = dir.join(format!(".sharu-update-{}", std::process::id()));
     fs::write(&staged, binary).map_err(|e| format!("stage new binary: {e}"))?;
     let result = fs::set_permissions(&staged, fs::Permissions::from_mode(0o755))
         .map_err(|e| format!("chmod new binary: {e}"))
@@ -160,7 +160,7 @@ mod tests {
     #[test]
     fn verifies_a_real_signature_and_rejects_tampering() {
         let keypair = minisign::KeyPair::generate_unencrypted_keypair().unwrap();
-        let data = b"safu-node release archive bytes";
+        let data = b"sharu release archive bytes";
         let signature = minisign::sign(
             Some(&keypair.pk),
             &keypair.sk,
@@ -184,8 +184,8 @@ mod tests {
         let data = b"some bytes";
         let digest = hex::encode(Sha256::digest(data));
         // `sha256sum` format is "<hex>  <filename>".
-        assert!(verify_sha256(data, &format!("{digest}  safu-node.tar.gz")).is_ok());
-        assert!(verify_sha256(data, "deadbeef  safu-node.tar.gz").is_err());
+        assert!(verify_sha256(data, &format!("{digest}  sharu.tar.gz")).is_ok());
+        assert!(verify_sha256(data, "deadbeef  sharu.tar.gz").is_err());
         assert!(verify_sha256(data, "").is_err());
     }
 
@@ -195,11 +195,11 @@ mod tests {
         use flate2::Compression;
         use std::io::Write;
 
-        // Build a .tar.gz containing a `safu-node` file with known contents.
+        // Build a .tar.gz containing a `sharu` file with known contents.
         let mut tar_builder = tar::Builder::new(Vec::new());
         let payload = b"#!/bin/true\n";
         let mut header = tar::Header::new_gnu();
-        header.set_path("safu-node").unwrap();
+        header.set_path("sharu").unwrap();
         header.set_size(payload.len() as u64);
         header.set_mode(0o755);
         header.set_cksum();

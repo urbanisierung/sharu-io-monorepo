@@ -1,4 +1,4 @@
-# safu-node — headless zero-knowledge backup node (CLI)
+# sharu — headless zero-knowledge backup node (CLI)
 
 An always-on backup node you configure entirely from the terminal. Pair it with
 your devices and it holds a full **ciphertext** replica of everything they back
@@ -44,7 +44,7 @@ policy the SDK applies.
 ## Install
 
 Prebuilt binaries for Linux, macOS, and Windows are published to GitHub Releases
-by the `Release safu-node` workflow. Install the latest with one line:
+by the `Release sharu` workflow. Install the latest with one line:
 
 **Linux / macOS**
 
@@ -61,21 +61,21 @@ irm https://new.sharu.io/install.ps1 | iex
 The install scripts are served by the website (source: `apps/web/public/`); the
 release binaries they fetch live on GitHub Releases. The scripts detect your
 OS/arch, download the matching archive from the latest release, verify its
-SHA-256, and install `safu-node` to `~/.local/bin`
-(`%LOCALAPPDATA%\safu-node\bin` on Windows). Pin a version with
-`SAFU_NODE_VERSION=0.1.0`, or change the location with `SAFU_NODE_INSTALL_DIR`.
+SHA-256, and install `sharu` to `~/.local/bin`
+(`%LOCALAPPDATA%\sharu\bin` on Windows). Pin a version with
+`SHARU_VERSION=0.1.0`, or change the location with `SHARU_INSTALL_DIR`.
 
 While this repository is **private**, anonymous downloads from GitHub Releases
 return `404` — pass a token with read access so the scripts fetch the asset
-through the authenticated API instead (`SAFU_NODE_TOKEN`, or `GH_TOKEN` /
+through the authenticated API instead (`SHARU_TOKEN`, or `GH_TOKEN` /
 `GITHUB_TOKEN`):
 
 ```sh
-curl -fsSL https://new.sharu.io/install.sh | SAFU_NODE_TOKEN="$(gh auth token)" sh
+curl -fsSL https://new.sharu.io/install.sh | SHARU_TOKEN="$(gh auth token)" sh
 ```
 
 ```powershell
-$env:SAFU_NODE_TOKEN = (gh auth token); irm https://new.sharu.io/install.ps1 | iex
+$env:SHARU_TOKEN = (gh auth token); irm https://new.sharu.io/install.ps1 | iex
 ```
 
 Supported targets: `x86_64`/`aarch64` Linux (gnu), `aarch64` macOS,
@@ -83,11 +83,11 @@ Supported targets: `x86_64`/`aarch64` Linux (gnu), `aarch64` macOS,
 
 ### Cutting a release
 
-Push a tag of the form `safu-node-v<version>` (matching the crate version in
+Push a tag of the form `sharu-v<version>` (matching the crate version in
 `Cargo.toml`); the workflow builds every target and publishes the release:
 
 ```sh
-git tag safu-node-v0.1.0 && git push origin safu-node-v0.1.0
+git tag sharu-v0.1.0 && git push origin sharu-v0.1.0
 ```
 
 It can also be run manually from the Actions tab (`workflow_dispatch`) with the
@@ -100,12 +100,12 @@ identity on first run, prints this node's pairing code, walks you through linkin
 each device, then runs:
 
 ```sh
-cargo build --release -p safu-node      # or build from source: target/release/safu-node
+cargo build --release -p sharu      # or build from source: target/release/sharu
 
-export SAFU_NODE_PASSPHRASE="…"          # derives this node's signing identity
-export SAFU_NODE_DATA_DIR="/srv/safu"    # the directory this node owns
+export SHARU_PASSPHRASE="…"          # derives this node's signing identity
+export SHARU_DATA_DIR="/srv/safu"    # the directory this node owns
 
-safu-node serve                          # guided first run, then always-on
+sharu serve                          # guided first run, then always-on
 ```
 
 The guided run does the pairing handshake for you:
@@ -127,13 +127,13 @@ Under a service manager (no terminal) `serve` skips the wizard and runs straight
 away, so the individual steps stay available for scripting:
 
 ```sh
-safu-node init                            # one-time: create the identity
-safu-node info                            # print this node's pairing code
-safu-node link <device-connection-code>   # authorize + remember a device
-safu-node serve                           # run the always-on backup node
+sharu init                            # one-time: create the identity
+sharu info                            # print this node's pairing code
+sharu link <device-connection-code>   # authorize + remember a device
+sharu serve                           # run the always-on backup node
 ```
 
-Copy the **connection code** the web app shows and run `safu-node link <code>`:
+Copy the **connection code** the web app shows and run `sharu link <code>`:
 the node authorizes that device's signing id and remembers its address, then
 `serve` dials it, syncs the allocation table, and replicates its ciphertext
 blocks. (Link devices **before** `serve`, or restart it afterwards — `serve`
@@ -147,8 +147,8 @@ applied change, so you can inspect a running node from a **second terminal**
 without stopping it — point the read-only commands at the same `--data-dir`:
 
 ```sh
-safu-node files    # the files this node has synced into its backup replica
-safu-node status   # files, replication progress, public-share pins, linked devices
+sharu files    # the files this node has synced into its backup replica
+sharu status   # files, replication progress, public-share pins, linked devices
 ```
 
 `status` is the quickest "is this node actually working?" check. Its
@@ -165,8 +165,8 @@ To wipe a node and set it up again from scratch — a new identity, no linked
 devices, no stored blocks — run `reset`:
 
 ```sh
-safu-node reset            # prompts for confirmation
-safu-node reset --force    # skip the prompt (for scripts / no terminal)
+sharu reset            # prompts for confirmation
+sharu reset --force    # skip the prompt (for scripts / no terminal)
 ```
 
 It deletes this node's `identity/`, `doc.json`, `devices.json`, `meta.json`, and
@@ -182,7 +182,7 @@ a terminal to prompt, `reset` refuses unless `--force` is given.
 the same code the web app shows next to that device on its Devices screen.
 Compare them out of band (read it aloud, message it): if they match, the link is
 genuine; if they differ, a relay swapped a key in transit, so run
-`safu-node unlink <signing-id>` and pair again. This is the terminal equivalent
+`sharu unlink <signing-id>` and pair again. This is the terminal equivalent
 of the app's "Codes match" / "Codes differ" check.
 
 ### Hosting public shares
@@ -212,10 +212,10 @@ them. The node only ever receives ciphertext.
 
 | Env var | Flag | Meaning |
 | --- | --- | --- |
-| `SAFU_NODE_PASSPHRASE` | `--passphrase` | Derives the node's signing identity (**required**). Prefer the env var to keep it out of shell history. |
-| `SAFU_NODE_DATA_DIR` | `--data-dir` | Directory the node owns (default `./safu-node-data`). |
-| `SAFU_NODE_NO_UPDATE_CHECK` | — | Set to disable the one-line "newer version available" notice at `serve` startup. |
-| `SAFU_NODE_TOKEN` (`GH_TOKEN` / `GITHUB_TOKEN`) | — | GitHub read token for the update check while the repo is private. |
+| `SHARU_PASSPHRASE` | `--passphrase` | Derives the node's signing identity (**required**). Prefer the env var to keep it out of shell history. |
+| `SHARU_DATA_DIR` | `--data-dir` | Directory the node owns (default `./sharu-data`). |
+| `SHARU_NO_UPDATE_CHECK` | — | Set to disable the one-line "newer version available" notice at `serve` startup. |
+| `SHARU_TOKEN` (`GH_TOKEN` / `GITHUB_TOKEN`) | — | GitHub read token for the update check while the repo is private. |
 
 ### Running multiple nodes
 
@@ -224,8 +224,8 @@ independent identity and keeps an independent ciphertext replica, so the same
 device can fan its backups out to as many nodes as you like:
 
 ```sh
-SAFU_NODE_DATA_DIR=/srv/safu-a SAFU_NODE_PASSPHRASE=… safu-node serve
-SAFU_NODE_DATA_DIR=/srv/safu-b SAFU_NODE_PASSPHRASE=… safu-node serve
+SHARU_DATA_DIR=/srv/safu-a SHARU_PASSPHRASE=… sharu serve
+SHARU_DATA_DIR=/srv/safu-b SHARU_PASSPHRASE=… sharu serve
 ```
 
 ## Data layout (`--data-dir`)
@@ -254,11 +254,11 @@ devices again**, and shares stay pinned.
 Check whether a newer version exists:
 
 ```sh
-safu-node update            # reports; --apply to install
+sharu update            # reports; --apply to install
 ```
 
 `serve` also prints a one-line notice at startup when a newer version is out
-(disable with `SAFU_NODE_NO_UPDATE_CHECK`).
+(disable with `SHARU_NO_UPDATE_CHECK`).
 
 **Self-apply (Linux/macOS).** `update --apply` downloads the release archive for
 this host, **verifies its minisign signature against the public key embedded in
@@ -267,8 +267,8 @@ executable. Any failure aborts without touching the installed binary. Then
 restart:
 
 ```sh
-safu-node update --apply
-sudo systemctl restart safu-node   # or your supervisor, or re-run `safu-node serve`
+sharu update --apply
+sudo systemctl restart sharu   # or your supervisor, or re-run `sharu serve`
 ```
 
 Verification is mandatory — an unsigned or tampered release is refused, so a
@@ -290,7 +290,7 @@ so a node and a device on adjacent versions keep talking.
 
 ### Running as a service (systemd)
 
-A sample unit lives at [`deploy/safu-node.service`](deploy/safu-node.service).
+A sample unit lives at [`deploy/sharu.service`](deploy/sharu.service).
 It runs `serve` under a dedicated user, restarts on failure, and stops cleanly
 (SIGTERM → flush) so updates are a one-liner: install the new binary, then
-`systemctl restart safu-node`.
+`systemctl restart sharu`.

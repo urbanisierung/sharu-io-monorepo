@@ -1,7 +1,7 @@
 // The backup-node CLI docs (route: /cli-docs): getting started, use cases, and
 // the full command + option reference. The reference tables and the quickstart
 // are rendered from `cliSpec`, which a drift test regenerates from the Rust
-// source (crates/safu-node), so the page can't fall behind the CLI. The prose
+// source (crates/sharu), so the page can't fall behind the CLI. The prose
 // re-voices with the global reading mode via `tr` (imported as `t`); the install
 // one-liners are reused from the landing copy. Reachable from the landing page's
 // backup-node section; `onLaunch` opens the app.
@@ -23,7 +23,7 @@ const withArg = (name: string, arg: string | null): string => (arg ? `${name} ${
 /** Build the first-run script straight from the spec, so renamed commands or a
  *  renamed passphrase env var flow through automatically. */
 function quickstart(): string {
-  const passEnv = cliSpec.options.find((option) => option.required)?.env ?? 'SAFU_NODE_PASSPHRASE';
+  const passEnv = cliSpec.options.find((option) => option.required)?.env ?? 'SHARU_PASSPHRASE';
   const order = ['init', 'info', 'link', 'serve'];
   const steps = order
     .map((name) => cliSpec.commands.find((command) => command.name === name))

@@ -57,6 +57,9 @@ export interface PeerInfo {
   /** The peer's dialable transport address (id + home relay), if we remember it
    *  from pairing. Surfaced read-only in the Devices view for transparency. */
   addr?: PeerAddr;
+  /** Wall-clock time (ms) the device was linked, from the grant op's HLC stamp.
+   *  Undefined for links made before this was tracked. */
+  linkedAt?: number;
 }
 
 export interface Runtime {
@@ -95,6 +98,9 @@ export interface Runtime {
   verifyPeer: (id: string) => void;
   /** Mark a peer's SAS as mismatched: revoke its write access. */
   rejectPeer: (id: string) => void;
+  /** Permanently unlink a device: revoke its write access. It can never
+   *  re-authorize itself and stays listed as removed. */
+  removeDevice: (id: string) => void;
   /** Give a paired device a friendly local name (empty clears it). */
   renameDevice: (id: string, name: string) => void;
   /** This device's connection code (empty until unlock derives the identity). */
@@ -233,15 +239,30 @@ export async function createRuntime(wallet: Wallet): Promise<Runtime> {
         for (const peerId of writerIds) {
           let sas = sasCache.get(peerId);
           if (sas === undefined) {
-            sas = await deriveSas(id.id, peerId);
-            sasCache.set(peerId, sas);
+            // Derive per peer defensively: a failure for one must not throw out
+            // of the loop and leave the whole device list — and every safety
+            // number with it — unrendered. An empty string just hides that one
+            // peer's number until the next derivation succeeds.
+            try {
+              sas = await deriveSas(id.id, peerId);
+              sasCache.set(peerId, sas);
+            } catch {
+              sas = '';
+            }
           }
           const status = !ready.authorized(peerId)
             ? 'rejected'
             : isVerified.has(peerId)
               ? 'verified'
               : 'pending';
-          list.push({ id: peerId, name: names[peerId], sas, status, addr: addrs[peerId] });
+          list.push({
+            id: peerId,
+            name: names[peerId],
+            sas,
+            status,
+            addr: addrs[peerId],
+            linkedAt: ready.linkedAt(peerId),
+          });
         }
         peers.value = list;
       })();
@@ -410,6 +431,14 @@ export async function createRuntime(wallet: Wallet): Promise<Runtime> {
     doc?.revokeWriter(id);
   };
 
+  const removeDevice = (id: string): void => {
+    // Unlink a device the user no longer wants: permanently revoke its write
+    // access. Revocation is a grow-only tombstone, so the device can never
+    // re-authorize itself; it stays listed as removed rather than silently
+    // vanishing, which is why re-linking the same device is (correctly) blocked.
+    doc?.revokeWriter(id);
+  };
+
   const renameDevice = (id: string, name: string): void => {
     deviceNames.value = saveDeviceName(id, name);
   };
@@ -457,6 +486,7 @@ export async function createRuntime(wallet: Wallet): Promise<Runtime> {
     pairWithCode,
     verifyPeer,
     rejectPeer,
+    removeDevice,
     renameDevice,
     connectionCode,
     watchFolder,

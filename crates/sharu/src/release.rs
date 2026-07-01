@@ -9,8 +9,8 @@
 
 use std::time::Duration;
 
-/// Release tags are `safu-node-v<version>`, e.g. `safu-node-v0.1.0`.
-const TAG_PREFIX: &str = "safu-node-v";
+/// Release tags are `sharu-v<version>`, e.g. `sharu-v0.1.0`.
+const TAG_PREFIX: &str = "sharu-v";
 
 /// This build's version, baked in from Cargo at compile time.
 pub fn current_version() -> &'static str {
@@ -30,7 +30,7 @@ pub fn target_triple() -> Option<&'static str> {
     })
 }
 
-/// Pull the version out of a release tag like `safu-node-v0.1.0`.
+/// Pull the version out of a release tag like `sharu-v0.1.0`.
 pub fn version_from_tag(tag: &str) -> Option<&str> {
     tag.strip_prefix(TAG_PREFIX)
 }
@@ -56,7 +56,7 @@ fn tag_from_release_json(body: &str) -> Option<String> {
 /// A read token from the environment, mirroring the install script — so the check
 /// also works while the repository is private (where anonymous calls 404).
 fn token() -> Option<String> {
-    ["SAFU_NODE_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"]
+    ["SHARU_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"]
         .into_iter()
         .find_map(|var| std::env::var(var).ok().filter(|v| !v.is_empty()))
 }
@@ -101,7 +101,7 @@ async fn fetch_release_json() -> Result<String, String> {
         // GitHub rejects API requests without a User-Agent.
         .header(
             "User-Agent",
-            concat!("safu-node/", env!("CARGO_PKG_VERSION")),
+            concat!("sharu/", env!("CARGO_PKG_VERSION")),
         )
         .header("Accept", "application/vnd.github+json");
     if let Some(token) = token() {
@@ -193,7 +193,7 @@ pub async fn download_asset(asset: &Asset) -> Result<Vec<u8>, String> {
         .get(url)
         .header(
             "User-Agent",
-            concat!("safu-node/", env!("CARGO_PKG_VERSION")),
+            concat!("sharu/", env!("CARGO_PKG_VERSION")),
         )
         .header("Accept", "application/octet-stream");
     if let Some(token) = token {
@@ -223,7 +223,7 @@ mod tests {
 
     #[test]
     fn parses_the_version_from_a_tag() {
-        assert_eq!(version_from_tag("safu-node-v0.1.0"), Some("0.1.0"));
+        assert_eq!(version_from_tag("sharu-v0.1.0"), Some("0.1.0"));
         assert_eq!(version_from_tag("v0.1.0"), None);
     }
 
@@ -238,10 +238,10 @@ mod tests {
 
     #[test]
     fn reads_tag_name_out_of_release_json() {
-        let body = r#"{"tag_name":"safu-node-v1.2.3","name":"whatever"}"#;
+        let body = r#"{"tag_name":"sharu-v1.2.3","name":"whatever"}"#;
         assert_eq!(
             tag_from_release_json(body).as_deref(),
-            Some("safu-node-v1.2.3")
+            Some("sharu-v1.2.3")
         );
         assert_eq!(tag_from_release_json("not json"), None);
         assert_eq!(tag_from_release_json("{}"), None);
@@ -257,16 +257,16 @@ mod tests {
     #[test]
     fn parses_a_release_with_its_assets() {
         let body = r#"{
-            "tag_name": "safu-node-v0.2.0",
+            "tag_name": "sharu-v0.2.0",
             "assets": [
                 {
-                    "name": "safu-node-x86_64-unknown-linux-gnu.tar.gz",
-                    "browser_download_url": "https://cdn/safu-node.tar.gz",
+                    "name": "sharu-x86_64-unknown-linux-gnu.tar.gz",
+                    "browser_download_url": "https://cdn/sharu.tar.gz",
                     "url": "https://api/assets/1"
                 },
                 {
-                    "name": "safu-node-x86_64-unknown-linux-gnu.tar.gz.minisig",
-                    "browser_download_url": "https://cdn/safu-node.tar.gz.minisig",
+                    "name": "sharu-x86_64-unknown-linux-gnu.tar.gz.minisig",
+                    "browser_download_url": "https://cdn/sharu.tar.gz.minisig",
                     "url": "https://api/assets/2"
                 }
             ]
@@ -274,9 +274,9 @@ mod tests {
         let release = parse_release(body).unwrap();
         assert_eq!(release.version, "0.2.0");
         let archive = release
-            .asset("safu-node-x86_64-unknown-linux-gnu.tar.gz")
+            .asset("sharu-x86_64-unknown-linux-gnu.tar.gz")
             .unwrap();
-        assert_eq!(archive.download_url, "https://cdn/safu-node.tar.gz");
+        assert_eq!(archive.download_url, "https://cdn/sharu.tar.gz");
         assert_eq!(archive.api_url, "https://api/assets/1");
         assert!(release.asset("nope").is_none());
     }

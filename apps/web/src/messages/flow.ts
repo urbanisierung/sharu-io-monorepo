@@ -30,7 +30,7 @@ export const flow = defineMessages('safu.flow', {
   nodeRelay: 'Iroh relay',
   nodeRelayRole: 'Untrusted transport',
   nodeBackup: 'Backup node',
-  nodeBackupRole: 'safu-node replica',
+  nodeBackupRole: 'sharu replica',
 
   // Script (the walk) — one caption per exchange
   step1:
@@ -221,7 +221,7 @@ export const flowMachine = defineMessages('safu.flow.machine', {
     'Pairing is explicit: peer A emits a connection code (addr + signing id); peer B imports it, derives the same key from the shared password, both confirm the SAS, then direct sync over Iroh.',
   wallet4Title: 'durability := recovery_sheet + replica',
   wallet4Body:
-    'Recovery sheet restores wallet on any peer. safu-node holds an always-on ciphertext replica.',
+    'Recovery sheet restores wallet on any peer. sharu holds an always-on ciphertext replica.',
 
   stackKicker: 'stack',
   stackTitle: 'components.',

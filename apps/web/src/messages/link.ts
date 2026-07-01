@@ -1,13 +1,13 @@
 import { defineMessages } from '@cascivo/i18n';
 
 /** The browser onboarding view (route `/link`) that picks up the deep link
- *  `safu-node serve` prints. It walks the operator through the round trip between
+ *  `sharu serve` prints. It walks the operator through the round trip between
  *  this browser and their terminal: link the node here, confirm the safety
  *  number, and send this device's code back to the CLI. */
 export const link = defineMessages('safu.link', {
   title: 'Link your backup node',
   intro:
-    'You started safu-node on your terminal and opened the link it printed. Here is how to finish pairing — it is a quick round trip between this browser and your terminal.',
+    'You started sharu on your terminal and opened the link it printed. Here is how to finish pairing — it is a quick round trip between this browser and your terminal.',
   nodeHeading: 'The node you’re linking',
   signingIdLabel: 'Signing ID',
   relayLabel: 'Home relay',
@@ -24,7 +24,7 @@ export const link = defineMessages('safu.link', {
   cta: 'Open Sharu and link this node',
   invalidTitle: 'No node code in this link',
   invalidBody:
-    'Run safu-node serve (or safu-node info) on your terminal and copy the link it prints into your browser’s address bar.',
+    'Run sharu serve (or sharu info) on your terminal and copy the link it prints into your browser’s address bar.',
   invalidCta: 'Read the backup-node docs',
 });
 
@@ -49,7 +49,7 @@ export const linkEli5 = defineMessages('safu.link.eli5', {
   cta: 'Open Sharu and hook up this helper',
   invalidTitle: 'No helper code in this link',
   invalidBody:
-    'Wake up your helper with safu-node serve (or safu-node info) on your keyboard and copy the link it shows into your browser.',
+    'Wake up your helper with sharu serve (or sharu info) on your keyboard and copy the link it shows into your browser.',
   invalidCta: 'Read about the helper',
 });
 
@@ -57,7 +57,7 @@ export const linkEli5 = defineMessages('safu.link.eli5', {
 export const linkMachine = defineMessages('safu.link.machine', {
   title: 'node.link',
   intro:
-    'safu-node serve started on terminal; deep link opened. finish pairing = round trip: browser <-> terminal.',
+    'sharu serve started on terminal; deep link opened. finish pairing = round trip: browser <-> terminal.',
   nodeHeading: 'node being linked',
   signingIdLabel: 'signing id',
   relayLabel: 'home relay',
@@ -72,7 +72,6 @@ export const linkMachine = defineMessages('safu.link.machine', {
     'devices › “cp code” → paste at terminal “Device code:” prompt → confirm sas there too.',
   cta: 'open sharu + link node',
   invalidTitle: 'err: no node code in link',
-  invalidBody:
-    'run safu-node serve (|info) on terminal → copy printed link into browser address bar.',
+  invalidBody: 'run sharu serve (|info) on terminal → copy printed link into browser address bar.',
   invalidCta: 'backup-node docs',
 });

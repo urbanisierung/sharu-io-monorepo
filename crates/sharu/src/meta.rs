@@ -21,7 +21,7 @@ struct Meta {
 
 /// Ensure `data_dir`'s format is one this binary can use, creating the marker for
 /// a new (or pre-marker) dir. Errors only when the dir was written by a *newer*
-/// safu-node, so a too-old binary refuses to run rather than corrupt newer state.
+/// sharu, so a too-old binary refuses to run rather than corrupt newer state.
 ///
 /// A missing marker is treated as the current format and written: a data dir
 /// from before this marker existed is layout-identical to format 1, so adopting
@@ -37,7 +37,7 @@ pub fn ensure(data_dir: &Path) -> Result<(), String> {
         serde_json::from_str(&text).map_err(|e| format!("parse {}: {e}", path.display()))?;
     if meta.format > CURRENT_FORMAT {
         return Err(format!(
-            "data dir {} was written by a newer safu-node (format {}); this binary supports up to format {} — upgrade safu-node",
+            "data dir {} was written by a newer sharu (format {}); this binary supports up to format {} — upgrade sharu",
             data_dir.display(),
             meta.format,
             CURRENT_FORMAT,

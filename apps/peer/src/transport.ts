@@ -8,7 +8,7 @@
 //
 // Tradeoff: relay-only routes all traffic through the n0 relay (which still sees
 // only ciphertext) rather than hole-punching directly. For best NAT traversal on
-// a NAS / VPS / Raspberry Pi, use the native Rust node `crates/safu-node`, which
+// a NAS / VPS / Raspberry Pi, use the native Rust node `crates/sharu`, which
 // realizes wiring "A" over `safu_transport::native`.
 import { BLOCK_PROTOCOL, PIN_PROTOCOL, SYNC_PROTOCOL, UNPIN_PROTOCOL } from '@safu/sdk';
 import type { Transport } from '@safu/transport';

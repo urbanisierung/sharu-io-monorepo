@@ -65,7 +65,7 @@ export const landing = defineMessages('safu.landing', {
   cliKicker: 'Backup node',
   cliTitle: 'Add an always-on replica from your terminal.',
   cliBody:
-    'Run safu-node on a server, NAS, or Raspberry Pi to keep a full ciphertext replica of everything your devices back up — an always-reachable copy, zero-knowledge and over Iroh. One command installs it; link a device with its connection code and it starts replicating.',
+    'Run sharu on a server, NAS, or Raspberry Pi to keep a full ciphertext replica of everything your devices back up — an always-reachable copy, zero-knowledge and over Iroh. One command installs it; link a device with its connection code and it starts replicating.',
   cliUnixLabel: 'Linux & macOS',
   cliUnixCmd: `curl -fsSL ${SITE_URL}/install.sh | sh`,
   cliWindowsLabel: 'Windows · PowerShell',
@@ -146,7 +146,7 @@ export const landingEli5 = defineMessages('safu.landing.eli5', {
   cliKicker: 'Always-awake helper',
   cliTitle: 'Add a helper that never sleeps, right from your typing box.',
   cliBody:
-    'Run safu-node on a little always-on machine to keep a full set of the locked boxes for everything your gadgets save — a copy that is always there, can never be peeked at, and travels the friend-to-friend way. One line sets it up; tell a gadget its little code word and it starts keeping copies.',
+    'Run sharu on a little always-on machine to keep a full set of the locked boxes for everything your gadgets save — a copy that is always there, can never be peeked at, and travels the friend-to-friend way. One line sets it up; tell a gadget its little code word and it starts keeping copies.',
   cliUnixLabel: 'Linux & macOS',
   cliUnixCmd: `curl -fsSL ${SITE_URL}/install.sh | sh`,
   cliWindowsLabel: 'Windows · PowerShell',
@@ -223,7 +223,7 @@ export const landingMachine = defineMessages('safu.landing.machine', {
   cliKicker: 'backup-node',
   cliTitle: 'replica := always-on, via terminal.',
   cliBody:
-    'safu-node @server|nas|rpi → full ciphertext-replica(all device-backups). always-reachable, zk, over-iroh. install := 1 cmd; link(device, conn-code) → replicate.',
+    'sharu @server|nas|rpi → full ciphertext-replica(all device-backups). always-reachable, zk, over-iroh. install := 1 cmd; link(device, conn-code) → replicate.',
   cliUnixLabel: 'Linux & macOS',
   cliUnixCmd: `curl -fsSL ${SITE_URL}/install.sh | sh`,
   cliWindowsLabel: 'Windows · PowerShell',

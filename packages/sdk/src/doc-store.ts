@@ -10,6 +10,10 @@ export interface DocSnapshot {
   entries: StampedEntry[];
   added: PeerId[];
   revoked: PeerId[];
+  /** Wall-clock time (ms) each peer was granted write access — when it was
+   *  linked — keyed by peer id. Optional so snapshots written before link times
+   *  were tracked still load. */
+  addedAt?: Record<PeerId, number>;
   hlc: { wall: number; counter: number };
 }
 
