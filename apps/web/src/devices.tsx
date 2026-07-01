@@ -31,6 +31,9 @@ const renamingId = signal<string | null>(null);
 const renameDraft = signal('');
 // The device awaiting a "really remove?" confirmation, so removal is two steps.
 const removingId = signal<string | null>(null);
+// Which device row is expanded to show its full details, if any. The Manage
+// table stays a scannable name/linked/status overview until a row is opened.
+const expandedId = signal<string | null>(null);
 
 /** Reset module-level view state — for deterministic tests. */
 export function resetDevicesView(): void {
@@ -42,6 +45,7 @@ export function resetDevicesView(): void {
   renamingId.value = null;
   renameDraft.value = '';
   removingId.value = null;
+  expandedId.value = null;
 }
 
 /** Decode this device's own identity (signing id + transport address) from its
@@ -65,10 +69,6 @@ function selfIdentity(code: string): { signId: string; id: string; relayUrl?: st
 export function maskCode(value: string, visible = 6): string {
   if (value.length <= visible * 2 + 1) return value;
   return `${value.slice(0, visible)}…${value.slice(-visible)}`;
-}
-
-function shortId(id: string): string {
-  return id.length > 12 ? `${id.slice(0, 12)}…` : id;
 }
 
 function statusLabel(status: PeerInfo['status']): string {
@@ -231,164 +231,207 @@ export function Devices({
         <article class={styles.setting}>
           <h3 class={styles.settingTitle}>{t(messages.manageSectionTitle)}</h3>
           <p class={styles.settingDesc}>{t(messages.manageSectionDesc)}</p>
-          <ul class={styles.list}>
-            {peers.value.map((peer) => (
-              <li key={peer.id} class={styles.peerRow}>
-                <div class={styles.peerHead}>
-                  <span class={styles.deviceName}>{peer.name ?? t(messages.unnamedDevice)}</span>
-                  <span
-                    class={cn(
-                      styles.peerStatus,
-                      peer.status === 'verified' && styles.statusOk,
-                      peer.status === 'rejected' && styles.warn,
-                    )}
-                  >
-                    {statusLabel(peer.status)}
-                  </span>
-                </div>
-                <code class={styles.code}>{shortId(peer.id)}</code>
-                <p class={styles.settingDesc}>
-                  {t(messages.sasPrompt)} <strong>{peer.sas}</strong>
-                </p>
-                {peer.linkedAt !== undefined && (
-                  <p class={styles.settingDesc}>
-                    {t(messages.linkedLabel)} <strong>{formatDate(peer.linkedAt)}</strong>
-                  </p>
-                )}
+          <table class={styles.deviceTable}>
+            <thead>
+              <tr>
+                <th scope="col">{t(messages.colDeviceName)}</th>
+                <th scope="col">{t(messages.linkedLabel)}</th>
+                <th scope="col">{t(messages.colStatus)}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {peers.value.flatMap((peer) => {
+                const open = expandedId.value === peer.id;
+                const summary = (
+                  <tr key={peer.id} class={styles.deviceRow}>
+                    <td>
+                      <button
+                        type="button"
+                        class={styles.deviceExpand}
+                        aria-expanded={open}
+                        onClick={() => (expandedId.value = open ? null : peer.id)}
+                      >
+                        <span class={styles.chevron} aria-hidden="true">
+                          {open ? '▾' : '▸'}
+                        </span>
+                        <span class={styles.deviceName}>
+                          {peer.name ?? t(messages.unnamedDevice)}
+                        </span>
+                      </button>
+                    </td>
+                    <td class={styles.deviceLinked}>
+                      {peer.linkedAt !== undefined ? formatDate(peer.linkedAt) : '—'}
+                    </td>
+                    <td>
+                      <span
+                        class={cn(
+                          styles.peerStatus,
+                          peer.status === 'verified' && styles.statusOk,
+                          peer.status === 'rejected' && styles.warn,
+                        )}
+                      >
+                        {statusLabel(peer.status)}
+                      </span>
+                    </td>
+                  </tr>
+                );
+                if (!open) return [summary];
+                const detail = (
+                  <tr key={`${peer.id}-detail`} class={styles.deviceDetailRow}>
+                    <td colSpan={3}>
+                      <div class={styles.deviceDetail}>
+                        <p class={styles.settingDesc}>
+                          {t(messages.sasPrompt)} <strong>{peer.sas}</strong>
+                        </p>
 
-                <dl class={styles.identityList}>
-                  <div class={styles.identityRow}>
-                    <dt class={styles.identityLabel}>{t(messages.signingIdLabel)}</dt>
-                    <dd class={styles.identityValue}>
-                      <code class={styles.code} title={peer.id}>
-                        {peer.id}
-                      </code>
-                    </dd>
-                  </div>
-                  {peer.addr && (
-                    <>
-                      <div class={styles.identityRow}>
-                        <dt class={styles.identityLabel}>{t(messages.transportIdLabel)}</dt>
-                        <dd class={styles.identityValue}>
-                          <code class={styles.code}>{peer.addr.id}</code>
-                        </dd>
-                      </div>
-                      <div class={styles.identityRow}>
-                        <dt class={styles.identityLabel}>{t(messages.relayLabel)}</dt>
-                        <dd class={styles.identityValue}>
-                          {peer.addr.relayUrl ? (
-                            <code class={styles.code}>{peer.addr.relayUrl}</code>
-                          ) : (
-                            <span class={styles.muted}>{t(messages.relayUnknown)}</span>
+                        <dl class={styles.identityList}>
+                          <div class={styles.identityRow}>
+                            <dt class={styles.identityLabel}>{t(messages.signingIdLabel)}</dt>
+                            <dd class={styles.identityValue}>
+                              <code class={styles.code} title={peer.id}>
+                                {peer.id}
+                              </code>
+                            </dd>
+                          </div>
+                          {peer.addr && (
+                            <>
+                              <div class={styles.identityRow}>
+                                <dt class={styles.identityLabel}>{t(messages.transportIdLabel)}</dt>
+                                <dd class={styles.identityValue}>
+                                  <code class={styles.code}>{peer.addr.id}</code>
+                                </dd>
+                              </div>
+                              <div class={styles.identityRow}>
+                                <dt class={styles.identityLabel}>{t(messages.relayLabel)}</dt>
+                                <dd class={styles.identityValue}>
+                                  {peer.addr.relayUrl ? (
+                                    <code class={styles.code}>{peer.addr.relayUrl}</code>
+                                  ) : (
+                                    <span class={styles.muted}>{t(messages.relayUnknown)}</span>
+                                  )}
+                                </dd>
+                              </div>
+                            </>
                           )}
-                        </dd>
-                      </div>
-                    </>
-                  )}
-                </dl>
+                        </dl>
 
-                <div class={styles.peerActions}>
-                  {onSetShareHost &&
-                    (shareHostId?.value === peer.id ? (
-                      <p class={styles.peerActionHint}>{t(messages.hostingShares)}</p>
-                    ) : (
-                      <div class={styles.peerAction}>
-                        <Button intent="neutral" onClick={() => onSetShareHost(peer.id)}>
-                          {t(messages.hostShares)}
-                        </Button>
-                        <span class={styles.peerActionHint}>{t(messages.hostSharesHint)}</span>
-                      </div>
-                    ))}
+                        <div class={styles.peerActions}>
+                          {onSetShareHost &&
+                            (shareHostId?.value === peer.id ? (
+                              <p class={styles.peerActionHint}>{t(messages.hostingShares)}</p>
+                            ) : (
+                              <div class={styles.peerAction}>
+                                <Button intent="neutral" onClick={() => onSetShareHost(peer.id)}>
+                                  {t(messages.hostShares)}
+                                </Button>
+                                <span class={styles.peerActionHint}>
+                                  {t(messages.hostSharesHint)}
+                                </span>
+                              </div>
+                            ))}
 
-                  {peer.status === 'pending' && onVerify && onReject && (
-                    <>
-                      <div class={styles.peerAction}>
-                        <Button intent="primary" onClick={() => onVerify(peer.id)}>
-                          {t(messages.confirm)}
-                        </Button>
-                        <span class={styles.peerActionHint}>{t(messages.confirmHint)}</span>
-                      </div>
-                      <div class={styles.peerAction}>
-                        <Button intent="neutral" onClick={() => onReject(peer.id)}>
-                          {t(messages.reject)}
-                        </Button>
-                        <span class={styles.peerActionHint}>{t(messages.rejectHint)}</span>
-                      </div>
-                    </>
-                  )}
+                          {peer.status === 'pending' && onVerify && onReject && (
+                            <>
+                              <div class={styles.peerAction}>
+                                <Button intent="primary" onClick={() => onVerify(peer.id)}>
+                                  {t(messages.confirm)}
+                                </Button>
+                                <span class={styles.peerActionHint}>{t(messages.confirmHint)}</span>
+                              </div>
+                              <div class={styles.peerAction}>
+                                <Button intent="neutral" onClick={() => onReject(peer.id)}>
+                                  {t(messages.reject)}
+                                </Button>
+                                <span class={styles.peerActionHint}>{t(messages.rejectHint)}</span>
+                              </div>
+                            </>
+                          )}
 
-                  {onRename &&
-                    (renamingId.value === peer.id ? (
-                      <div class={styles.peerRename}>
-                        <input
-                          class={styles.input}
-                          aria-label={t(messages.renamePlaceholder)}
-                          placeholder={t(messages.renamePlaceholder)}
-                          value={renameDraft.value}
-                          onInput={(event) => {
-                            renameDraft.value = (event.target as HTMLInputElement).value;
-                          }}
-                        />
-                        <Button
-                          intent="primary"
-                          onClick={() => {
-                            onRename(peer.id, renameDraft.value);
-                            renamingId.value = null;
-                          }}
-                        >
-                          {t(messages.saveName)}
-                        </Button>
-                        <Button intent="neutral" onClick={() => (renamingId.value = null)}>
-                          {t(messages.cancelName)}
-                        </Button>
-                      </div>
-                    ) : (
-                      <div class={styles.peerAction}>
-                        <Button
-                          intent="neutral"
-                          onClick={() => {
-                            renamingId.value = peer.id;
-                            renameDraft.value = peer.name ?? '';
-                          }}
-                        >
-                          {t(messages.renameDevice)}
-                        </Button>
-                        <span class={styles.peerActionHint}>{t(messages.renameHint)}</span>
-                      </div>
-                    ))}
+                          {onRename &&
+                            (renamingId.value === peer.id ? (
+                              <div class={styles.peerRename}>
+                                <input
+                                  class={styles.input}
+                                  aria-label={t(messages.renamePlaceholder)}
+                                  placeholder={t(messages.renamePlaceholder)}
+                                  value={renameDraft.value}
+                                  onInput={(event) => {
+                                    renameDraft.value = (event.target as HTMLInputElement).value;
+                                  }}
+                                />
+                                <Button
+                                  intent="primary"
+                                  onClick={() => {
+                                    onRename(peer.id, renameDraft.value);
+                                    renamingId.value = null;
+                                  }}
+                                >
+                                  {t(messages.saveName)}
+                                </Button>
+                                <Button intent="neutral" onClick={() => (renamingId.value = null)}>
+                                  {t(messages.cancelName)}
+                                </Button>
+                              </div>
+                            ) : (
+                              <div class={styles.peerAction}>
+                                <Button
+                                  intent="neutral"
+                                  onClick={() => {
+                                    renamingId.value = peer.id;
+                                    renameDraft.value = peer.name ?? '';
+                                  }}
+                                >
+                                  {t(messages.renameDevice)}
+                                </Button>
+                                <span class={styles.peerActionHint}>{t(messages.renameHint)}</span>
+                              </div>
+                            ))}
 
-                  {onRemove &&
-                    peer.status !== 'rejected' &&
-                    (removingId.value === peer.id ? (
-                      <div class={styles.peerAction}>
-                        <span class={styles.peerActionHint}>{t(messages.removePrompt)}</span>
-                        <div class={styles.peerRename}>
-                          <Button
-                            intent="primary"
-                            onClick={() => {
-                              onRemove(peer.id);
-                              removingId.value = null;
-                            }}
-                          >
-                            {t(messages.confirmRemove)}
-                          </Button>
-                          <Button intent="neutral" onClick={() => (removingId.value = null)}>
-                            {t(messages.cancelRemove)}
-                          </Button>
+                          {onRemove &&
+                            peer.status !== 'rejected' &&
+                            (removingId.value === peer.id ? (
+                              <div class={styles.peerAction}>
+                                <span class={styles.peerActionHint}>
+                                  {t(messages.removePrompt)}
+                                </span>
+                                <div class={styles.peerRename}>
+                                  <Button
+                                    intent="primary"
+                                    onClick={() => {
+                                      onRemove(peer.id);
+                                      removingId.value = null;
+                                    }}
+                                  >
+                                    {t(messages.confirmRemove)}
+                                  </Button>
+                                  <Button
+                                    intent="neutral"
+                                    onClick={() => (removingId.value = null)}
+                                  >
+                                    {t(messages.cancelRemove)}
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div class={styles.peerAction}>
+                                <Button
+                                  intent="neutral"
+                                  onClick={() => (removingId.value = peer.id)}
+                                >
+                                  {t(messages.removeDevice)}
+                                </Button>
+                                <span class={styles.peerActionHint}>{t(messages.removeHint)}</span>
+                              </div>
+                            ))}
                         </div>
                       </div>
-                    ) : (
-                      <div class={styles.peerAction}>
-                        <Button intent="neutral" onClick={() => (removingId.value = peer.id)}>
-                          {t(messages.removeDevice)}
-                        </Button>
-                        <span class={styles.peerActionHint}>{t(messages.removeHint)}</span>
-                      </div>
-                    ))}
-                </div>
-              </li>
-            ))}
-          </ul>
+                    </td>
+                  </tr>
+                );
+                return [summary, detail];
+              })}
+            </tbody>
+          </table>
         </article>
       )}
     </section>

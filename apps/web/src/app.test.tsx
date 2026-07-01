@@ -121,6 +121,9 @@ describe('App shell (plan §2.4)', () => {
 
     // Devices live in their own section, selected from the navbar's tabs.
     activeView.value = 'devices';
+    // Expand the device row to reveal its details (the Manage table is an
+    // overview until a row is opened).
+    fireEvent.click(await screen.findByRole('button', { name: 'Unnamed device' }));
     // The SAS is shown for out-of-band comparison...
     expect(await screen.findByText('123456')).toBeTruthy();
     // ...and confirming it calls back with the peer id.

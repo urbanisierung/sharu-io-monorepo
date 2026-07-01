@@ -11,6 +11,12 @@ const noPeers = signal<readonly PeerInfo[]>([]);
 beforeEach(resetDevicesView);
 afterEach(cleanup);
 
+/** Open a device row in the Manage table to reveal its details + actions. The
+ *  row's expand toggle is the device-name button (the chevron is aria-hidden). */
+function expandRow(name = 'Unnamed device'): void {
+  fireEvent.click(screen.getByRole('button', { name }));
+}
+
 describe('maskCode', () => {
   it('shows only the first and last characters with an ellipsis between', () => {
     expect(maskCode('ABCDEFGHIJKLMNOPQRSTUVWXYZ')).toBe('ABCDEF…UVWXYZ');
@@ -67,6 +73,7 @@ describe('Devices', () => {
     // Unnamed until labelled.
     expect(screen.getByText('Unnamed device')).toBeTruthy();
 
+    expandRow();
     fireEvent.click(screen.getByRole('button', { name: 'Rename' }));
     fireEvent.input(screen.getByLabelText(/Name this device/), {
       target: { value: 'Mom’s phone' },
@@ -88,6 +95,7 @@ describe('Devices', () => {
         onSetShareHost={onSetShareHost}
       />,
     );
+    expandRow();
     fireEvent.click(screen.getByRole('button', { name: 'Host shares here' }));
     expect(onSetShareHost).toHaveBeenCalledWith('NODE1');
   });
@@ -104,6 +112,7 @@ describe('Devices', () => {
         onSetShareHost={vi.fn()}
       />,
     );
+    expandRow();
     expect(screen.getByText('Hosts public shares')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Host shares here' })).toBeNull();
   });
@@ -146,6 +155,7 @@ describe('Devices', () => {
       },
     ]);
     render(<Devices connectionCode={code} peers={peers} onPair={async () => {}} />);
+    expandRow();
     expect(screen.getByText('PEER-TRANSPORT')).toBeTruthy();
     expect(screen.getByText('https://peer-relay.example')).toBeTruthy();
   });
@@ -155,6 +165,7 @@ describe('Devices', () => {
       { id: 'PEER1', sas: '123456', status: 'verified', addr: { id: 'PEER-TRANSPORT' } },
     ]);
     render(<Devices connectionCode={code} peers={peers} onPair={async () => {}} />);
+    expandRow();
     expect(screen.getByText('Not connected to a relay yet')).toBeTruthy();
   });
 
@@ -167,12 +178,28 @@ describe('Devices', () => {
     expect(screen.getByText('Jan 15, 2024')).toBeTruthy();
   });
 
+  it('keeps device details collapsed until the row is expanded', () => {
+    const peers = signal<readonly PeerInfo[]>([
+      { id: 'PEER-FULL-ID', sas: '123456', status: 'verified', linkedAt: 1705276800000 },
+    ]);
+    render(<Devices connectionCode={code} peers={peers} onPair={async () => {}} />);
+    // The overview row shows name + linked date, but not the safety number or id.
+    expect(screen.getByText('Jan 15, 2024')).toBeTruthy();
+    expect(screen.queryByText('123456')).toBeNull();
+    expect(screen.queryByText('PEER-FULL-ID')).toBeNull();
+
+    expandRow();
+    expect(screen.getByText('123456')).toBeTruthy();
+    expect(screen.getByText('PEER-FULL-ID')).toBeTruthy();
+  });
+
   it('removes a linked device after a confirmation step', () => {
     const onRemove = vi.fn();
     const peers = signal<readonly PeerInfo[]>([{ id: 'PEER1', sas: '123456', status: 'verified' }]);
     render(
       <Devices connectionCode={code} peers={peers} onPair={async () => {}} onRemove={onRemove} />,
     );
+    expandRow();
     // First click asks to confirm — it must not remove yet.
     fireEvent.click(screen.getByRole('button', { name: 'Remove device' }));
     expect(onRemove).not.toHaveBeenCalled();
@@ -185,6 +212,7 @@ describe('Devices', () => {
     render(
       <Devices connectionCode={code} peers={peers} onPair={async () => {}} onRemove={vi.fn()} />,
     );
+    expandRow();
     expect(screen.queryByRole('button', { name: 'Remove device' })).toBeNull();
   });
 
@@ -201,8 +229,10 @@ describe('Devices', () => {
         onReject={onReject}
       />,
     );
-    const row = screen.getByText('654321').closest('li') as HTMLElement;
-    fireEvent.click(within(row).getByRole('button', { name: 'Codes match' }));
+    expandRow();
+    // The safety number is revealed in the expanded detail panel.
+    expect(screen.getByText('654321')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Codes match' }));
     expect(onVerify).toHaveBeenCalledWith('PEER1');
   });
 });
