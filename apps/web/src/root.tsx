@@ -227,6 +227,7 @@ function AppScreen() {
         onPair={(code) => ready.pairWithCode(code)}
         onVerify={(id) => ready.verifyPeer(id)}
         onReject={(id) => ready.rejectPeer(id)}
+        onRemove={(id) => ready.removeDevice(id)}
         onRename={(id, name) => ready.renameDevice(id, name)}
         onWatch={ready.watchFolder}
       />
@@ -298,7 +299,7 @@ function RouteContent() {
     return <CliDocs onLaunch={launch} />;
   }
   // The backup-node onboarding companion: opened from the deep link
-  // `safu-node serve` prints. Continuing hands the node code to the app's
+  // `sharu serve` prints. Continuing hands the node code to the app's
   // auto-link-on-unlock path as a soft SPA transition (see `linkNode`).
   if (view === 'link') {
     return <NodeOnboarding onContinue={linkNode} onCliDocs={() => navigate('cli-docs')} />;

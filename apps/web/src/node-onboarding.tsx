@@ -1,5 +1,5 @@
-// The browser onboarding view (route `/link`) for the safu-node CLI. When the
-// operator runs `safu-node serve`, it prints a deep link carrying the node's
+// The browser onboarding view (route `/link`) for the sharu CLI. When the
+// operator runs `sharu serve`, it prints a deep link carrying the node's
 // pairing code in the URL hash (`/link#node=…`, see pairing.ts `nodeLink`).
 // Opening that link lands here: a guided companion to the CLI's first-run
 // wizard. It decodes the node identity so the operator can eyeball it against

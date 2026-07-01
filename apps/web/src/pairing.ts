@@ -60,7 +60,7 @@ export function readPairingFromHash(hash: string): string | undefined {
 }
 
 /** Extract a backup-node code from a URL hash (`#node=…`), or undefined if
- *  absent. The `safu-node serve` deep link (`/link#node=…`) carries the node's
+ *  absent. The `sharu serve` deep link (`/link#node=…`) carries the node's
  *  pairing code here so the browser onboarding view can pick it up. Kept distinct
  *  from `#pair=` so the node link lands on the guided view, not the app's silent
  *  auto-link. */
@@ -78,7 +78,7 @@ function readHashCode(hash: string, key: 'pair' | 'node'): string | undefined {
   }
 }
 
-/** The deep link `safu-node serve` prints for its pairing code: it opens the
+/** The deep link `sharu serve` prints for its pairing code: it opens the
  *  browser onboarding view (`/link`) with the node code in the hash, which never
  *  leaves the device. Mirrors `pairingLink` but targets the guided node flow. */
 export function nodeLink(code: string, origin: string): string {

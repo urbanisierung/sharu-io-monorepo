@@ -12,6 +12,7 @@
 import { cn } from '@cascivo/core';
 import { type ReadonlySignal, signal } from '@preact/signals';
 import styles from './app.module.css';
+import { formatDate } from './format.js';
 import { messages } from './messages.js';
 import { decodePairingCode, pairingLink, readPairingFromHash } from './pairing.js';
 import { QrCode } from './qr-code.js';
@@ -28,6 +29,8 @@ const codeCopied = signal(false);
 const idCopied = signal(false);
 const renamingId = signal<string | null>(null);
 const renameDraft = signal('');
+// The device awaiting a "really remove?" confirmation, so removal is two steps.
+const removingId = signal<string | null>(null);
 
 /** Reset module-level view state — for deterministic tests. */
 export function resetDevicesView(): void {
@@ -38,6 +41,7 @@ export function resetDevicesView(): void {
   idCopied.value = false;
   renamingId.value = null;
   renameDraft.value = '';
+  removingId.value = null;
 }
 
 /** Decode this device's own identity (signing id + transport address) from its
@@ -79,6 +83,8 @@ export interface DevicesProps {
   onPair: (code: string) => Promise<void>;
   onVerify?: (id: string) => void;
   onReject?: (id: string) => void;
+  /** Permanently unlink a paired device (revokes its write access). */
+  onRemove?: (id: string) => void;
   onRename?: (id: string, name: string) => void;
   /** The signing id of the peer currently chosen to host public shares. */
   shareHostId?: ReadonlySignal<string | undefined>;
@@ -92,6 +98,7 @@ export function Devices({
   onPair,
   onVerify,
   onReject,
+  onRemove,
   onRename,
   shareHostId,
   onSetShareHost,
@@ -243,6 +250,11 @@ export function Devices({
                 <p class={styles.settingDesc}>
                   {t(messages.sasPrompt)} <strong>{peer.sas}</strong>
                 </p>
+                {peer.linkedAt !== undefined && (
+                  <p class={styles.settingDesc}>
+                    {t(messages.linkedLabel)} <strong>{formatDate(peer.linkedAt)}</strong>
+                  </p>
+                )}
 
                 <dl class={styles.identityList}>
                   <div class={styles.identityRow}>
@@ -342,6 +354,35 @@ export function Devices({
                           {t(messages.renameDevice)}
                         </Button>
                         <span class={styles.peerActionHint}>{t(messages.renameHint)}</span>
+                      </div>
+                    ))}
+
+                  {onRemove &&
+                    peer.status !== 'rejected' &&
+                    (removingId.value === peer.id ? (
+                      <div class={styles.peerAction}>
+                        <span class={styles.peerActionHint}>{t(messages.removePrompt)}</span>
+                        <div class={styles.peerRename}>
+                          <Button
+                            intent="primary"
+                            onClick={() => {
+                              onRemove(peer.id);
+                              removingId.value = null;
+                            }}
+                          >
+                            {t(messages.confirmRemove)}
+                          </Button>
+                          <Button intent="neutral" onClick={() => (removingId.value = null)}>
+                            {t(messages.cancelRemove)}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div class={styles.peerAction}>
+                        <Button intent="neutral" onClick={() => (removingId.value = peer.id)}>
+                          {t(messages.removeDevice)}
+                        </Button>
+                        <span class={styles.peerActionHint}>{t(messages.removeHint)}</span>
                       </div>
                     ))}
                 </div>

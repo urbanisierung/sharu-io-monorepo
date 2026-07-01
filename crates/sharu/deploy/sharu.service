@@ -1,0 +1,43 @@
+# Sample systemd unit for the always-on sharu backup/share host.
+#
+# Setup:
+#   sudo useradd --system --home /var/lib/sharu --create-home safu
+#   sudo install -m 0700 -o safu -g safu -d /var/lib/sharu
+#   # Put the passphrase in a root-only env file (keeps it out of the unit and
+#   # the process list); SHARU_PASSPHRASE is read from the environment:
+#   printf 'SHARU_PASSPHRASE=%s\n' 'your-passphrase' | sudo tee /etc/sharu.env >/dev/null
+#   sudo chmod 600 /etc/sharu.env
+#   sudo cp sharu.service /etc/systemd/system/
+#   sudo systemctl enable --now sharu
+#
+# Updating is then: install the new binary (the install script), and
+#   sudo systemctl restart sharu
+# The data dir is untouched, so devices stay linked.
+
+[Unit]
+Description=sharu — zero-knowledge backup & public-share host
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=safu
+Group=safu
+EnvironmentFile=/etc/sharu.env
+Environment=SHARU_DATA_DIR=/var/lib/sharu
+ExecStart=/usr/local/bin/sharu serve
+# Graceful stop: SIGTERM lets the node flush its document snapshot before exit.
+KillSignal=SIGTERM
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=5
+
+# Hardening: the node only needs its own data dir.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/sharu
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

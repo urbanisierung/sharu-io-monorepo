@@ -1,4 +1,4 @@
-//! The optional full-screen dashboard (`safu-node tui`): a live, read-only view
+//! The optional full-screen dashboard (`sharu tui`): a live, read-only view
 //! of what this node holds — its identity, linked devices (with safety numbers),
 //! and how much of the referenced ciphertext has been replicated — refreshed
 //! from the data dir once a second.
@@ -265,7 +265,7 @@ fn devices_table(board: &Dashboard) -> Table<'static> {
     if board.devices.is_empty() {
         return Table::new(
             [Row::new([Cell::from(
-                "none — run `safu-node link <code>` to add one",
+                "none — run `sharu link <code>` to add one",
             )])],
             [Constraint::Percentage(100)],
         )
@@ -363,7 +363,7 @@ mod tests {
     fn render(board: &Dashboard) -> Vec<String> {
         let mut terminal = Terminal::new(TestBackend::new(72, 22)).expect("test terminal");
         terminal
-            .draw(|frame| draw(frame, Path::new("./safu-node-data"), board))
+            .draw(|frame| draw(frame, Path::new("./sharu-data"), board))
             .expect("draw");
         let buffer = terminal.backend().buffer().clone();
         (0..buffer.area.height)
@@ -383,7 +383,7 @@ mod tests {
         eprintln!("\n{screen}\n");
 
         assert!(screen.contains("safu node"), "header");
-        assert!(screen.contains("./safu-node-data"), "data dir");
+        assert!(screen.contains("./sharu-data"), "data dir");
         assert!(screen.contains("backed-up files:"), "stats");
         assert!(
             screen.contains("4 present, 1 replicating"),

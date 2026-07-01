@@ -5,7 +5,7 @@
 // The two values that change on a repo transfer or rebrand live in one place:
 // `project.config.json` at the repo root. It is the single source of truth shared
 // across runtimes — the TypeScript apps import it here, and the Rust node embeds
-// the same file (see `crates/safu-node/src/brand.rs`).
+// the same file (see `crates/sharu/src/brand.rs`).
 
 import projectConfig from '../../../project.config.json' with { type: 'json' };
 

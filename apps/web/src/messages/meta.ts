@@ -19,10 +19,10 @@ export const meta = defineMessages('safu.meta', {
     'How Sharu works: encrypt on device, address by hash, sync peer-to-peer over Iroh, and restore anywhere with per-block verification.',
   cliTitle: 'Backup node (CLI) · Sharu',
   cliDesc:
-    'Run safu-node on a server, NAS, or Raspberry Pi to keep an always-on, zero-knowledge ciphertext replica of everything your devices back up.',
+    'Run sharu on a server, NAS, or Raspberry Pi to keep an always-on, zero-knowledge ciphertext replica of everything your devices back up.',
   linkTitle: 'Link your backup node · Sharu',
   linkDesc:
-    'Finish pairing the safu-node backup node you started from your terminal: link it to this device, confirm the safety number, and send your device code back.',
+    'Finish pairing the sharu backup node you started from your terminal: link it to this device, confirm the safety number, and send your device code back.',
   appTitle: 'Your files · Sharu',
   appDesc:
     'Sharu is a zero-knowledge, local-first backup & sync platform — your files, encrypted on your device and synced across your own machines.',

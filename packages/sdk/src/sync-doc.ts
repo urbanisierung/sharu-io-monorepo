@@ -86,6 +86,10 @@ export class SyncDoc {
   readonly #self: PeerId;
   readonly #added = new Set<PeerId>();
   readonly #revoked = new Set<PeerId>();
+  // Wall-clock time (ms) each added peer was granted write access — when it was
+  // linked. Taken from the grant op's HLC stamp, so every replica agrees. `self`
+  // is never recorded here (it is authorized from genesis, not linked).
+  readonly #addedAt = new Map<PeerId, number>();
   readonly #writerIds = signal<readonly PeerId[]>([]);
   readonly #files = signal<readonly FileView[]>([]);
   readonly #listeners = new Set<(delta: Delta) => void>();
@@ -130,6 +134,14 @@ export class SyncDoc {
   /** Is `peer` currently allowed to author mutations? */
   authorized(peer: PeerId): boolean {
     return this.#added.has(peer) && !this.#revoked.has(peer);
+  }
+
+  /** Wall-clock time (ms) `peer` was granted write access — when it was linked —
+   *  or undefined if unknown (self, or a snapshot from before link times were
+   *  tracked). Replicated: derived from the grant op's HLC stamp, so every
+   *  device shows the same time. */
+  linkedAt(peer: PeerId): number | undefined {
+    return this.#addedAt.get(peer);
   }
 
   /** Record (or update) the allocation for `path`. Returns the delta to broadcast. */
@@ -202,6 +214,7 @@ export class SyncDoc {
       entries: this.#table.state(),
       added: [...this.#added],
       revoked: [...this.#revoked],
+      addedAt: Object.fromEntries(this.#addedAt),
       hlc: this.#hlc.state(),
     };
   }
@@ -238,6 +251,9 @@ export class SyncDoc {
     for (const entry of snapshot.entries) this.#table.apply(entry);
     for (const peer of snapshot.added) this.#added.add(peer);
     for (const peer of snapshot.revoked) this.#revoked.add(peer);
+    for (const [peer, wall] of Object.entries(snapshot.addedAt ?? {})) {
+      this.#addedAt.set(peer, wall);
+    }
     this.#hlc.load(snapshot.hlc.wall, snapshot.hlc.counter);
     this.#refreshWriters();
     this.#publish();
@@ -263,6 +279,7 @@ export class SyncDoc {
     if (op.kind === 'add') {
       if (this.#added.has(op.peer)) return false;
       this.#added.add(op.peer);
+      this.#addedAt.set(op.peer, op.stamp.wall);
       this.#refreshWriters();
       return true;
     }

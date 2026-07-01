@@ -158,6 +158,36 @@ describe('Devices', () => {
     expect(screen.getByText('Not connected to a relay yet')).toBeTruthy();
   });
 
+  it('shows when a device was linked', () => {
+    const peers = signal<readonly PeerInfo[]>([
+      // 2024-01-15T00:00:00Z — formatDate renders UTC, so this is deterministic.
+      { id: 'PEER1', sas: '123456', status: 'verified', linkedAt: 1705276800000 },
+    ]);
+    render(<Devices connectionCode={code} peers={peers} onPair={async () => {}} />);
+    expect(screen.getByText('Jan 15, 2024')).toBeTruthy();
+  });
+
+  it('removes a linked device after a confirmation step', () => {
+    const onRemove = vi.fn();
+    const peers = signal<readonly PeerInfo[]>([{ id: 'PEER1', sas: '123456', status: 'verified' }]);
+    render(
+      <Devices connectionCode={code} peers={peers} onPair={async () => {}} onRemove={onRemove} />,
+    );
+    // First click asks to confirm — it must not remove yet.
+    fireEvent.click(screen.getByRole('button', { name: 'Remove device' }));
+    expect(onRemove).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Remove', exact: true }));
+    expect(onRemove).toHaveBeenCalledWith('PEER1');
+  });
+
+  it('offers no Remove action for an already-removed (rejected) device', () => {
+    const peers = signal<readonly PeerInfo[]>([{ id: 'PEER1', sas: '123456', status: 'rejected' }]);
+    render(
+      <Devices connectionCode={code} peers={peers} onPair={async () => {}} onRemove={vi.fn()} />,
+    );
+    expect(screen.queryByRole('button', { name: 'Remove device' })).toBeNull();
+  });
+
   it('walks through the safety-number check for a pending peer', () => {
     const onVerify = vi.fn();
     const onReject = vi.fn();

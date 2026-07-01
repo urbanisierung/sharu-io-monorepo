@@ -1,16 +1,16 @@
 import { defineMessages } from '@cascivo/i18n';
 
-/** Docs page for the safu-node CLI. The command/option tables are rendered from
+/** Docs page for the sharu CLI. The command/option tables are rendered from
  *  the generated spec (cli-docs/cli-spec.generated.ts); this namespace is the
  *  surrounding explanatory prose. */
 export const cliDocs = defineMessages('safu.cli', {
   title: 'The backup node',
   subtitle:
-    'safu-node is an always-on, zero-knowledge replica of your backups you run from your terminal.',
+    'sharu is an always-on, zero-knowledge replica of your backups you run from your terminal.',
   versionLabel: 'Version',
   introHeading: 'What it is',
   introBody:
-    'safu-node is a small headless binary you run on a machine that is always on — a home server, NAS, or Raspberry Pi. It joins your devices over Iroh and keeps a full ciphertext replica of everything they back up, so a copy stays reachable even when every other device is offline. It is zero-knowledge: it stores and serves only ciphertext and never sees your keys or your files.',
+    'sharu is a small headless binary you run on a machine that is always on — a home server, NAS, or Raspberry Pi. It joins your devices over Iroh and keeps a full ciphertext replica of everything they back up, so a copy stays reachable even when every other device is offline. It is zero-knowledge: it stores and serves only ciphertext and never sees your keys or your files.',
   useCasesHeading: 'When to run one',
   uc1Title: 'An always-on copy',
   uc1Body:
@@ -25,7 +25,7 @@ export const cliDocs = defineMessages('safu.cli', {
   startIntro: 'Install the binary, create an identity, link a device, then leave it serving.',
   installHeading: 'Install',
   installNote:
-    'No prebuilt binary for your platform? Build it from source with cargo build --release -p safu-node.',
+    'No prebuilt binary for your platform? Build it from source with cargo build --release -p sharu.',
   quickstartHeading: 'First run',
   quickstartIntro:
     'Set the passphrase that derives this node identity (prefer an environment variable so it stays out of your shell history), then run these in order:',
@@ -45,7 +45,7 @@ export const cliDocs = defineMessages('safu.cli', {
   badgeRequired: 'Required',
   dataLayoutHeading: 'Data directory',
   dataLayoutIntro:
-    'Everything the node owns lives under its data dir. Point --data-dir (or SAFU_NODE_DATA_DIR) at a durable location:',
+    'Everything the node owns lives under its data dir. Point --data-dir (or SHARU_DATA_DIR) at a durable location:',
   dataLayout:
     '<data-dir>/\n  identity/signer.salt   the salt; the secret key is never written to disk\n  doc.json               the replicated allocation table\n  devices.json           linked devices: signing id and address\n  blocks/                content-addressed ciphertext, one file per hash',
   securityHeading: 'Zero-knowledge by construction',
@@ -59,11 +59,11 @@ export const cliDocs = defineMessages('safu.cli', {
 export const cliDocsEli5 = defineMessages('safu.cli.eli5', {
   title: 'The helper that holds your backups',
   subtitle:
-    'safu-node is a helper computer that never sleeps and keeps a locked-up copy of your backups, started from your keyboard.',
+    'sharu is a helper computer that never sleeps and keeps a locked-up copy of your backups, started from your keyboard.',
   versionLabel: 'Version',
   introHeading: 'What it is',
   introBody:
-    'safu-node is a tiny program you run on a computer that is always awake — like a home server, a NAS, or a Raspberry Pi. It holds hands with your other gadgets over Iroh and keeps a full copy of everything they tuck away, all locked tight, so a copy is always there even when every other gadget has gone to sleep. It never peeks: it only holds and hands out locked boxes, and it never sees your secret word or what is inside.',
+    'sharu is a tiny program you run on a computer that is always awake — like a home server, a NAS, or a Raspberry Pi. It holds hands with your other gadgets over Iroh and keeps a full copy of everything they tuck away, all locked tight, so a copy is always there even when every other gadget has gone to sleep. It never peeks: it only holds and hands out locked boxes, and it never sees your secret word or what is inside.',
   useCasesHeading: 'When to run one',
   uc1Title: 'A copy that never sleeps',
   uc1Body:
@@ -79,7 +79,7 @@ export const cliDocsEli5 = defineMessages('safu.cli.eli5', {
     'Put the program on the computer, give it a name, hold hands with one of your gadgets, then let it keep watch.',
   installHeading: 'Install',
   installNote:
-    'No ready-made program for your kind of computer? Build your own with cargo build --release -p safu-node.',
+    'No ready-made program for your kind of computer? Build your own with cargo build --release -p sharu.',
   quickstartHeading: 'First run',
   quickstartIntro:
     'Pick the secret word that gives this helper its name (it is tidier to tuck it into an environment variable so it stays out of your typing history), then run these one after another:',
@@ -99,7 +99,7 @@ export const cliDocsEli5 = defineMessages('safu.cli.eli5', {
   badgeRequired: 'Required',
   dataLayoutHeading: 'Data directory',
   dataLayoutIntro:
-    'Everything the helper keeps lives inside its own drawer. Point --data-dir (or SAFU_NODE_DATA_DIR) at a safe, sturdy spot:',
+    'Everything the helper keeps lives inside its own drawer. Point --data-dir (or SHARU_DATA_DIR) at a safe, sturdy spot:',
   dataLayout:
     '<data-dir>/\n  identity/signer.salt   a sprinkle of magic dust; the real secret key is never written down\n  doc.json               the shared list of what goes where\n  devices.json           the gadgets it holds hands with: their signature and where to find them\n  blocks/                the locked boxes, named by what is inside, one file each',
   securityHeading: 'Zero-knowledge by construction',
@@ -112,11 +112,11 @@ export const cliDocsEli5 = defineMessages('safu.cli.eli5', {
 /** Machine reading mode — same keys, stripped to terse near-protocol notation. */
 export const cliDocsMachine = defineMessages('safu.cli.machine', {
   title: 'backup node',
-  subtitle: 'safu-node := always-on, zero-knowledge replica of backups; run from terminal.',
+  subtitle: 'sharu := always-on, zero-knowledge replica of backups; run from terminal.',
   versionLabel: 'Version',
   introHeading: 'def',
   introBody:
-    'safu-node := small headless binary on always-on host (home server | NAS | Raspberry Pi). joins devices over Iroh → keeps full ciphertext replica of all backups; copy stays reachable while all other devices = offline. zero-knowledge: stores+serves ciphertext only; keys = never seen, files = never seen.',
+    'sharu := small headless binary on always-on host (home server | NAS | Raspberry Pi). joins devices over Iroh → keeps full ciphertext replica of all backups; copy stays reachable while all other devices = offline. zero-knowledge: stores+serves ciphertext only; keys = never seen, files = never seen.',
   useCasesHeading: 'when to run',
   uc1Title: 'always-on copy',
   uc1Body: 'laptop, phone → intermittent. node that never sleeps → backups reachable 24/7.',
@@ -130,7 +130,7 @@ export const cliDocsMachine = defineMessages('safu.cli.machine', {
   startIntro: 'install binary → create identity → link device → leave serving.',
   installHeading: 'install',
   installNote:
-    'no prebuilt binary for platform → build from source: cargo build --release -p safu-node.',
+    'no prebuilt binary for platform → build from source: cargo build --release -p sharu.',
   quickstartHeading: 'first run',
   quickstartIntro:
     'set passphrase → derives node identity (prefer env var → stays out of shell history), then run in order:',
@@ -149,7 +149,7 @@ export const cliDocsMachine = defineMessages('safu.cli.machine', {
   badgeRequired: 'Required',
   dataLayoutHeading: 'data dir',
   dataLayoutIntro:
-    'all node state → under data dir. point --data-dir (or SAFU_NODE_DATA_DIR) → durable location:',
+    'all node state → under data dir. point --data-dir (or SHARU_DATA_DIR) → durable location:',
   dataLayout:
     '<data-dir>/\n  identity/signer.salt   salt; secret key → never on disk\n  doc.json               replicated allocation table\n  devices.json           linked devices = signing id + address\n  blocks/                content-addressed ciphertext, 1 file = 1 hash',
   securityHeading: 'zero-knowledge by construction',

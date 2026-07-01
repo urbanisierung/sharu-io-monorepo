@@ -1,4 +1,4 @@
-//! `safu-node` — a headless, always-on, zero-knowledge backup node for the
+//! `sharu` — a headless, always-on, zero-knowledge backup node for the
 //! command line.
 //!
 //! It is the project's answer to "permanent storage" on a server with no
@@ -23,8 +23,8 @@
 //! pairing code, walks you through linking each device, then runs.
 //!
 //! ```text
-//!   export SAFU_NODE_PASSPHRASE=…   # derives this node's identity
-//!   safu-node serve                 # guided first run, then always-on
+//!   export SHARU_PASSPHRASE=…   # derives this node's identity
+//!   sharu serve                 # guided first run, then always-on
 //! ```
 //!
 //! The individual steps remain available for scripting or headless setups:
@@ -60,7 +60,7 @@ use crate::sas::safety_number;
 use crate::store::{load_doc, save_doc, FsBlockStore};
 use crate::sync::{Node, BLOCK_PROTOCOL, PIN_PROTOCOL, SYNC_PROTOCOL, UNPIN_PROTOCOL};
 
-const DEFAULT_DATA_DIR: &str = "./safu-node-data";
+const DEFAULT_DATA_DIR: &str = "./sharu-data";
 const ONLINE_TIMEOUT: Duration = Duration::from_secs(15);
 
 #[tokio::main]
@@ -99,7 +99,7 @@ async fn run() -> Result<(), String> {
         "serve" | "run" => cmd_serve(&args).await,
         "update" => cmd_update(&args).await,
         "version" | "--version" | "-V" => {
-            println!("safu-node {}", env!("CARGO_PKG_VERSION"));
+            println!("sharu {}", env!("CARGO_PKG_VERSION"));
             Ok(())
         }
         "help" | "--help" | "-h" => {
@@ -121,8 +121,8 @@ fn cmd_init(args: &Args) -> Result<(), String> {
     println!("  data dir:   {}", args.data_dir.display());
     println!("  signing id: {}", signer.id());
     println!();
-    println!("Next: run `safu-node info` to print this node's pairing code, then");
-    println!("`safu-node link <device-connection-code>` for each device to back up.");
+    println!("Next: run `sharu info` to print this node's pairing code, then");
+    println!("`sharu link <device-connection-code>` for each device to back up.");
     Ok(())
 }
 
@@ -183,7 +183,7 @@ fn cmd_link(args: &Args) -> Result<(), String> {
         "  safety number: {} — confirm it matches the one shown on the device",
         safety_number(&node_id, &sign_id)
     );
-    println!("run `safu-node serve` to start backing it up.");
+    println!("run `sharu serve` to start backing it up.");
     Ok(())
 }
 
@@ -209,7 +209,7 @@ fn cmd_unlink(args: &Args) -> Result<(), String> {
 fn cmd_list(args: &Args) -> Result<(), String> {
     let devices = Devices::load(&args.data_dir)?;
     if devices.list().is_empty() {
-        println!("no linked devices — run `safu-node link <code>` to add one");
+        println!("no linked devices — run `sharu link <code>` to add one");
         return Ok(());
     }
     // The safety number binds this node's identity to each device's, so showing
@@ -334,10 +334,10 @@ fn cmd_status(args: &Args) -> Result<(), String> {
         );
     }
     if devices.list().is_empty() {
-        println!("    none — run `safu-node link <code>` to add one");
+        println!("    none — run `sharu link <code>` to add one");
     }
     println!();
-    println!("Run `safu-node files` for the file list, `list` for device safety numbers, or");
+    println!("Run `sharu files` for the file list, `list` for device safety numbers, or");
     println!(
         "`info` for this node's pairing code (paste it into the web app's \"Host shares here\")."
     );
@@ -389,7 +389,7 @@ fn cmd_reset(args: &Args) -> Result<(), String> {
         println!("nothing to reset — no node data found in {}", dir.display());
     } else {
         println!("reset complete — removed node data from {}", dir.display());
-        println!("run `safu-node serve` to set the node up again from scratch.");
+        println!("run `sharu serve` to set the node up again from scratch.");
     }
     Ok(())
 }
@@ -476,7 +476,7 @@ async fn cmd_serve(args: &Args) -> Result<(), String> {
     println!("Select this node under \"Host shares here\" on a device to publish its");
     println!("public shares through it; they stay reachable while the device is offline.");
     if devices.is_empty() {
-        println!("no linked devices yet — `safu-node link <code>` then restart to back them up.");
+        println!("no linked devices yet — `sharu link <code>` then restart to back them up.");
     }
     spawn_update_check();
 
@@ -539,7 +539,7 @@ fn onboard(
         }
     }
     if devices.list().is_empty() {
-        println!("No devices linked — you can add one anytime with `safu-node link <code>`.\n");
+        println!("No devices linked — you can add one anytime with `sharu link <code>`.\n");
     }
     Ok(())
 }
@@ -576,7 +576,7 @@ fn prepare_link(node_id: &str, code: &str) -> Result<(PairingInfo, String), Stri
 
 async fn cmd_update(args: &Args) -> Result<(), String> {
     let current = release::current_version();
-    println!("safu-node {current}");
+    println!("sharu {current}");
 
     let release = match release::latest_release().await {
         Ok(release) => release,
@@ -604,7 +604,7 @@ async fn cmd_update(args: &Args) -> Result<(), String> {
     println!("a newer release is available: v{}", release.version);
     if !args.has_flag("--apply") {
         println!();
-        println!("Run `safu-node update --apply` to download, verify, and install it,");
+        println!("Run `sharu update --apply` to download, verify, and install it,");
         println!("or upgrade manually:");
         println!();
         print_upgrade_instructions();
@@ -619,23 +619,23 @@ async fn cmd_update(args: &Args) -> Result<(), String> {
         release.version
     );
     println!(
-        "  sudo systemctl restart safu-node   # or your supervisor, or re-run `safu-node serve`"
+        "  sudo systemctl restart sharu   # or your supervisor, or re-run `sharu serve`"
     );
     Ok(())
 }
 
 /// Best-effort, non-blocking "a newer version exists" notice at `serve` startup.
-/// Opt out with `SAFU_NODE_NO_UPDATE_CHECK`. Never fatal and never delays the
+/// Opt out with `SHARU_NO_UPDATE_CHECK`. Never fatal and never delays the
 /// node: a failed or slow check (offline, private repo without a token) is simply
 /// silent.
 fn spawn_update_check() {
-    if std::env::var_os("SAFU_NODE_NO_UPDATE_CHECK").is_some() {
+    if std::env::var_os("SHARU_NO_UPDATE_CHECK").is_some() {
         return;
     }
     tokio::spawn(async {
         if let Ok(latest) = release::latest_version().await {
             if release::is_newer(&latest, release::current_version()) {
-                println!("update available: v{latest} — run `safu-node update` for how to upgrade");
+                println!("update available: v{latest} — run `sharu update` for how to upgrade");
             }
         }
     });
@@ -653,12 +653,12 @@ fn print_upgrade_instructions() {
     } else {
         // No prebuilt asset is published for this host's os/arch.
         println!("No prebuilt binary is published for this host; build from source, then restart:");
-        println!("  cargo build --release -p safu-node");
+        println!("  cargo build --release -p sharu");
     }
     println!();
     println!("The upgrade is binary-only: your data dir — identity, linked devices,");
     println!("and stored blocks — carries over untouched, so there is no need to link");
-    println!("devices again. Under a service manager, `systemctl restart safu-node`");
+    println!("devices again. Under a service manager, `systemctl restart sharu`");
     println!("(or your supervisor's restart) applies it with a momentary blip only.");
 }
 
@@ -737,10 +737,10 @@ async fn wait_for_shutdown() {
 
 fn print_usage() {
     println!(
-        "safu-node — headless zero-knowledge backup node & public-share host\n\
+        "sharu — headless zero-knowledge backup node & public-share host\n\
 \n\
 USAGE:\n\
-  safu-node <command> [options]\n\
+  sharu <command> [options]\n\
 \n\
 COMMANDS:\n\
   init                 Create this node's identity and data dir\n\
@@ -757,9 +757,9 @@ COMMANDS:\n\
   version              Print the version\n\
 \n\
 OPTIONS / ENVIRONMENT:\n\
-  --data-dir <path>    Directory this node owns        [env SAFU_NODE_DATA_DIR]\n\
+  --data-dir <path>    Directory this node owns        [env SHARU_DATA_DIR]\n\
                        (default: {DEFAULT_DATA_DIR})\n\
-  --passphrase <pass>  Derives this node's identity     [env SAFU_NODE_PASSPHRASE]\n\
+  --passphrase <pass>  Derives this node's identity     [env SHARU_PASSPHRASE]\n\
                        (required; prefer the env var to keep it out of shell history)\n\
 \n\
 Run multiple nodes by giving each its own --data-dir."
@@ -780,8 +780,8 @@ impl Args {
         let mut command = None;
         let mut positionals = Vec::new();
         let mut data_dir =
-            std::env::var("SAFU_NODE_DATA_DIR").unwrap_or_else(|_| DEFAULT_DATA_DIR.into());
-        let mut passphrase = std::env::var("SAFU_NODE_PASSPHRASE").ok();
+            std::env::var("SHARU_DATA_DIR").unwrap_or_else(|_| DEFAULT_DATA_DIR.into());
+        let mut passphrase = std::env::var("SHARU_PASSPHRASE").ok();
 
         let mut it = argv.into_iter();
         while let Some(arg) = it.next() {
@@ -822,7 +822,7 @@ impl Args {
         self.passphrase
             .clone()
             .filter(|p| !p.is_empty())
-            .ok_or_else(|| "SAFU_NODE_PASSPHRASE (or --passphrase) is required".into())
+            .ok_or_else(|| "SHARU_PASSPHRASE (or --passphrase) is required".into())
     }
 }
 

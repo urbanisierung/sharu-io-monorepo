@@ -54,6 +54,8 @@ export interface AppProps {
   onPair?: (code: string) => Promise<void>;
   onVerify?: (id: string) => void;
   onReject?: (id: string) => void;
+  /** Permanently unlink a paired device. */
+  onRemove?: (id: string) => void;
   /** Give a paired device a friendly local name. */
   onRename?: (id: string, name: string) => void;
   /** Desktop only: start watching a folder for auto-backup. */
@@ -86,6 +88,7 @@ export function App({
   onPair,
   onVerify,
   onReject,
+  onRemove,
   onRename,
   onWatch,
 }: AppProps) {
@@ -175,6 +178,7 @@ export function App({
             onPair={onPair}
             onVerify={onVerify}
             onReject={onReject}
+            onRemove={onRemove}
             onRename={onRename}
             shareHostId={shareHostId}
             onSetShareHost={onSetShareHost}
