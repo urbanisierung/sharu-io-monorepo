@@ -61,6 +61,9 @@ export const landing = defineMessages('safu.landing', {
   p6Title: 'Yours to own',
   p6Body:
     'Open architecture, content you can self-host, and a revocable trust model for lost devices.',
+  p7Title: 'Relay-optional',
+  p7Body:
+    'The relay only forwards ciphertext, and only when a direct link fails. Point Sharu at your own relay, or give a node a reachable address and skip it entirely — no dependency on us.',
 
   cliKicker: 'Backup node',
   cliTitle: 'Add an always-on replica from your terminal.',
@@ -142,6 +145,9 @@ export const landingEli5 = defineMessages('safu.landing.eli5', {
   p6Title: 'Truly yours',
   p6Body:
     'An open design, things you can keep on your own helper, and a way to say no more to a gadget you lost.',
+  p7Title: 'Middle-helper optional',
+  p7Body:
+    'The helper in the middle only ever carries locked boxes, and only when two gadgets can’t reach each other. Run your own, or give a gadget a spot others can reach and skip it — you never need ours.',
 
   cliKicker: 'Always-awake helper',
   cliTitle: 'Add a helper that never sleeps, right from your typing box.',
@@ -219,6 +225,9 @@ export const landingMachine = defineMessages('safu.landing.machine', {
   p5Body: 'crdt alloc-table → converge(deterministic). dropped-writes := 0.',
   p6Title: 'owned',
   p6Body: 'open-arch + self-host(content) + revocable-trust(lost-device).',
+  p7Title: 'relay-optional',
+  p7Body:
+    'relay forwards ciphertext only, only on direct-fail. self-host(relay) | reachable-node ⇒ relay=0. dependency(n0) := none.',
 
   cliKicker: 'backup-node',
   cliTitle: 'replica := always-on, via terminal.',

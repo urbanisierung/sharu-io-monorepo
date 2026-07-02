@@ -340,3 +340,34 @@
 .deviceName {
   font-weight: 600;
 }
+
+/* The backup-node (CLI) onboarding flow: the two values `sharu serve` asks for,
+   shown big so they’re impossible to miss and easy to copy off the screen. */
+.deviceCode {
+  font-family: var(--safu-font-mono);
+  font-size: 0.85rem;
+  word-break: break-all;
+  color: var(--cascivo-color-primary);
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--cascivo-color-border, #d4d4d8);
+  border-radius: var(--cascivo-radius, 0.5rem);
+  background: color-mix(in srgb, var(--cascivo-color-surface) 60%, transparent);
+  user-select: all;
+}
+
+/* A pending node awaiting its safety-number check: the number front and centre,
+   with the compare buttons right beneath it. */
+.safetyCheck {
+  display: grid;
+  gap: 0.4rem;
+  justify-items: start;
+}
+
+.safetyNumber {
+  font-family: var(--safu-font-mono);
+  font-size: 1.9rem;
+  letter-spacing: 0.35em;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--cascivo-color-primary);
+}

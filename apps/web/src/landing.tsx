@@ -29,6 +29,7 @@ const guarantees = [
   { term: landing.p4Title, def: landing.p4Body },
   { term: landing.p5Title, def: landing.p5Body },
   { term: landing.p6Title, def: landing.p6Body },
+  { term: landing.p7Title, def: landing.p7Body },
 ];
 
 const installs = [

@@ -180,6 +180,28 @@ export const messages = defineMessages('safu', {
   watchHeading: 'Watched folders',
   watchPlaceholder: 'Folder path to auto-back-up',
   watch: 'Watch folder',
+  // Backup-node (CLI) onboarding — a focused, in-tab flow that surfaces the two
+  // values `sharu serve` asks for: this device’s code and the safety number.
+  onboardCliTitle: 'Set up a backup node',
+  onboardCliDesc:
+    'Link the sharu command-line node — an always-on machine that keeps an encrypted copy of everything. This walks you through the two things it needs.',
+  onboardCliStart: 'Onboard a backup node',
+  onboardBack: '← Back to devices',
+  onboardHeading: 'Onboard a backup node',
+  onboardIntro:
+    'Run sharu serve on your always-on machine. It asks for a device code and shows a safety number — both are right here.',
+  onboardStep1Title: '1. Give the node this device’s code',
+  onboardStep1Desc:
+    'Copy this, then paste it at the terminal’s “Device code:” prompt and press Enter.',
+  deviceCodeLabel: 'This device’s code',
+  onboardStep2Title: '2. Link the node here',
+  onboardStep2Desc:
+    'Paste the node’s code (printed by sharu serve) to link it. If you opened the link the CLI printed, it is already linked.',
+  onboardStep3Title: '3. Check the safety number',
+  onboardStep3Desc:
+    'Your terminal shows a safety number for the node. Confirm it matches the one below — on both sides.',
+  onboardWaiting: 'Link the node above and its safety number will appear here to confirm.',
+  onboardVerified: 'Verified — the safety number matched.',
 });
 
 /** ELI5 reading mode — same keys, retold so a five-year-old gets it. */
@@ -360,6 +382,26 @@ export const messagesEli5 = defineMessages('safu.eli5', {
   watchHeading: 'Folders we watch',
   watchPlaceholder: 'Folder to keep safe by itself',
   watch: 'Watch folder',
+  onboardCliTitle: 'Set up an always-awake helper',
+  onboardCliDesc:
+    'Hook up the sharu keyboard helper — an always-awake machine that keeps a secret copy of everything. This shows you the two things it needs.',
+  onboardCliStart: 'Hook up a helper',
+  onboardBack: '← Back to gadgets',
+  onboardHeading: 'Hook up a helper',
+  onboardIntro:
+    'Run sharu serve on your always-awake machine. It asks for a device code and shows a safety number — both are right here.',
+  onboardStep1Title: '1. Give the helper this gadget’s code',
+  onboardStep1Desc:
+    'Copy this, then paste it where the keyboard asks for “Device code:” and press Enter.',
+  deviceCodeLabel: 'This gadget’s code',
+  onboardStep2Title: '2. Hook the helper up here',
+  onboardStep2Desc:
+    'Paste the helper’s code (shown by sharu serve) to hook it up. If you opened the link it printed, it is already hooked up.',
+  onboardStep3Title: '3. Check the safety number',
+  onboardStep3Desc:
+    'Your keyboard shows a safety number for the helper. Make sure it is the same as the one below — on both.',
+  onboardWaiting: 'Hook up the helper above and its safety number will show up here to check.',
+  onboardVerified: 'Checked — the safety numbers were the same.',
 });
 
 /** Machine reading mode — same keys, stripped to terse lowercase token style. */
@@ -528,4 +570,20 @@ export const messagesMachine = defineMessages('safu.machine', {
   watchHeading: 'watched folders',
   watchPlaceholder: 'folder path for auto-backup',
   watch: 'watch',
+  onboardCliTitle: 'backup node setup',
+  onboardCliDesc:
+    'link sharu cli node — always-on host, ciphertext replica. guides the 2 required values.',
+  onboardCliStart: 'onboard node',
+  onboardBack: '← devices',
+  onboardHeading: 'onboard node',
+  onboardIntro: 'run sharu serve on always-on host. it asks device code + prints sas — both here.',
+  onboardStep1Title: '1. give node this device code',
+  onboardStep1Desc: 'copy → paste at terminal “Device code:” prompt → enter.',
+  deviceCodeLabel: 'this device code',
+  onboardStep2Title: '2. link node here',
+  onboardStep2Desc: 'paste node code (from sharu serve) to link. cli deep link → already linked.',
+  onboardStep3Title: '3. verify sas',
+  onboardStep3Desc: 'terminal prints node sas. confirm == value below, both sides.',
+  onboardWaiting: 'link node above → its sas appears here to confirm.',
+  onboardVerified: 'verified — sas matched.',
 });

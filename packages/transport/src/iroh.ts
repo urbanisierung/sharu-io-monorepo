@@ -112,16 +112,32 @@ class IrohTransport implements Transport {
   }
 }
 
+/** Parse a `SHARU_RELAY_URL`-style value (comma-separated relay URLs) into a
+ *  list, trimming blanks. Callers read the value from their own runtime's env
+ *  (`import.meta.env.VITE_SHARU_RELAY_URL` in the browser, `process.env` in
+ *  Node) and pass the result to {@link createIrohTransport}. */
+export function parseRelays(value: string | undefined): string[] {
+  if (!value) return [];
+  return value
+    .split(',')
+    .map((url) => url.trim())
+    .filter((url) => url.length > 0);
+}
+
 /** Boot the WASM module and bind a relay-only endpoint advertising `protocols`.
  *  Waits up to `onlineTimeoutMs` for a home relay so the address is dialable;
  *  if the relay is unreachable the transport still returns (local features keep
- *  working — only peer dialing needs the relay), rather than blocking forever. */
+ *  working — only peer dialing needs the relay), rather than blocking forever.
+ *  When `relays` is non-empty, the endpoint uses exactly those relay servers
+ *  instead of the n0 defaults, so a self-hosted deployment can point at its own
+ *  relay rather than iroh.computer's. */
 export async function createIrohTransport(
   protocols: string[],
   onlineTimeoutMs = 15_000,
+  relays: string[] = [],
 ): Promise<Transport> {
   await ready();
-  const endpoint = (await IrohEndpoint.create(protocols)) as IrohEndpoint;
+  const endpoint = (await IrohEndpoint.create(protocols, relays)) as IrohEndpoint;
   const relayUrl = await Promise.race([
     endpoint.online() as Promise<string | null>,
     new Promise<null>((resolve) => setTimeout(() => resolve(null), onlineTimeoutMs)),

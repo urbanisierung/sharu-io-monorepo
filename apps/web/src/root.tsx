@@ -9,6 +9,7 @@ import { App } from './app.js';
 import styles from './app.module.css';
 import { CliDocs } from './cli-docs.js';
 import { Comparison } from './comparison.js';
+import { openCliOnboarding } from './devices.js';
 import { FlowPage } from './flow.js';
 import { Landing } from './landing.js';
 import { messages } from './messages.js';
@@ -79,9 +80,10 @@ function launch(): void {
  *  a soft SPA transition, no reload. If a wallet is already unlocked, link the
  *  node right away; otherwise stash the code so the next unlock auto-links it
  *  (the same path a `#pair=` deep link takes). Either way we land on Devices so
- *  the operator sees the node appear and can copy *this* device's code back to
- *  the CLI to finish the round trip — landing on Files would hide both. The hash
- *  is dropped because the code now lives in the signal, not the URL. */
+ *  the operator lands straight in the focused backup-node onboarding flow, where
+ *  this device's code and the node's safety number are front and centre to finish
+ *  the round trip. The hash is dropped because the code now lives in the signal,
+ *  not the URL. */
 export function linkNode(code: string): void {
   const rt = runtime.value;
   if (rt) {
@@ -90,6 +92,7 @@ export function linkNode(code: string): void {
     pairCode.value = code;
   }
   activeView.value = 'devices';
+  openCliOnboarding();
   navigate('app', { dropHash: true });
   if (walletsLoaded.value) decideInitial();
 }
