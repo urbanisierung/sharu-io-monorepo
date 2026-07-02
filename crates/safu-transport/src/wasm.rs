@@ -14,7 +14,7 @@ use std::rc::Rc;
 use std::str::FromStr;
 
 use iroh::endpoint::{presets, RecvStream, SendStream};
-use iroh::{Endpoint, EndpointAddr, EndpointId, RelayUrl};
+use iroh::{Endpoint, EndpointAddr, EndpointId, RelayMode, RelayUrl};
 use js_sys::Promise;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
@@ -31,15 +31,25 @@ pub struct IrohEndpoint {
 
 #[wasm_bindgen]
 impl IrohEndpoint {
-    /// Bind an endpoint advertising `protocols`. Resolves to an `IrohEndpoint`.
-    pub fn create(protocols: Vec<String>) -> Promise {
+    /// Bind an endpoint advertising `protocols`. When `relays` is non-empty, use
+    /// exactly those relay servers instead of the n0 defaults, so a self-hosted
+    /// deployment can point the web app at its own relay rather than
+    /// iroh.computer's. (The browser is relay-only, so this is its sole relay
+    /// dependency.) Discovery stays on the N0 preset. Resolves to an
+    /// `IrohEndpoint`.
+    pub fn create(protocols: Vec<String>, relays: Vec<String>) -> Promise {
         future_to_promise(async move {
             let alpns: Vec<Vec<u8>> = protocols.iter().map(|p| p.as_bytes().to_vec()).collect();
-            let ep = Endpoint::builder(presets::N0)
-                .alpns(alpns)
-                .bind()
-                .await
-                .map_err(err)?;
+            let mut builder = Endpoint::builder(presets::N0).alpns(alpns);
+            if !relays.is_empty() {
+                let urls = relays
+                    .iter()
+                    .map(|url| RelayUrl::from_str(url))
+                    .collect::<Result<Vec<RelayUrl>, _>>()
+                    .map_err(err)?;
+                builder = builder.relay_mode(RelayMode::custom(urls));
+            }
+            let ep = builder.bind().await.map_err(err)?;
             Ok(JsValue::from(IrohEndpoint { ep }))
         })
     }

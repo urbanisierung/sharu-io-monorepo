@@ -28,6 +28,28 @@ finished `dist/` (workflow: [`.github/workflows/deploy-web.yml`](../.github/work
 (default output dir). `apps/desktop` is excluded from the pnpm workspace, so it
 is never part of this build.
 
+## Self-hosting the relay
+
+By default every runtime uses n0's public relay servers (iroh.computer). The
+relay is a coordination + NAT-traversal fallback — it only ever forwards
+encrypted QUIC, never plaintext — but it is a *liveness* dependency: if it is
+unreachable, browser peers (which are relay-only) cannot connect. To drop that
+dependency, run your own [`iroh-relay`](https://github.com/n0-computer/iroh)
+server on a host with a public address + TLS, and point each runtime at it. No
+fork required — it is configuration:
+
+- **Web app** — set `VITE_SHARU_RELAY_URL` at build time (comma-separate for
+  several relays), e.g. `VITE_SHARU_RELAY_URL=https://relay.example.com pnpm -r build`.
+- **CLI node (`sharu`)** — pass `--relay https://relay.example.com` (repeatable)
+  or set `SHARU_RELAY_URL` (comma-separated). `sharu info` / `serve` print the
+  configured relays.
+- **Headless peer (`apps/peer`) and desktop** — set `SHARU_RELAY_URL`.
+
+Peer discovery still uses the N0 preset (n0 DNS/pkarr); only the relay map is
+overridden. For a node you control, giving it a directly reachable address
+(public IP / forwarded port / IPv6) lets your devices reach it over direct QUIC
+with no relay on the data path at all — the strongest form of relay independence.
+
 ## Headers / cross-origin isolation
 
 The app intentionally does **not** set `Cross-Origin-Opener-Policy` /

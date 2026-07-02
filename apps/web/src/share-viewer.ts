@@ -162,8 +162,12 @@ export async function openShare(info: ShareInfo, fetchBlock: FetchBlock): Promis
  *  lazy `getFile`, releasing it on `close`. No wallet, no passphrase, no
  *  persistence — the in-memory store is discarded with the transport. */
 export async function openShareOverIroh(info: ShareInfo): Promise<Opened> {
-  const { createIrohTransport } = await import('@safu/transport/iroh');
-  const transport = await createIrohTransport([BLOCK_PROTOCOL]);
+  const { createIrohTransport, parseRelays } = await import('@safu/transport/iroh');
+  const transport = await createIrohTransport(
+    [BLOCK_PROTOCOL],
+    15_000,
+    parseRelays(import.meta.env.VITE_SHARU_RELAY_URL),
+  );
   const store = new MemoryBlockStore();
   const fetch: FetchBlock = (addr) => fetchBlock(transport, info.peer, addr, store);
   try {

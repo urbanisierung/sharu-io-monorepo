@@ -34,6 +34,17 @@ const removingId = signal<string | null>(null);
 // Which device row is expanded to show its full details, if any. The Manage
 // table stays a scannable name/linked/status overview until a row is opened.
 const expandedId = signal<string | null>(null);
+// Whether the focused "Onboard a backup node" flow is open, replacing the normal
+// Devices content. It surfaces the two values `sharu serve` asks for — this
+// device's code and the safety number — so both are impossible to miss.
+const cliOnboarding = signal(false);
+
+/** Open the focused backup-node onboarding flow. Called from the button in the
+ *  Devices view and from `/link` (root.tsx) so continuing from the CLI's deep
+ *  link lands straight on the device code + safety number. */
+export function openCliOnboarding(): void {
+  cliOnboarding.value = true;
+}
 
 /** Reset module-level view state — for deterministic tests. */
 export function resetDevicesView(): void {
@@ -46,6 +57,7 @@ export function resetDevicesView(): void {
   renameDraft.value = '';
   removingId.value = null;
   expandedId.value = null;
+  cliOnboarding.value = false;
 }
 
 /** Decode this device's own identity (signing id + transport address) from its
@@ -109,12 +121,34 @@ export function Devices({
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
   const self = selfIdentity(code);
 
+  if (cliOnboarding.value) {
+    return (
+      <CliOnboarding
+        code={code}
+        peers={peers}
+        onPair={onPair}
+        onVerify={onVerify}
+        onReject={onReject}
+      />
+    );
+  }
+
   return (
     <section class={styles.settings}>
       <header class={styles.settingsHead}>
         <h2 class={styles.settingsTitle}>{t(messages.devicesHeading)}</h2>
         <p class={styles.settingsIntro}>{t(messages.devicesIntro)}</p>
       </header>
+
+      <article class={styles.setting}>
+        <h3 class={styles.settingTitle}>{t(messages.onboardCliTitle)}</h3>
+        <p class={styles.settingDesc}>{t(messages.onboardCliDesc)}</p>
+        <div class={styles.settingRow}>
+          <Button intent="primary" onClick={openCliOnboarding}>
+            {t(messages.onboardCliStart)}
+          </Button>
+        </div>
+      </article>
 
       {self && (
         <article class={styles.setting}>
@@ -434,6 +468,123 @@ export function Devices({
           </table>
         </article>
       )}
+    </section>
+  );
+}
+
+interface CliOnboardingProps {
+  /** This device's connection code — the "device code" the CLI prompts for. */
+  code: string;
+  peers: ReadonlySignal<readonly PeerInfo[]>;
+  onPair: (code: string) => Promise<void>;
+  onVerify?: (id: string) => void;
+  onReject?: (id: string) => void;
+}
+
+/** The focused backup-node onboarding flow, reached from the Devices button or
+ *  the CLI's `/link` deep link. It shows, big and in order, the two values
+ *  `sharu serve` asks for: this device's code to paste at the terminal, and each
+ *  freshly-linked node's safety number to confirm on both sides. Linking the node
+ *  and confirming its number happen right here, so the whole round trip lives in
+ *  one view instead of being scattered across the Manage table. */
+function CliOnboarding({ code, peers, onPair, onVerify, onReject }: CliOnboardingProps) {
+  // Every not-yet-verified peer needs its safety number checked; in this flow
+  // that is the node the operator just linked. Verified ones show as confirmed.
+  const pending = peers.value.filter((peer) => peer.status === 'pending');
+  const verified = peers.value.filter((peer) => peer.status === 'verified');
+
+  return (
+    <section class={styles.settings}>
+      <header class={styles.settingsHead}>
+        <h2 class={styles.settingsTitle}>{t(messages.onboardHeading)}</h2>
+        <p class={styles.settingsIntro}>{t(messages.onboardIntro)}</p>
+      </header>
+
+      <div class={styles.settingRow}>
+        <Button intent="neutral" onClick={() => (cliOnboarding.value = false)}>
+          {t(messages.onboardBack)}
+        </Button>
+      </div>
+
+      <article class={styles.setting}>
+        <h3 class={styles.settingTitle}>{t(messages.onboardStep1Title)}</h3>
+        <p class={styles.settingDesc}>{t(messages.onboardStep1Desc)}</p>
+        <p class={styles.identityLabel}>{t(messages.deviceCodeLabel)}</p>
+        <code class={styles.deviceCode}>{code}</code>
+        <div class={styles.settingRow}>
+          <Button
+            intent="primary"
+            onClick={() => {
+              void navigator.clipboard?.writeText(code);
+              codeCopied.value = true;
+            }}
+          >
+            {codeCopied.value ? t(messages.copied) : t(messages.copyCode)}
+          </Button>
+        </div>
+      </article>
+
+      <article class={styles.setting}>
+        <h3 class={styles.settingTitle}>{t(messages.onboardStep2Title)}</h3>
+        <p class={styles.settingDesc}>{t(messages.onboardStep2Desc)}</p>
+        <div class={styles.settingRow}>
+          <input
+            class={styles.input}
+            aria-label={t(messages.peerCodePlaceholder)}
+            placeholder={t(messages.peerCodePlaceholder)}
+            value={draftPeerCode.value}
+            onInput={(event) => {
+              draftPeerCode.value = (event.target as HTMLInputElement).value;
+              pairFailed.value = false;
+            }}
+          />
+          <Button
+            intent="neutral"
+            onClick={() => {
+              pairFailed.value = false;
+              onPair(draftPeerCode.value)
+                .then(() => {
+                  draftPeerCode.value = '';
+                })
+                .catch(() => {
+                  pairFailed.value = true;
+                });
+            }}
+          >
+            {t(messages.pair)}
+          </Button>
+        </div>
+        {pairFailed.value && <p class={styles.warn}>{t(messages.pairError)}</p>}
+      </article>
+
+      <article class={styles.setting}>
+        <h3 class={styles.settingTitle}>{t(messages.onboardStep3Title)}</h3>
+        <p class={styles.settingDesc}>{t(messages.onboardStep3Desc)}</p>
+        {pending.length === 0 && verified.length === 0 && (
+          <p class={styles.muted}>{t(messages.onboardWaiting)}</p>
+        )}
+        {pending.map((peer) => (
+          <div class={styles.safetyCheck} key={peer.id}>
+            <p class={styles.settingDesc}>{t(messages.sasPrompt)}</p>
+            <span class={styles.safetyNumber}>{peer.sas}</span>
+            {onVerify && onReject && (
+              <div class={styles.settingRow}>
+                <Button intent="primary" onClick={() => onVerify(peer.id)}>
+                  {t(messages.confirm)}
+                </Button>
+                <Button intent="neutral" onClick={() => onReject(peer.id)}>
+                  {t(messages.reject)}
+                </Button>
+              </div>
+            )}
+          </div>
+        ))}
+        {verified.map((peer) => (
+          <p class={styles.statusOk} key={peer.id}>
+            {t(messages.onboardVerified)}
+          </p>
+        ))}
+      </article>
     </section>
   );
 }

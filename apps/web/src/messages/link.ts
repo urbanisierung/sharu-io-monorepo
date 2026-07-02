@@ -14,13 +14,13 @@ export const link = defineMessages('safu.link', {
   relayUnknown: 'Not connected to a relay yet',
   step1Title: '1. Link the node to this device',
   step1Body:
-    'Continue into Sharu and unlock your wallet. This node is authorized automatically and then shows up under Devices.',
+    'Continue into Sharu and unlock your wallet. This node is authorized automatically, and Sharu opens a guided “Onboard a backup node” view.',
   step2Title: '2. Confirm the safety number',
   step2Body:
-    'Your terminal prints a safety number for this node. Check it matches the one Sharu shows for the node under Devices before you trust it.',
+    'Your terminal prints a safety number for this node. The guided view shows the same number for it — check they match before you trust it.',
   step3Title: '3. Send your device code back',
   step3Body:
-    'Under Devices, use “Copy code” to copy this device’s code, paste it at the terminal’s “Device code:” prompt, and confirm the safety number there too.',
+    'The guided view has this device’s code ready to copy. Paste it at the terminal’s “Device code:” prompt, then confirm the safety number there too.',
   cta: 'Open Sharu and link this node',
   invalidTitle: 'No node code in this link',
   invalidBody:
@@ -39,13 +39,13 @@ export const linkEli5 = defineMessages('safu.link.eli5', {
   relayUnknown: 'Not connected yet',
   step1Title: '1. Hook the helper up to this gadget',
   step1Body:
-    'Go into Sharu and say your secret word. This helper gets let in by itself and then shows up under Gadgets.',
+    'Go into Sharu and say your secret word. This helper gets let in by itself, and Sharu opens a step-by-step “Hook up a helper” view.',
   step2Title: '2. Check the safety number',
   step2Body:
-    'Your keyboard shows a little safety number for this helper. Make sure it is the same as the one Sharu shows for it under Gadgets before you trust it.',
+    'Your keyboard shows a little safety number for this helper. That view shows the same number for it — make sure they are the same before you trust it.',
   step3Title: '3. Send your gadget’s code back',
   step3Body:
-    'Under Gadgets, tap “Copy the code” to grab this gadget’s code, paste it where your keyboard asks for “Device code:”, and check the safety number there too.',
+    'That view has this gadget’s code ready to copy. Paste it where your keyboard asks for “Device code:”, then check the safety number there too.',
   cta: 'Open Sharu and hook up this helper',
   invalidTitle: 'No helper code in this link',
   invalidBody:
@@ -63,13 +63,14 @@ export const linkMachine = defineMessages('safu.link.machine', {
   relayLabel: 'home relay',
   relayUnknown: 'no relay yet',
   step1Title: '1. link node -> this device',
-  step1Body: 'continue into sharu + unlock wallet. node auto-authorized → appears under devices.',
+  step1Body:
+    'continue into sharu + unlock wallet. node auto-authorized → guided onboard view opens.',
   step2Title: '2. verify sas',
   step2Body:
-    'terminal prints node sas. verify == sas sharu shows for node under devices before trust.',
+    'terminal prints node sas. guided view shows same sas for node — verify == before trust.',
   step3Title: '3. send device code back',
   step3Body:
-    'devices › “cp code” → paste at terminal “Device code:” prompt → confirm sas there too.',
+    'guided view has this device code ready → paste at terminal “Device code:” → confirm sas.',
   cta: 'open sharu + link node',
   invalidTitle: 'err: no node code in link',
   invalidBody: 'run sharu serve (|info) on terminal → copy printed link into browser address bar.',

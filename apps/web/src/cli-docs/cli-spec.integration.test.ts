@@ -29,7 +29,7 @@ describe('CLI spec', () => {
     expect(parsed).toEqual(cliSpec);
   });
 
-  it('captures every command and both options', () => {
+  it('captures every command and every option', () => {
     const parsed = fromSource();
     expect(parsed.commands.map((c) => c.name)).toEqual([
       'init',
@@ -45,7 +45,8 @@ describe('CLI spec', () => {
       'update',
       'version',
     ]);
-    expect(parsed.options.map((o) => o.flag)).toEqual(['--data-dir', '--passphrase']);
+    expect(parsed.options.map((o) => o.flag)).toEqual(['--data-dir', '--passphrase', '--relay']);
     expect(parsed.options.find((o) => o.flag === '--passphrase')?.required).toBe(true);
+    expect(parsed.options.find((o) => o.flag === '--relay')?.env).toBe('SHARU_RELAY_URL');
   });
 });

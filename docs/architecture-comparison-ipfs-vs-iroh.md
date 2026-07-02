@@ -66,7 +66,7 @@ The master key is derived **client-side** (Argon2id). Files are streamed through
 ### Disadvantages
 - **Direct-connectivity assumption.** The model favors peers that can reach each other (directly or via relay). It is a sync/backup fabric between *your* devices and trusted peers — not a public "anyone can serve this CID" content network.
 - **Smaller / newer ecosystem.** Iroh is younger than IPFS; fewer third-party gateways, tools, and community resources.
-- **Relay dependency in hostile networks.** When hole-punching fails, transfers fall back to relay infrastructure — a reachability dependency the pure-DHT model framed differently.
+- **Relay dependency in hostile networks.** When hole-punching fails, transfers fall back to relay infrastructure — a reachability dependency the pure-DHT model framed differently. It only forwards ciphertext (never plaintext), and it is a *liveness* dependency, not a trust one. It defaults to n0's public relays but is self-hostable via configuration (`SHARU_RELAY_URL` / `--relay` / `VITE_SHARU_RELAY_URL`; see [`deployment.md`](deployment.md)), and a node with a directly reachable address needs no relay on the data path at all.
 - **Rust → WASM build complexity.** Cross-compiling the core to WASM and native adds toolchain and CI burden (a cost paid once at the build layer, not by users).
 - **Less "infinite replication."** Without a global content network, broad public censorship-resistance is not a goal — by design (see below).
 
