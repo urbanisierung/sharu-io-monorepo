@@ -128,7 +128,7 @@ fn cmd_init(args: &Args) -> Result<(), String> {
 
 async fn cmd_info(args: &Args) -> Result<(), String> {
     let signer = signer(args)?;
-    let endpoint = bind_endpoint().await?;
+    let endpoint = bind_endpoint(args).await?;
     let relay = online(&endpoint).await;
     let info = PairingInfo {
         id: endpoint.id(),
@@ -140,6 +140,9 @@ async fn cmd_info(args: &Args) -> Result<(), String> {
     match &relay {
         Some(url) => println!("home relay:    {url}"),
         None => println!("home relay:    (offline — could not reach a relay)"),
+    }
+    if !args.relays.is_empty() {
+        println!("relay servers: custom — {}", args.relays.join(", "));
     }
     let code = info.encode();
     println!();
@@ -427,7 +430,7 @@ async fn cmd_serve(args: &Args) -> Result<(), String> {
     let store = FsBlockStore::new(args.data_dir.join("blocks"));
     let mut devices = Devices::load(&args.data_dir)?;
 
-    let endpoint = Arc::new(bind_endpoint().await?);
+    let endpoint = Arc::new(bind_endpoint(args).await?);
     let relay = online(&endpoint).await;
     let pairing_code = PairingInfo {
         id: endpoint.id(),
@@ -458,6 +461,9 @@ async fn cmd_serve(args: &Args) -> Result<(), String> {
     match &relay {
         Some(url) => println!("  home relay:    {url}"),
         None => println!("  home relay:    (offline — waiting for a relay)"),
+    }
+    if !args.relays.is_empty() {
+        println!("  relay servers:  custom — {}", args.relays.join(", "));
     }
     println!("  blocks held:    {}", store.count());
     println!("  linked devices: {}", devices.len());
@@ -680,19 +686,34 @@ fn open_doc(args: &Args, signer: Signer) -> Result<SyncDoc, String> {
     Ok(SyncDoc::open(signer, snapshot))
 }
 
-async fn bind_endpoint() -> Result<NativeEndpoint, String> {
+async fn bind_endpoint(args: &Args) -> Result<NativeEndpoint, String> {
     // Serve replication (sync + blocks) and public-share hosting (pin + unpin):
     // the node is both an always-on backup replica and the "Host shares here"
-    // target a device pins its public shares to.
-    NativeEndpoint::bind(&[SYNC_PROTOCOL, BLOCK_PROTOCOL, PIN_PROTOCOL, UNPIN_PROTOCOL])
-        .await
-        .map_err(|e| format!("bind transport: {e}"))
+    // target a device pins its public shares to. With `--relay`/`SHARU_RELAY_URL`
+    // set, it routes through the operator's own relay(s) instead of the defaults.
+    NativeEndpoint::bind_with_relays(
+        &[SYNC_PROTOCOL, BLOCK_PROTOCOL, PIN_PROTOCOL, UNPIN_PROTOCOL],
+        &args.relays,
+    )
+    .await
+    .map_err(|e| format!("bind transport: {e}"))
 }
 
 /// A short, log-friendly prefix of a long hex id (ids are ASCII, so byte-slicing
 /// never splits a character).
 fn short(id: &str) -> &str {
     &id[..id.len().min(12)]
+}
+
+/// Split a `SHARU_RELAY_URL` value into individual relay URLs: comma-separated,
+/// trimmed, empties dropped. So `"https://a, https://b"` yields two entries.
+fn split_relays(value: &str) -> Vec<String> {
+    value
+        .split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+        .collect()
 }
 
 /// A compact, human-readable byte size (e.g. `3.4 MB`) for status/file listings.
@@ -763,6 +784,9 @@ OPTIONS / ENVIRONMENT:\n\
                        (default: {DEFAULT_DATA_DIR})\n\
   --passphrase <pass>  Derives this node's identity     [env SHARU_PASSPHRASE]\n\
                        (required; prefer the env var to keep it out of shell history)\n\
+  --relay <url>        Use this relay instead of the defaults [env SHARU_RELAY_URL]\n\
+                       (repeatable; comma-separate in the env var). Point it at a\n\
+                       self-hosted relay to drop the dependency on iroh.computer.\n\
 \n\
 Run multiple nodes by giving each its own --data-dir."
     );
@@ -775,6 +799,9 @@ struct Args {
     positionals: Vec<String>,
     data_dir: PathBuf,
     passphrase: Option<String>,
+    /// Relay servers to use instead of the n0 defaults, so the node can run
+    /// against a self-hosted relay. Empty means "use the defaults".
+    relays: Vec<String>,
 }
 
 impl Args {
@@ -784,6 +811,11 @@ impl Args {
         let mut data_dir =
             std::env::var("SHARU_DATA_DIR").unwrap_or_else(|_| DEFAULT_DATA_DIR.into());
         let mut passphrase = std::env::var("SHARU_PASSPHRASE").ok();
+        // Seed relays from the env (comma-separated); `--relay` adds more.
+        let mut relays: Vec<String> = std::env::var("SHARU_RELAY_URL")
+            .ok()
+            .map(|value| split_relays(&value))
+            .unwrap_or_default();
 
         let mut it = argv.into_iter();
         while let Some(arg) = it.next() {
@@ -793,6 +825,9 @@ impl Args {
                 }
                 "--passphrase" => {
                     passphrase = Some(it.next().ok_or("--passphrase needs a value")?);
+                }
+                "--relay" => {
+                    relays.push(it.next().ok_or("--relay needs a value")?);
                 }
                 _ if command.is_none() => command = Some(arg),
                 _ => positionals.push(arg),
@@ -804,6 +839,7 @@ impl Args {
             positionals,
             data_dir: PathBuf::from(data_dir),
             passphrase,
+            relays,
         })
     }
 
@@ -868,6 +904,19 @@ mod tests {
         assert!(url.contains(super::brand::domain()));
         // The code is URL-safe base64, so it rides the hash verbatim — no escaping.
         assert!(url.ends_with("/link#node=ABC-123_code"));
+    }
+
+    #[test]
+    fn split_relays_trims_and_drops_empties() {
+        assert!(super::split_relays("").is_empty());
+        assert!(super::split_relays("  , ,  ").is_empty());
+        assert_eq!(
+            super::split_relays("https://a.example , ,https://b.example"),
+            vec![
+                "https://a.example".to_string(),
+                "https://b.example".to_string()
+            ]
+        );
     }
 
     #[test]

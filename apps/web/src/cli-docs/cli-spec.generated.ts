@@ -87,5 +87,13 @@ export const cliSpec: CliSpec = {
       required: true,
       default: null,
     },
+    {
+      flag: '--relay',
+      value: '<url>',
+      summary: 'Use this relay instead of the defaults',
+      env: 'SHARU_RELAY_URL',
+      required: false,
+      default: null,
+    },
   ],
 };

@@ -196,9 +196,22 @@ pub fn run() {
             let blocks_dir = app.path().app_data_dir()?.join("blocks");
             std::fs::create_dir_all(&blocks_dir)?;
 
-            // Bind the native endpoint advertising the SDK's protocols.
+            // Bind the native endpoint advertising the SDK's protocols. A
+            // `SHARU_RELAY_URL` (comma-separated) points it at self-hosted
+            // relay(s) instead of the n0 defaults; unset keeps the defaults.
+            let relays: Vec<String> = std::env::var("SHARU_RELAY_URL")
+                .ok()
+                .map(|value| {
+                    value
+                        .split(',')
+                        .map(str::trim)
+                        .filter(|s| !s.is_empty())
+                        .map(str::to_string)
+                        .collect()
+                })
+                .unwrap_or_default();
             let endpoint = tauri::async_runtime::block_on(async {
-                NativeEndpoint::bind(&["safu/sync/1", "safu/blocks/1"]).await
+                NativeEndpoint::bind_with_relays(&["safu/sync/1", "safu/blocks/1"], &relays).await
             })
             .map_err(|e| std::io::Error::other(e.to_string()))?;
 
