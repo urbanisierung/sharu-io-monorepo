@@ -146,7 +146,8 @@ async fn cmd_info(args: &Args) -> Result<(), String> {
     println!("Open this link in a browser to pair step by step:");
     println!("  {}", web_link(&code));
     println!();
-    println!("…or paste this node's code into the web app's Devices › Link field:");
+    println!("…or paste this node's code into the web app's Devices ›");
+    println!("\"Onboard a backup node\" › Link field:");
     println!("  {code}");
     Ok(())
 }
@@ -507,8 +508,9 @@ fn onboard(
     println!("     {}\n", web_link(pairing_code));
     println!("   (or paste this node's code into the web app's Devices › Link field:)\n");
     println!("     {pairing_code}\n");
-    println!("2. Then use \"Copy code\" in the web app's Devices view and paste it");
-    println!("   here. Link as many devices as you like; press Enter when you're done.\n");
+    println!("2. In the web app, open Devices › \"Onboard a backup node\". It shows this");
+    println!("   device's code and the safety number. Paste that code here, then confirm");
+    println!("   the safety number matches on both sides. Press Enter when you're done.\n");
 
     loop {
         let Some(code) = prompt("Device code (Enter to start serving): ")? else {

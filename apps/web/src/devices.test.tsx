@@ -216,6 +216,46 @@ describe('Devices', () => {
     expect(screen.queryByRole('button', { name: 'Remove device' })).toBeNull();
   });
 
+  it('opens a focused backup-node onboarding view showing this device’s full code', () => {
+    const writeText = vi.fn();
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    render(<Devices connectionCode={code} peers={noPeers} onPair={async () => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Onboard a backup node' }));
+
+    // The heading switches to the guided flow, and the device code is shown in
+    // full (not masked) so it can be pasted at the CLI's "Device code:" prompt.
+    expect(screen.getByRole('heading', { name: 'Onboard a backup node' })).toBeTruthy();
+    expect(screen.getByText('LINKCODE')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Copy code' }));
+    expect(writeText).toHaveBeenCalledWith('LINKCODE');
+  });
+
+  it('surfaces a pending node’s safety number prominently in the onboarding view', () => {
+    const onVerify = vi.fn();
+    const peers = signal<readonly PeerInfo[]>([{ id: 'NODE1', sas: '424242', status: 'pending' }]);
+    render(
+      <Devices
+        connectionCode={code}
+        peers={peers}
+        onPair={async () => {}}
+        onVerify={onVerify}
+        onReject={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Onboard a backup node' }));
+    // The safety number is visible straight away — no row to expand.
+    expect(screen.getByText('424242')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Codes match' }));
+    expect(onVerify).toHaveBeenCalledWith('NODE1');
+  });
+
+  it('returns from the onboarding view to the normal Devices layout', () => {
+    render(<Devices connectionCode={code} peers={noPeers} onPair={async () => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Onboard a backup node' }));
+    fireEvent.click(screen.getByRole('button', { name: /Back to devices/ }));
+    expect(screen.getByRole('heading', { name: 'Share' })).toBeTruthy();
+  });
+
   it('walks through the safety-number check for a pending peer', () => {
     const onVerify = vi.fn();
     const onReject = vi.fn();
