@@ -214,6 +214,16 @@ transport-agnostic).
 
 ### 6.1 Layer R1 — remove n0 from the liveness equation (highest value, lowest effort)
 
+> **Status: R1 implemented** (R1.1–R1.4). Discovery is now configurable
+> (`SHARU_DISCOVERY`: `n0`, `pkarr:<url>`, `dht`, `mdns`), native nodes can run
+> fully company-less (Mainline DHT + mDNS), and a WASM endpoint was verified to
+> honor a self-hosted relay with zero n0. See
+> [`r1-discovery-hardening-plan.md`](./r1-discovery-hardening-plan.md) and
+> [`r13-selfhost-spike-findings.md`](./r13-selfhost-spike-findings.md). One
+> finding reshaped the sequel: Safu dials with an explicit `relayUrl`, so
+> discovery is *latent* until a **dial-by-id + reconnect** path exists — now the
+> lead item of R2 below.
+
 1. **Make discovery configurable** the same way relays already are: allow a
    custom pkarr/DNS origin (self-hosted `iroh-dns-server`) instead of the
    hardcoded `presets::N0` in `native.rs` / `wasm.rs`. This closes the one

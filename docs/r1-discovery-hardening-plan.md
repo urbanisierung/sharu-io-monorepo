@@ -241,6 +241,19 @@ n0 dependency on any runtime** (native: self-DNS or DHT + own relay; browser:
 self-DNS + own relay, contingent on R1.3), and understands the fallback-list
 model.
 
+**Status: done** — [`deployment.md`](./deployment.md) now carries "Self-hosting
+the relay", "Self-hosting discovery", "Company-less discovery on native", and a
+"Choosing a relay + discovery posture" table with the three postures (default /
+self-hosted / sovereign), the n0-as-trailing-fallback list shape, and the relay
+economics note. **One decision changed from the plan:** the code default stays
+`n0`, **not** `n0,dht,mdns` — auto-enabling `dht` would publish this endpoint's
+id→address to the public Mainline DHT (a *presence*-metadata leak; the ciphertext
+invariant is untouched), which for a zero-knowledge product must be a deliberate
+opt-in, not a silent default. The recommended production posture is instead
+self-hosted relay + `pkarr:` discovery (n0-free, no public metadata), with
+`dht`/`mdns` reserved for zero-infrastructure operation when that trade-off is
+acceptable.
+
 ---
 
 ## Dependencies added

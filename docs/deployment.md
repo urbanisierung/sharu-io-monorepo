@@ -87,6 +87,39 @@ directly reachable native node. DHT records expire after a few hours and are
 republished automatically while the node is online; a mostly-offline device
 should rely on the relay hint embedded in its pairing code instead.
 
+## Choosing a relay + discovery posture
+
+The pieces above compose into three postures. Pick per deployment:
+
+| Posture | Relay | Discovery | n0 dependency | Notes |
+| --- | --- | --- | --- | --- |
+| **Default (convenience)** | n0 public relays | n0 DNS/pkarr | Full — but best-effort, no SLA | Zero config. Fine to start; n0 only ever sees ciphertext. |
+| **Self-hosted (recommended)** | your `iroh-relay` | `pkarr:` your `iroh-dns-server` | **None** | One VPS (ACME TLS built in) frees both runtimes, browser included. No public metadata. The recommended production posture. |
+| **Sovereign (native)** | directly-reachable address, or your relay | `dht`, `mdns` | **None** | No server at all. Trade-off: `dht` publishes signed address records to the **public** Mainline DHT — see below. |
+
+**n0 as a fallback, not the sole path.** Relay and discovery configs take
+*lists*, so the resilient shape is *your* infra first with n0 as a trailing
+fallback rather than the default, e.g.
+`SHARU_RELAY_URL="https://relay.example.com,https://relay.n0.example"` and
+`SHARU_DISCOVERY="pkarr:https://dns.example.com,n0"`. A node with a directly
+reachable address (public IP / forwarded port / IPv6) needs no relay on the data
+path at all.
+
+**Why the code default stays `n0` (not `n0,dht,mdns`).** Auto-enabling `dht`
+would publish this endpoint's id→address record to the public, ~10M-node
+Mainline DHT — observable by anyone crawling it (which endpoint ids are online,
+and their relay). For a zero-knowledge product that is a deliberate
+metadata trade-off, so `dht`/`mdns` are **opt-in**, not a silent default. The
+ciphertext invariant is untouched either way; this is purely about *presence*
+metadata. Enable `dht,mdns` when zero-infrastructure operation is worth that
+trade-off (e.g. a node on a network you don't control with no self-hosted
+server).
+
+**Relay economics.** A self-hosted relay only carries data for hole-punch
+failures plus *all* browser traffic (browsers are relay-only), so sizing depends
+on how many browser clients and hostile-NAT peers you serve — benchmark before
+committing to a single small VPS if browser usage is heavy.
+
 ## Headers / cross-origin isolation
 
 The app intentionally does **not** set `Cross-Origin-Opener-Policy` /
