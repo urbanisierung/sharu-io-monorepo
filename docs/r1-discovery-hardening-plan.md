@@ -1,12 +1,16 @@
 # R1 — Discovery Hardening: Implementation Plan
 
-> Status: **R1.1 implemented** (discovery-config seam: `n0` + `pkarr:<url>`,
-> Rust-verified; R1.2–R1.4 pending). During implementation the self-hosted token
-> was refined from `dns:<origin>` to **`pkarr:<url>`**: `PkarrPublisher`/
-> `PkarrResolver` builders exist on both native and wasm (pkarr over HTTPS),
-> whereas `DnsAddressLookup` is native-only — so a pkarr-relay URL is the one
-> self-hosted grammar that works in the browser too. The rest of this plan turns
-> Layer R1 of
+> Status: **R1.1 + R1.2 implemented** (`n0`, `pkarr:<url>`, `dht`, `mdns` —
+> Rust-verified, native + wasm builds green; R1.3–R1.4 pending). Two refinements
+> landed during implementation: (1) the self-hosted token is **`pkarr:<url>`**,
+> not `dns:<origin>` — `PkarrPublisher`/`PkarrResolver` work on both native and
+> wasm (pkarr over HTTPS) whereas `DnsAddressLookup` is native-only, so a
+> pkarr-relay URL is the one self-hosted grammar that also frees the browser; and
+> (2) `dht`/`mdns` are scoped to the **non-wasm target** (no Cargo feature
+> needed) and **rejected** by the wasm parser rather than warn-and-dropped —
+> dropping the only provider would silently leave a browser endpoint with no
+> discovery, so a hard error with a clear message is safer. The rest of this plan
+> turns Layer R1 of
 > [`resilient-transport-research.md`](./resilient-transport-research.md) §6.1
 > into a concrete, verifiable engineering task, following the milestone
 > discipline of [`implementation-plan.md`](./implementation-plan.md) (each step
@@ -58,8 +62,8 @@ Tokens:
 | --- | --- | --- | --- | --- |
 | `n0` | DNS discovery via `dns.iroh.link` + pkarr publish (today's behavior) | ✅ | ✅ | **Yes** |
 | `pkarr:<url>` **(R1.1 done)** | Self-hosted `iroh-dns-server` pkarr relay: publish + resolve at your own URL (e.g. `pkarr:https://dns.example.com`), repeatable | ✅ | ✅ (HTTPS) | No |
-| `dht` *(R1.2)* | BitTorrent Mainline DHT via pkarr signed packets — no operator at all | ✅ | ❌ (UDP) | No |
-| `mdns` *(R1.2)* | Local-network mDNS/swarm discovery | ✅ | ❌ (no multicast) | No |
+| `dht` **(R1.2 done)** | BitTorrent Mainline DHT via pkarr signed packets — no operator at all | ✅ | ❌ (UDP, rejected) | No |
+| `mdns` **(R1.2 done)** | Local-network mDNS/swarm discovery | ✅ | ❌ (multicast, rejected) | No |
 
 Rules:
 - **Unset → `n0`.** Preserves current behavior byte-for-byte; R1 is opt-in and

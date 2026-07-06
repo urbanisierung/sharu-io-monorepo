@@ -42,8 +42,10 @@ impl IrohEndpoint {
     /// `discovery` is a `SHARU_DISCOVERY` token list (`n0` or `pkarr:<url>`);
     /// empty keeps n0's DNS/pkarr discovery. A self-hosted `pkarr:<url>` resolves
     /// over HTTPS, which works in the browser (unlike native DNS lookup), so the
-    /// web app can drop its n0 discovery dependency too. Resolves to an
-    /// `IrohEndpoint`, or rejects if a discovery token is malformed.
+    /// web app can drop its n0 discovery dependency too. The `dht`/`mdns` tokens
+    /// are native-only and are rejected here (this binding is relay-only —
+    /// browser and headless Node — so it cannot do UDP/multicast). Resolves to an
+    /// `IrohEndpoint`, or rejects if a discovery token is malformed or native-only.
     pub fn create(protocols: Vec<String>, relays: Vec<String>, discovery: Vec<String>) -> Promise {
         future_to_promise(async move {
             let discovery = Discovery::parse(&discovery).map_err(err)?;

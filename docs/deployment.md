@@ -68,8 +68,24 @@ default when unset):
 - **Headless peer (`apps/peer`) and desktop** — set `SHARU_DISCOVERY`.
 
 With a self-hosted relay **and** discovery, no runtime depends on n0 at all.
-(BitTorrent Mainline DHT + mDNS discovery — company-less on native — is planned;
-see [`r1-discovery-hardening-plan.md`](./r1-discovery-hardening-plan.md) R1.2.)
+
+### Company-less discovery on native (`dht`, `mdns`)
+
+The native node (`sharu`, desktop) can also discover peers with **no
+infrastructure at all** — not even a self-hosted server:
+
+- `dht` — publish/resolve peer records over the **BitTorrent Mainline DHT**, a
+  ~10M-node commons that has run for two decades with no operating company.
+- `mdns` — discover peers on the **local network** via multicast.
+
+These compose with each other and with `n0`/`pkarr:` — e.g. a fully
+n0-independent node: `sharu serve --discovery dht --discovery mdns`, or belt-and-
+suspenders `SHARU_DISCOVERY=n0,dht,mdns`. Both are **native-only** (Mainline is
+UDP, mDNS is multicast); the relay-only browser/headless-Node WASM core rejects
+them — for company-less discovery there, self-host a `pkarr:` relay or run a
+directly reachable native node. DHT records expire after a few hours and are
+republished automatically while the node is online; a mostly-offline device
+should rely on the relay hint embedded in its pairing code instead.
 
 ## Headers / cross-origin isolation
 

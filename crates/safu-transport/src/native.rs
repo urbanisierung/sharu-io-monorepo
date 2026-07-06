@@ -29,14 +29,14 @@ impl NativeEndpoint {
     /// connectivity with relay fallback through iroh.computer's relays, and n0
     /// DNS/pkarr discovery).
     pub async fn bind(protocols: &[&str]) -> Result<Self> {
-        Self::bind_with(protocols, &[], Discovery::N0).await
+        Self::bind_with(protocols, &[], Discovery::n0()).await
     }
 
     /// Bind advertising `protocols`, overriding only the relay map (discovery
     /// stays on the n0 default). Retained for callers that configure relays but
     /// not discovery; delegates to [`Self::bind_with`].
     pub async fn bind_with_relays(protocols: &[&str], relays: &[String]) -> Result<Self> {
-        Self::bind_with(protocols, relays, Discovery::N0).await
+        Self::bind_with(protocols, relays, Discovery::n0()).await
     }
 
     /// Bind advertising `protocols` with explicit relay and discovery config.
@@ -47,9 +47,10 @@ impl NativeEndpoint {
     /// Each entry must be a full relay URL, e.g. `https://relay.example.com`.
     ///
     /// `discovery` overrides how peer `EndpointId`s are resolved to addresses:
-    /// [`Discovery::N0`] keeps n0's DNS/pkarr; [`Discovery::Pkarr`] points at a
-    /// self-hosted pkarr relay, removing the last hardcoded n0 dependency.
-    /// Relay and discovery are independent — either can be overridden alone.
+    /// [`Discovery::n0`] keeps n0's DNS/pkarr, while a parsed config can point at
+    /// a self-hosted pkarr relay and/or the company-less Mainline DHT + mDNS,
+    /// removing the hardcoded n0 dependency. Relay and discovery are independent
+    /// — either can be overridden alone.
     pub async fn bind_with(
         protocols: &[&str],
         relays: &[String],

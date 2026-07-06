@@ -799,9 +799,10 @@ OPTIONS / ENVIRONMENT:\n\
                        (repeatable; comma-separate in the env var). Point it at a\n\
                        self-hosted relay to drop the dependency on iroh.computer.\n\
   --discovery <token>  Override peer discovery            [env SHARU_DISCOVERY]\n\
-                       (repeatable; comma-separate in the env var). `n0` (default)\n\
-                       or `pkarr:<url>` to resolve peer ids via a self-hosted\n\
-                       pkarr relay instead of n0's DNS.\n\
+                       (repeatable; comma-separate in the env var). Tokens compose:\n\
+                       `n0` (default), `pkarr:<url>` (self-hosted pkarr relay),\n\
+                       `dht` (BitTorrent Mainline — no operator), `mdns` (local).\n\
+                       e.g. `--discovery dht --discovery mdns` for zero-n0 discovery.\n\
 \n\
 Run multiple nodes by giving each its own --data-dir."
     );

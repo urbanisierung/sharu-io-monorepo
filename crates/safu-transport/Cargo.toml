@@ -26,6 +26,16 @@ iroh = "1"
 # in the tree via iroh; declaring it directly lets `discovery.rs` name the type.
 url = "2"
 
+# Company-less discovery for the native runtime (`SHARU_DISCOVERY=dht,mdns`):
+# resolve peer ids over the BitTorrent Mainline DHT (a ~10M-node, 20-year-old
+# commons no company operates) and local-network mDNS, with zero n0
+# infrastructure. Native-only by construction — Mainline is UDP and mDNS is
+# multicast, neither reachable from a browser — so these are scoped to the
+# non-wasm target and never enter the wasm build.
+[target.'cfg(not(all(target_family = "wasm", target_os = "unknown")))'.dependencies]
+iroh-mainline-address-lookup = "0.4"
+iroh-mdns-address-lookup = "0.4"
+
 [target.'cfg(all(target_family = "wasm", target_os = "unknown"))'.dependencies]
 wasm-bindgen = { workspace = true }
 wasm-bindgen-futures = "0.4"
