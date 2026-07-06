@@ -29,6 +29,13 @@ async function boot(): Promise<void> {
   }
 }
 
+/** The ordered dial attempts for a peer: the known relay first (if any), then an
+ *  id-only attempt (empty relay string) so the configured discovery can resolve
+ *  a stale or changed address (plan R2.1). Exported for testing. */
+export function dialPlan(peer: PeerAddr): string[] {
+  return peer.relayUrl ? [peer.relayUrl, ''] : [''];
+}
+
 /** Adapts one Iroh bi-stream into a message-oriented `Channel`. */
 class IrohChannelAdapter implements Channel {
   readonly peer: PeerId;
@@ -76,8 +83,22 @@ class IrohTransport implements Transport {
   }
 
   async connect(peer: PeerAddr, protocol: string): Promise<Channel> {
-    if (!peer.relayUrl) throw new Error('iroh: relay URL required to dial in the browser');
-    const channel = (await this.#endpoint.connect(peer.id, peer.relayUrl, protocol)) as IrohChannel;
+    // Try the known relay first; on failure fall back to id-only so the
+    // configured discovery can resolve a stale/changed address (plan R2.1).
+    const attempts = dialPlan(peer);
+    let lastErr: unknown;
+    for (const relay of attempts) {
+      try {
+        return await this.#dial(peer.id, relay, protocol);
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    throw lastErr instanceof Error ? lastErr : new Error(`iroh: could not dial ${peer.id}`);
+  }
+
+  async #dial(id: PeerId, relay: string, protocol: string): Promise<Channel> {
+    const channel = (await this.#endpoint.connect(id, relay, protocol)) as IrohChannel;
     return new IrohChannelAdapter(channel);
   }
 

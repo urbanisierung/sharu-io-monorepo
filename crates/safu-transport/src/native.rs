@@ -87,11 +87,17 @@ impl NativeEndpoint {
         self.relay_url()
     }
 
-    /// Dial `peer` and open a bi-stream tagged `protocol`.
+    /// Dial `peer` and open a bi-stream tagged `protocol`. When `relay` is empty,
+    /// dial by id alone (`EndpointAddr::new(id)`) and let the configured
+    /// discovery resolve the peer's current address — the recovery path for a
+    /// stale/changed relay (plan R2.1). Otherwise dial the given relay directly.
     pub async fn connect(&self, peer: &str, relay: &str, protocol: &str) -> Result<NativeChannel> {
         let id = EndpointId::from_str(peer)?;
-        let relay_url = RelayUrl::from_str(relay)?;
-        let addr = EndpointAddr::new(id).with_relay_url(relay_url);
+        let addr = if relay.is_empty() {
+            EndpointAddr::new(id)
+        } else {
+            EndpointAddr::new(id).with_relay_url(RelayUrl::from_str(relay)?)
+        };
         let conn = self.endpoint.connect(addr, protocol.as_bytes()).await?;
         let remote = conn.remote_id().to_string();
         let (send, recv) = conn.open_bi().await?;

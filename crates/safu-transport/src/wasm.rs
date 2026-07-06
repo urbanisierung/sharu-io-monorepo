@@ -88,13 +88,19 @@ impl IrohEndpoint {
         })
     }
 
-    /// Dial `peer` (id + relay URL) and open a bi-stream tagged `protocol`.
+    /// Dial `peer` and open a bi-stream tagged `protocol`. When `relay` is empty,
+    /// dial by id alone and let the configured discovery resolve the peer's
+    /// current address (plan R2.1 — the recovery path for a stale/changed relay);
+    /// otherwise dial the given relay URL directly.
     pub fn connect(&self, peer: String, relay: String, protocol: String) -> Promise {
         let ep = self.ep.clone();
         future_to_promise(async move {
             let id = EndpointId::from_str(&peer).map_err(err)?;
-            let relay_url = RelayUrl::from_str(&relay).map_err(err)?;
-            let addr = EndpointAddr::new(id).with_relay_url(relay_url);
+            let addr = if relay.is_empty() {
+                EndpointAddr::new(id)
+            } else {
+                EndpointAddr::new(id).with_relay_url(RelayUrl::from_str(&relay).map_err(err)?)
+            };
             let conn = ep.connect(addr, protocol.as_bytes()).await.map_err(err)?;
             let remote = conn.remote_id().to_string();
             let (send, recv) = conn.open_bi().await.map_err(err)?;
