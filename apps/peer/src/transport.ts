@@ -12,14 +12,17 @@
 // realizes wiring "A" over `safu_transport::native`.
 import { BLOCK_PROTOCOL, PIN_PROTOCOL, SYNC_PROTOCOL, UNPIN_PROTOCOL } from '@safu/sdk';
 import type { Transport } from '@safu/transport';
-import { createIrohTransport, parseRelays } from '@safu/transport/iroh';
+import { createIrohTransport, parseDiscovery, parseRelays } from '@safu/transport/iroh';
 
 export function createPeerTransport(): Promise<Transport> {
   // `SHARU_RELAY_URL` (comma-separated) points the peer at self-hosted relay(s)
-  // instead of the n0 defaults; unset keeps the defaults.
+  // instead of the n0 defaults; `SHARU_DISCOVERY` (`pkarr:<url>`) points peer
+  // discovery at a self-hosted pkarr relay instead of n0's DNS. Unset keeps the
+  // n0 defaults for both.
   return createIrohTransport(
     [SYNC_PROTOCOL, BLOCK_PROTOCOL, PIN_PROTOCOL, UNPIN_PROTOCOL],
     15_000,
     parseRelays(process.env.SHARU_RELAY_URL),
+    parseDiscovery(process.env.SHARU_DISCOVERY),
   );
 }

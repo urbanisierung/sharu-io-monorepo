@@ -95,5 +95,13 @@ export const cliSpec: CliSpec = {
       required: false,
       default: null,
     },
+    {
+      flag: '--discovery',
+      value: '<token>',
+      summary: 'Override peer discovery',
+      env: 'SHARU_DISCOVERY',
+      required: false,
+      default: null,
+    },
   ],
 };

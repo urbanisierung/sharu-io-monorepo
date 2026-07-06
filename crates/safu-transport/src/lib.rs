@@ -13,6 +13,10 @@ pub fn version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
+/// Configurable peer discovery (address lookup), shared by both bindings.
+pub mod discovery;
+pub use discovery::Discovery;
+
 #[cfg(all(target_family = "wasm", target_os = "unknown"))]
 mod wasm;
 

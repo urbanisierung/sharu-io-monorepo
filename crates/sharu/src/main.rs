@@ -51,6 +51,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use safu_transport::native::NativeEndpoint;
+use safu_transport::Discovery;
 
 use crate::config::Devices;
 use crate::doc::{StampedEntry, SyncDoc};
@@ -143,6 +144,9 @@ async fn cmd_info(args: &Args) -> Result<(), String> {
     }
     if !args.relays.is_empty() {
         println!("relay servers: custom — {}", args.relays.join(", "));
+    }
+    if !args.discovery.is_empty() {
+        println!("discovery:     custom — {}", args.discovery.join(", "));
     }
     let code = info.encode();
     println!();
@@ -465,6 +469,9 @@ async fn cmd_serve(args: &Args) -> Result<(), String> {
     if !args.relays.is_empty() {
         println!("  relay servers:  custom — {}", args.relays.join(", "));
     }
+    if !args.discovery.is_empty() {
+        println!("  discovery:      custom — {}", args.discovery.join(", "));
+    }
     println!("  blocks held:    {}", store.count());
     println!("  linked devices: {}", devices.len());
     for device in &devices {
@@ -690,10 +697,14 @@ async fn bind_endpoint(args: &Args) -> Result<NativeEndpoint, String> {
     // Serve replication (sync + blocks) and public-share hosting (pin + unpin):
     // the node is both an always-on backup replica and the "Host shares here"
     // target a device pins its public shares to. With `--relay`/`SHARU_RELAY_URL`
-    // set, it routes through the operator's own relay(s) instead of the defaults.
-    NativeEndpoint::bind_with_relays(
+    // set, it routes through the operator's own relay(s) instead of the defaults;
+    // with `--discovery`/`SHARU_DISCOVERY` set (`pkarr:<url>`), it resolves peer
+    // ids via a self-hosted pkarr relay instead of n0's DNS.
+    let discovery = Discovery::parse(&args.discovery)?;
+    NativeEndpoint::bind_with(
         &[SYNC_PROTOCOL, BLOCK_PROTOCOL, PIN_PROTOCOL, UNPIN_PROTOCOL],
         &args.relays,
+        discovery,
     )
     .await
     .map_err(|e| format!("bind transport: {e}"))
@@ -787,6 +798,10 @@ OPTIONS / ENVIRONMENT:\n\
   --relay <url>        Use this relay instead of the defaults [env SHARU_RELAY_URL]\n\
                        (repeatable; comma-separate in the env var). Point it at a\n\
                        self-hosted relay to drop the dependency on iroh.computer.\n\
+  --discovery <token>  Override peer discovery            [env SHARU_DISCOVERY]\n\
+                       (repeatable; comma-separate in the env var). `n0` (default)\n\
+                       or `pkarr:<url>` to resolve peer ids via a self-hosted\n\
+                       pkarr relay instead of n0's DNS.\n\
 \n\
 Run multiple nodes by giving each its own --data-dir."
     );
@@ -802,6 +817,9 @@ struct Args {
     /// Relay servers to use instead of the n0 defaults, so the node can run
     /// against a self-hosted relay. Empty means "use the defaults".
     relays: Vec<String>,
+    /// Discovery tokens (`n0` or `pkarr:<url>`) overriding how peer ids are
+    /// resolved. Empty means "use the n0 default (dns.iroh.link/pkarr)".
+    discovery: Vec<String>,
 }
 
 impl Args {
@@ -813,6 +831,12 @@ impl Args {
         let mut passphrase = std::env::var("SHARU_PASSPHRASE").ok();
         // Seed relays from the env (comma-separated); `--relay` adds more.
         let mut relays: Vec<String> = std::env::var("SHARU_RELAY_URL")
+            .ok()
+            .map(|value| split_relays(&value))
+            .unwrap_or_default();
+        // Seed discovery tokens from the env (comma-separated); `--discovery`
+        // adds more. Same comma-split as relays.
+        let mut discovery: Vec<String> = std::env::var("SHARU_DISCOVERY")
             .ok()
             .map(|value| split_relays(&value))
             .unwrap_or_default();
@@ -829,6 +853,9 @@ impl Args {
                 "--relay" => {
                     relays.push(it.next().ok_or("--relay needs a value")?);
                 }
+                "--discovery" => {
+                    discovery.push(it.next().ok_or("--discovery needs a value")?);
+                }
                 _ if command.is_none() => command = Some(arg),
                 _ => positionals.push(arg),
             }
@@ -840,6 +867,7 @@ impl Args {
             data_dir: PathBuf::from(data_dir),
             passphrase,
             relays,
+            discovery,
         })
     }
 

@@ -21,6 +21,11 @@ wasm-opt = false
 # hole-punching.
 iroh = "1"
 
+# Names the `url::Url` type that Iroh's pkarr address-lookup builders take for a
+# self-hosted discovery relay (`SHARU_DISCOVERY=pkarr:<url>`). `url` is already
+# in the tree via iroh; declaring it directly lets `discovery.rs` name the type.
+url = "2"
+
 [target.'cfg(all(target_family = "wasm", target_os = "unknown"))'.dependencies]
 wasm-bindgen = { workspace = true }
 wasm-bindgen-futures = "0.4"

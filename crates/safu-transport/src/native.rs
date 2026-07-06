@@ -14,6 +14,8 @@ use std::str::FromStr;
 use iroh::endpoint::{presets, RecvStream, SendStream};
 use iroh::{Endpoint, EndpointAddr, EndpointId, RelayMode, RelayUrl};
 
+use crate::Discovery;
+
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Result<T> = std::result::Result<T, Error>;
 
@@ -24,18 +26,35 @@ pub struct NativeEndpoint {
 
 impl NativeEndpoint {
     /// Bind an endpoint advertising `protocols`, using the n0 defaults (direct
-    /// connectivity with relay fallback through iroh.computer's relays).
+    /// connectivity with relay fallback through iroh.computer's relays, and n0
+    /// DNS/pkarr discovery).
     pub async fn bind(protocols: &[&str]) -> Result<Self> {
-        Self::bind_with_relays(protocols, &[]).await
+        Self::bind_with(protocols, &[], Discovery::N0).await
     }
 
-    /// Bind advertising `protocols`. When `relays` is non-empty, replace the n0
-    /// default relay servers with exactly those, so a deployment can point the
-    /// node at its own self-hosted relay(s) instead of iroh.computer's — removing
-    /// that liveness dependency. Peer discovery (n0 DNS/pkarr) stays on the N0
-    /// preset either way; only the relay map is overridden. Each entry must be a
-    /// full relay URL, e.g. `https://relay.example.com`.
+    /// Bind advertising `protocols`, overriding only the relay map (discovery
+    /// stays on the n0 default). Retained for callers that configure relays but
+    /// not discovery; delegates to [`Self::bind_with`].
     pub async fn bind_with_relays(protocols: &[&str], relays: &[String]) -> Result<Self> {
+        Self::bind_with(protocols, relays, Discovery::N0).await
+    }
+
+    /// Bind advertising `protocols` with explicit relay and discovery config.
+    ///
+    /// When `relays` is non-empty, replace the n0 default relay servers with
+    /// exactly those, so a deployment can point the node at its own self-hosted
+    /// relay(s) instead of iroh.computer's — removing that liveness dependency.
+    /// Each entry must be a full relay URL, e.g. `https://relay.example.com`.
+    ///
+    /// `discovery` overrides how peer `EndpointId`s are resolved to addresses:
+    /// [`Discovery::N0`] keeps n0's DNS/pkarr; [`Discovery::Pkarr`] points at a
+    /// self-hosted pkarr relay, removing the last hardcoded n0 dependency.
+    /// Relay and discovery are independent — either can be overridden alone.
+    pub async fn bind_with(
+        protocols: &[&str],
+        relays: &[String],
+        discovery: Discovery,
+    ) -> Result<Self> {
         let alpns: Vec<Vec<u8>> = protocols.iter().map(|p| p.as_bytes().to_vec()).collect();
         let mut builder = Endpoint::builder(presets::N0).alpns(alpns);
         if !relays.is_empty() {
@@ -45,6 +64,7 @@ impl NativeEndpoint {
                 .collect::<std::result::Result<Vec<RelayUrl>, _>>()?;
             builder = builder.relay_mode(RelayMode::custom(urls));
         }
+        builder = discovery.apply(builder);
         let endpoint = builder.bind().await?;
         Ok(Self { endpoint })
     }

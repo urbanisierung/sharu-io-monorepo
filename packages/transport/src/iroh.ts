@@ -124,20 +124,38 @@ export function parseRelays(value: string | undefined): string[] {
     .filter((url) => url.length > 0);
 }
 
+/** Parse a `SHARU_DISCOVERY`-style value (comma-separated discovery tokens) into
+ *  a list, trimming blanks — the discovery analog of {@link parseRelays}. Tokens
+ *  are `n0` (default) or `pkarr:<url>` (self-hosted, repeatable); validation and
+ *  the empty→n0 default live in the Rust `Discovery::parse`. Callers read the
+ *  value from their runtime's env (`import.meta.env.VITE_SHARU_DISCOVERY` in the
+ *  browser, `process.env.SHARU_DISCOVERY` in Node). */
+export function parseDiscovery(value: string | undefined): string[] {
+  if (!value) return [];
+  return value
+    .split(',')
+    .map((token) => token.trim())
+    .filter((token) => token.length > 0);
+}
+
 /** Boot the WASM module and bind a relay-only endpoint advertising `protocols`.
  *  Waits up to `onlineTimeoutMs` for a home relay so the address is dialable;
  *  if the relay is unreachable the transport still returns (local features keep
  *  working — only peer dialing needs the relay), rather than blocking forever.
  *  When `relays` is non-empty, the endpoint uses exactly those relay servers
  *  instead of the n0 defaults, so a self-hosted deployment can point at its own
- *  relay rather than iroh.computer's. */
+ *  relay rather than iroh.computer's. `discovery` (a {@link parseDiscovery} token
+ *  list) likewise overrides peer discovery: empty keeps n0's DNS/pkarr, while
+ *  `pkarr:<url>` points at a self-hosted pkarr relay — removing the last
+ *  hardcoded n0 dependency. */
 export async function createIrohTransport(
   protocols: string[],
   onlineTimeoutMs = 15_000,
   relays: string[] = [],
+  discovery: string[] = [],
 ): Promise<Transport> {
   await ready();
-  const endpoint = (await IrohEndpoint.create(protocols, relays)) as IrohEndpoint;
+  const endpoint = (await IrohEndpoint.create(protocols, relays, discovery)) as IrohEndpoint;
   const relayUrl = await Promise.race([
     endpoint.online() as Promise<string | null>,
     new Promise<null>((resolve) => setTimeout(() => resolve(null), onlineTimeoutMs)),

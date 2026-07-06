@@ -19,6 +19,8 @@ use js_sys::Promise;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
 
+use crate::Discovery;
+
 fn err(e: impl std::fmt::Display) -> JsValue {
     JsValue::from_str(&e.to_string())
 }
@@ -35,10 +37,16 @@ impl IrohEndpoint {
     /// exactly those relay servers instead of the n0 defaults, so a self-hosted
     /// deployment can point the web app at its own relay rather than
     /// iroh.computer's. (The browser is relay-only, so this is its sole relay
-    /// dependency.) Discovery stays on the N0 preset. Resolves to an
-    /// `IrohEndpoint`.
-    pub fn create(protocols: Vec<String>, relays: Vec<String>) -> Promise {
+    /// dependency.)
+    ///
+    /// `discovery` is a `SHARU_DISCOVERY` token list (`n0` or `pkarr:<url>`);
+    /// empty keeps n0's DNS/pkarr discovery. A self-hosted `pkarr:<url>` resolves
+    /// over HTTPS, which works in the browser (unlike native DNS lookup), so the
+    /// web app can drop its n0 discovery dependency too. Resolves to an
+    /// `IrohEndpoint`, or rejects if a discovery token is malformed.
+    pub fn create(protocols: Vec<String>, relays: Vec<String>, discovery: Vec<String>) -> Promise {
         future_to_promise(async move {
+            let discovery = Discovery::parse(&discovery).map_err(err)?;
             let alpns: Vec<Vec<u8>> = protocols.iter().map(|p| p.as_bytes().to_vec()).collect();
             let mut builder = Endpoint::builder(presets::N0).alpns(alpns);
             if !relays.is_empty() {
@@ -49,6 +57,7 @@ impl IrohEndpoint {
                     .map_err(err)?;
                 builder = builder.relay_mode(RelayMode::custom(urls));
             }
+            builder = discovery.apply(builder);
             let ep = builder.bind().await.map_err(err)?;
             Ok(JsValue::from(IrohEndpoint { ep }))
         })

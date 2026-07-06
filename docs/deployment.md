@@ -45,10 +45,31 @@ fork required — it is configuration:
   configured relays.
 - **Headless peer (`apps/peer`) and desktop** — set `SHARU_RELAY_URL`.
 
-Peer discovery still uses the N0 preset (n0 DNS/pkarr); only the relay map is
-overridden. For a node you control, giving it a directly reachable address
-(public IP / forwarded port / IPv6) lets your devices reach it over direct QUIC
-with no relay on the data path at all — the strongest form of relay independence.
+For a node you control, giving it a directly reachable address (public IP /
+forwarded port / IPv6) lets your devices reach it over direct QUIC with no relay
+on the data path at all — the strongest form of relay independence.
+
+## Self-hosting discovery
+
+By default, peer **discovery** (resolving an `EndpointId` to a dialable address)
+uses n0's DNS/pkarr (`dns.iroh.link`) — the one liveness dependency on n0 that
+was previously not configurable. It now is, mirroring the relay override. Run
+your own [`iroh-dns-server`](https://github.com/n0-computer/iroh) (a pkarr relay
+with automatic TLS) and point each runtime at it with a `pkarr:<url>` token
+(comma-separate / repeat for redundancy across independent operators; `n0` is the
+default when unset):
+
+- **Web app** — `VITE_SHARU_DISCOVERY=pkarr:https://dns.example.com pnpm -r build`.
+  Pkarr resolves over HTTPS, so this works in the browser (native DNS lookup does
+  not) — letting the web app drop its n0 discovery dependency as well as its relay.
+- **CLI node (`sharu`)** — `--discovery pkarr:https://dns.example.com` (repeatable)
+  or `SHARU_DISCOVERY` (comma-separated). `sharu info` / `serve` print the
+  configured discovery.
+- **Headless peer (`apps/peer`) and desktop** — set `SHARU_DISCOVERY`.
+
+With a self-hosted relay **and** discovery, no runtime depends on n0 at all.
+(BitTorrent Mainline DHT + mDNS discovery — company-less on native — is planned;
+see [`r1-discovery-hardening-plan.md`](./r1-discovery-hardening-plan.md) R1.2.)
 
 ## Headers / cross-origin isolation
 

@@ -45,8 +45,14 @@ describe('CLI spec', () => {
       'update',
       'version',
     ]);
-    expect(parsed.options.map((o) => o.flag)).toEqual(['--data-dir', '--passphrase', '--relay']);
+    expect(parsed.options.map((o) => o.flag)).toEqual([
+      '--data-dir',
+      '--passphrase',
+      '--relay',
+      '--discovery',
+    ]);
     expect(parsed.options.find((o) => o.flag === '--passphrase')?.required).toBe(true);
     expect(parsed.options.find((o) => o.flag === '--relay')?.env).toBe('SHARU_RELAY_URL');
+    expect(parsed.options.find((o) => o.flag === '--discovery')?.env).toBe('SHARU_DISCOVERY');
   });
 });

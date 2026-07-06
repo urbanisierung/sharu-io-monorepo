@@ -3209,6 +3209,7 @@ version = "0.0.0"
 dependencies = [
  "iroh",
  "js-sys",
+ "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
 ]

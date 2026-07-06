@@ -1,6 +1,12 @@
 # R1 — Discovery Hardening: Implementation Plan
 
-> Status: **plan** — not yet implemented. This turns Layer R1 of
+> Status: **R1.1 implemented** (discovery-config seam: `n0` + `pkarr:<url>`,
+> Rust-verified; R1.2–R1.4 pending). During implementation the self-hosted token
+> was refined from `dns:<origin>` to **`pkarr:<url>`**: `PkarrPublisher`/
+> `PkarrResolver` builders exist on both native and wasm (pkarr over HTTPS),
+> whereas `DnsAddressLookup` is native-only — so a pkarr-relay URL is the one
+> self-hosted grammar that works in the browser too. The rest of this plan turns
+> Layer R1 of
 > [`resilient-transport-research.md`](./resilient-transport-research.md) §6.1
 > into a concrete, verifiable engineering task, following the milestone
 > discipline of [`implementation-plan.md`](./implementation-plan.md) (each step
@@ -51,9 +57,9 @@ Tokens:
 | Token | Meaning | Native | Browser | n0 infra? |
 | --- | --- | --- | --- | --- |
 | `n0` | DNS discovery via `dns.iroh.link` + pkarr publish (today's behavior) | ✅ | ✅ | **Yes** |
-| `dns:<origin>` | Self-hosted `iroh-dns-server`: publish + resolve pkarr at your own origin (e.g. `dns:https://dns.example.com`) | ✅ | ✅ (HTTPS) | No |
-| `dht` | BitTorrent Mainline DHT via pkarr signed packets — no operator at all | ✅ | ❌ (UDP) | No |
-| `mdns` | Local-network mDNS/swarm discovery | ✅ | ❌ (no multicast) | No |
+| `pkarr:<url>` **(R1.1 done)** | Self-hosted `iroh-dns-server` pkarr relay: publish + resolve at your own URL (e.g. `pkarr:https://dns.example.com`), repeatable | ✅ | ✅ (HTTPS) | No |
+| `dht` *(R1.2)* | BitTorrent Mainline DHT via pkarr signed packets — no operator at all | ✅ | ❌ (UDP) | No |
+| `mdns` *(R1.2)* | Local-network mDNS/swarm discovery | ✅ | ❌ (no multicast) | No |
 
 Rules:
 - **Unset → `n0`.** Preserves current behavior byte-for-byte; R1 is opt-in and

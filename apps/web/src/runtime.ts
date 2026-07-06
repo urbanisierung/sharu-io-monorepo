@@ -157,10 +157,17 @@ async function selectTransport(protocols: string[]): Promise<Transport> {
     const { createTauriTransport } = await import('@safu/transport/tauri');
     return createTauriTransport();
   }
-  const { createIrohTransport, parseRelays } = await import('@safu/transport/iroh');
-  // A self-hosted deployment can point the web app at its own relay(s) at build
-  // time via `VITE_SHARU_RELAY_URL` (comma-separated); unset uses the defaults.
-  return createIrohTransport(protocols, 15_000, parseRelays(import.meta.env.VITE_SHARU_RELAY_URL));
+  const { createIrohTransport, parseDiscovery, parseRelays } = await import('@safu/transport/iroh');
+  // A self-hosted deployment can point the web app at its own relay(s) and
+  // discovery at build time via `VITE_SHARU_RELAY_URL` (comma-separated) and
+  // `VITE_SHARU_DISCOVERY` (`pkarr:<url>`, resolved over HTTPS so it works in the
+  // browser); unset uses the n0 defaults for both.
+  return createIrohTransport(
+    protocols,
+    15_000,
+    parseRelays(import.meta.env.VITE_SHARU_RELAY_URL),
+    parseDiscovery(import.meta.env.VITE_SHARU_DISCOVERY),
+  );
 }
 
 /** Pick the block store: the native filesystem-backed store under Tauri (plan
