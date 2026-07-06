@@ -204,6 +204,20 @@ n0 blocked. If the spike *fails* (e.g. wasm hard-ties discovery to n0), that is 
 finding: record it, keep `n0` as the browser default, and escalate to the R3
 WebRTC hedge — do not paper over it.
 
+**Status: done — see [`r13-selfhost-spike-findings.md`](./r13-selfhost-spike-findings.md).**
+Reproducible harness committed (`packages/transport/scripts/r13-selfhost-spike.sh`
++ the `SAFU_SPIKE`-gated `discovery-selfhost.spike.test.ts`). Result:
+**custom relay in WASM is VERIFIED** — a relay-only WASM endpoint comes online
+against a self-hosted `iroh-relay` reaching no n0 host (the core research
+unknown, answered: WASM is **not** hard-tied to n0). Custom pkarr discovery is
+wired and n0-free but its publish step did not complete in the headless sandbox
+(needs an HTTPS pkarr relay / settled address — the same limitation that gates
+the relay e2e); it is probed best-effort, not asserted, so the test stays green.
+**Key finding:** Safu dials with an explicit `relayUrl` from pairing codes, so
+discovery **resolution** is never exercised today — discovery is *latent*. The
+relay is the real browser dependency (verified swappable); making discovery
+load-bearing needs a **dial-by-id + reconnect** path — folded into R2.
+
 ---
 
 ## Phase R1.4 — Self-hosted-first deployment posture (docs + defaults)
