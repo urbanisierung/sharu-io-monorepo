@@ -5,9 +5,8 @@
 //
 // The shell is split into focused views — Files (the main use case: browsing and
 // adding backed-up files), Devices (pairing), and Settings (wallet + watched
-// folders) — selected from one navigation bar. That bar is a row of tabs on the
-// desktop and a fixed bottom bar on a phone, so every view is one tap away while
-// the file list stays the centre of attention.
+// folders) — selected from the navbar's tabs. Each is one 860px column: a screen
+// title, then a stack of Cards, built from the in-repo Cascivo components.
 import { cn } from '@cascivo/core';
 import { type ReadonlySignal, signal } from '@preact/signals';
 import type { FileView } from '@safu/sdk';
@@ -23,8 +22,13 @@ import type { PeerInfo } from './runtime.js';
 import type { PublishedShare } from './shares-store.js';
 import { SiteShare } from './site-share.js';
 import { StatusBanner } from './status-banner.js';
+import { Alert } from './ui/alert.js';
 import { Button } from './ui/button.js';
+import { Card, CardTitle } from './ui/card.js';
 import { DropZone } from './ui/drop-zone.js';
+import { Icon } from './ui/icon.js';
+import { Input } from './ui/input.js';
+import { Separator } from './ui/separator.js';
 import { type AppView, activeView } from './view-state.js';
 
 export interface AppProps {
@@ -102,13 +106,14 @@ export function App({
     <div class={styles.app}>
       <main class={styles.content}>
         {view === 'files' && (
-          <section class={styles.filesView}>
-            {/* The file list leads — it is the whole point of the app. It sits in
-                its own card to match the Devices and Settings views. A drag
+          <section class={styles.screen}>
+            <h1 class={styles.screenTitle}>{t(messages.filesHeading)}</h1>
+
+            {/* The file list leads — it is the whole point of the app. A drag
                 anywhere over this surface reveals the drop overlay; the rest of
                 the time the space belongs to the files, with "Add files" always
                 at hand in the table toolbar / empty state. */}
-            <article class={cn(styles.setting, styles.fileCard)}>
+            <Card as="article" padding="sm" class={styles.fileCard}>
               <section
                 class={styles.fileSurface}
                 aria-label={t(messages.filesHeading)}
@@ -149,25 +154,31 @@ export function App({
                   {phase.kind === 'success' ? t(messages.addMore) : t(messages.retry)}
                 </Button>
               )}
-            </article>
+            </Card>
 
             {(onPublishSite || (publishedShares && onUnpublish)) && (
-              <article class={styles.setting}>
-                <h3 class={styles.settingTitle}>{t(messages.sharingTitle)}</h3>
-                <p class={styles.settingDesc}>{t(messages.sharingHint)}</p>
+              <Card as="article">
+                <CardTitle>{t(messages.sharingTitle)}</CardTitle>
+                <p class={styles.cardText}>{t(messages.sharingHint)}</p>
+                <Separator class={styles.cardDivider} />
                 {onPublishSite && <SiteShare onPublish={onPublishSite} />}
                 {publishedShares && onUnpublish && (
                   <PublishedShares shares={publishedShares} onUnpublish={onUnpublish} />
                 )}
-              </article>
+              </Card>
             )}
 
             <StatusBanner files={files} peers={peers} />
-            <p class={cn(styles.muted, peers.value.length === 0 && styles.warn)}>
-              {peers.value.length === 0
-                ? t(messages.noPeers)
-                : t(messages.peersOnline, { count: peers.value.length })}
-            </p>
+
+            {/* A device on its own is not a backup, so the prompt to link a second
+                one is a standing caution rather than a line of muted text. */}
+            {peers.value.length === 0 ? (
+              <Alert tone="warning" icon="info">
+                {t(messages.noPeers)}
+              </Alert>
+            ) : (
+              <p class={styles.muted}>{t(messages.peersOnline, { count: peers.value.length })}</p>
+            )}
           </section>
         )}
 
@@ -186,19 +197,24 @@ export function App({
         )}
 
         {view === 'settings' && (
-          <section class={styles.settings}>
-            <header class={styles.settingsHead}>
-              <h2 class={styles.settingsTitle}>{t(messages.settingsHeading)}</h2>
-              <p class={styles.settingsIntro}>{t(messages.settingsIntro)}</p>
+          <section class={styles.screen}>
+            <header class={styles.screenHead}>
+              <h1 class={styles.screenTitle}>{t(messages.settingsHeading)}</h1>
+              <p class={styles.screenIntro}>{t(messages.settingsIntro)}</p>
             </header>
 
             {onWatch && (
-              <article class={styles.setting}>
-                <h3 class={styles.settingTitle}>{t(messages.watchHeading)}</h3>
-                <p class={styles.settingDesc}>{t(messages.watchHint)}</p>
-                <div class={styles.settingRow}>
-                  <input
-                    class={styles.input}
+              <Card as="article">
+                <div class={styles.tileHead}>
+                  <span class={styles.tile} aria-hidden="true">
+                    <Icon name="files" />
+                  </span>
+                  <CardTitle>{t(messages.watchHeading)}</CardTitle>
+                </div>
+                <p class={styles.cardText}>{t(messages.watchHint)}</p>
+                <div class={styles.cardRow}>
+                  <Input
+                    class={styles.cardField}
                     aria-label={t(messages.watchPlaceholder)}
                     placeholder={t(messages.watchPlaceholder)}
                     value={draftWatchPath.value}
@@ -214,31 +230,41 @@ export function App({
                     {t(messages.watch)}
                   </Button>
                 </div>
-              </article>
+              </Card>
             )}
 
             {onBackup && (
-              <article class={styles.setting}>
-                <h3 class={styles.settingTitle}>{t(messages.backupTitle)}</h3>
-                <p class={styles.settingDesc}>{t(messages.backupHint)}</p>
-                <div class={styles.settingRow}>
-                  <Button intent="neutral" onClick={onBackup}>
+              <Card as="article">
+                <div class={styles.tileHead}>
+                  <span class={styles.tile} aria-hidden="true">
+                    <Icon name="download" />
+                  </span>
+                  <CardTitle>{t(messages.backupTitle)}</CardTitle>
+                </div>
+                <p class={styles.cardText}>{t(messages.backupHint)}</p>
+                <div class={styles.cardRow}>
+                  <Button intent="primary" onClick={onBackup}>
                     {t(messages.backupWallet)}
                   </Button>
                 </div>
-              </article>
+              </Card>
             )}
 
             {onSwitchWallet && (
-              <article class={styles.setting}>
-                <h3 class={styles.settingTitle}>{t(messages.switchWalletTitle)}</h3>
-                <p class={styles.settingDesc}>{t(messages.switchWalletHint)}</p>
-                <div class={styles.settingRow}>
+              <Card as="article">
+                <div class={styles.tileHead}>
+                  <span class={cn(styles.tile, styles.tileNeutral)} aria-hidden="true">
+                    <Icon name="swap" />
+                  </span>
+                  <CardTitle>{t(messages.switchWalletTitle)}</CardTitle>
+                </div>
+                <p class={styles.cardText}>{t(messages.switchWalletHint)}</p>
+                <div class={styles.cardRow}>
                   <Button intent="neutral" onClick={onSwitchWallet}>
                     {t(messages.switchWallet)}
                   </Button>
                 </div>
-              </article>
+              </Card>
             )}
           </section>
         )}

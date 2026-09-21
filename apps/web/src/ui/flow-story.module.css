@@ -1,6 +1,8 @@
-/* FlowStory — Cascivo-derived, owned in-repo. Cyberpunk surface for an animated
-   node/edge walk: an SVG wire layer under positioned HTML nodes, plus a caption
-   that fades a new line in per step. Tokens only; no raw colours. */
+/* FlowStory — Cascivo-derived, owned in-repo: an animated node/edge walk, with
+   an SVG wire layer under positioned HTML nodes and a caption that fades a new
+   line in per step. On paper the three roles are told apart by the border they
+   carry, not by a glow — device takes the accent, relay the caution tone, store
+   plain ink. Tokens only; no raw colours. */
 
 .flow {
   display: grid;
@@ -12,9 +14,7 @@
   width: 100%;
   border: 1px solid var(--cascivo-color-border);
   border-radius: calc(var(--cascivo-radius) * 2);
-  background:
-    radial-gradient(120% 120% at 50% -20%, rgba(0, 234, 255, 0.08), transparent 60%),
-    var(--cascivo-color-surface);
+  background: var(--sh-chrome);
   overflow: hidden;
 }
 
@@ -34,10 +34,9 @@
 }
 
 .wireActive {
-  stroke: var(--cascivo-color-primary);
+  stroke: var(--cascivo-color-accent);
   stroke-width: 2.5;
   stroke-linecap: round;
-  filter: drop-shadow(0 0 0.4rem rgba(0, 234, 255, 0.6));
   stroke-dasharray: 6 8;
   animation: flow-dash 0.9s linear infinite;
 }
@@ -50,8 +49,7 @@
 
 .beam,
 .beamPaused {
-  fill: var(--cascivo-color-primary);
-  filter: drop-shadow(0 0 0.5rem rgba(0, 234, 255, 0.85));
+  fill: var(--cascivo-color-accent);
 }
 
 .beamPaused {
@@ -97,8 +95,7 @@
   padding: 0.6rem 0.85rem;
   border: 1px solid var(--cascivo-color-border);
   border-radius: var(--cascivo-radius);
-  background: var(--cascivo-color-surface-2);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+  background: var(--cascivo-color-surface);
   transition:
     border-color var(--dur-short) var(--ease-out),
     box-shadow var(--dur-short) var(--ease-out),
@@ -123,32 +120,32 @@
 
 /* Role accents */
 .device {
-  border-color: rgba(0, 234, 255, 0.5);
+  border-color: var(--sh-accent-line);
 }
 
 .relay {
-  border-color: rgba(255, 43, 214, 0.5);
+  border-color: var(--sh-caution-line);
 }
 
 .store {
-  border-color: rgba(177, 92, 255, 0.5);
+  border-color: var(--cascivo-color-border);
 }
 
 /* The two participants in the current step light up. */
 .nodeActive {
   transform: translate(-50%, -50%) scale(1.05);
-  border-color: var(--cascivo-color-primary);
-  box-shadow: var(--cascivo-glow-cyan);
+  border-color: var(--cascivo-color-accent);
+  background: var(--sh-accent-soft);
 }
 
 .relay.nodeActive {
-  border-color: var(--cascivo-color-accent);
-  box-shadow: var(--cascivo-glow-magenta);
+  border-color: var(--sh-caution-line);
+  background: var(--sh-caution-bg);
 }
 
 .store.nodeActive {
-  border-color: var(--cascivo-color-accent-2);
-  box-shadow: 0 0 0.7rem rgba(177, 92, 255, 0.55);
+  border-color: var(--cascivo-color-text);
+  background: var(--sh-track);
 }
 
 /* ---- Caption + controls ---------------------------------------------------- */
@@ -172,18 +169,17 @@
   height: 2.4rem;
   flex: none;
   font-size: 1.1rem;
-  color: var(--cascivo-color-primary);
+  color: var(--cascivo-color-accent);
   background: var(--cascivo-color-surface);
-  border: 1px solid var(--cascivo-color-primary);
-  border-radius: 999px;
+  border: 1px solid var(--cascivo-color-accent);
+  border-radius: var(--cascivo-radius-control);
   cursor: pointer;
-  box-shadow: var(--cascivo-glow-cyan);
   transition: background var(--dur-micro) var(--ease-out);
 }
 
 @media (hover: hover) {
   .control:hover {
-    background: var(--cascivo-color-surface-2);
+    background: var(--sh-accent-soft);
   }
 }
 
@@ -196,7 +192,7 @@
   font-family: var(--safu-font-mono);
   font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
-  color: var(--cascivo-color-primary);
+  color: var(--cascivo-color-accent);
 }
 
 .counterSlash {
@@ -213,7 +209,7 @@
 .dot {
   width: 0.5rem;
   height: 0.5rem;
-  border-radius: 999px;
+  border-radius: var(--cascivo-radius-indicator);
   background: var(--cascivo-color-border);
   transition:
     background var(--dur-short) var(--ease-out),
@@ -221,8 +217,7 @@
 }
 
 .dotActive {
-  background: var(--cascivo-color-primary);
-  box-shadow: var(--cascivo-glow-cyan);
+  background: var(--cascivo-color-accent);
 }
 
 .captionText {
@@ -266,7 +261,7 @@
 .staticNum {
   font-family: var(--safu-font-mono);
   font-variant-numeric: tabular-nums;
-  color: var(--cascivo-color-primary);
+  color: var(--cascivo-color-accent);
 }
 
 @media (max-width: 36rem) {

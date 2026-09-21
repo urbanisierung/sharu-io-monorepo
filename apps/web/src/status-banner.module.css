@@ -1,17 +1,20 @@
 .banner {
-  width: min(44rem, 92vw);
-  padding: 0.6rem 0.9rem;
-  border-radius: var(--cascivo-radius, 0.5rem);
-  font-size: 0.9rem;
-  text-align: center;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius-surface);
+  font-size: var(--cascivo-text-base);
+  line-height: var(--cascivo-leading-relaxed);
 }
 
 .ok {
-  background: color-mix(in srgb, var(--cascivo-color-success) 14%, transparent);
-  color: var(--cascivo-color-success);
+  background: var(--sh-accent-soft);
+  border-color: var(--sh-accent-line);
+  color: var(--sh-on-accent-soft);
 }
 
 .risk {
-  background: color-mix(in srgb, var(--cascivo-color-warning) 16%, transparent);
-  color: var(--cascivo-color-warning);
+  background: var(--sh-caution-bg);
+  border-color: var(--sh-caution-line);
+  color: var(--sh-caution-ink);
 }

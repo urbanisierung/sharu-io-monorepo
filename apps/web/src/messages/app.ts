@@ -38,6 +38,7 @@ export const messages = defineMessages('safu', {
   useAnotherWallet: 'Use a different wallet',
   walletsTitle: 'Your wallets',
   walletsSubtitle: 'Choose a wallet to open, or add another to this device.',
+  walletsOnDevice: 'Wallets on this device',
   newWallet: 'Create a new wallet',
   restoreWallet: 'Restore from a backup',
   restoreError: 'That file isn’t a valid Sharu wallet backup.',
@@ -47,6 +48,7 @@ export const messages = defineMessages('safu', {
   backupHint:
     'Save a backup file to restore this wallet on another device. It contains your password — keep it private.',
   switchWallet: 'Switch wallet',
+  lockWallet: 'Lock this wallet',
   settingsHeading: 'Settings',
   settingsIntro: 'Manage how this device backs up, and the wallet open here.',
   watchHint:
@@ -241,6 +243,7 @@ export const messagesEli5 = defineMessages('safu.eli5', {
   useAnotherWallet: 'Use a different magic box',
   walletsTitle: 'Your magic boxes',
   walletsSubtitle: 'Pick a magic box to open, or add another to this gadget.',
+  walletsOnDevice: 'Magic boxes on this gadget',
   newWallet: 'Make a new magic box',
   restoreWallet: 'Bring one back from a backup',
   restoreError: 'That file isn’t a real Sharu magic box backup.',
@@ -250,6 +253,7 @@ export const messagesEli5 = defineMessages('safu.eli5', {
   backupHint:
     'Save a backup file so you can bring this magic box to another gadget. It holds your secret word — keep it just for you.',
   switchWallet: 'Switch magic box',
+  lockWallet: 'Close up the magic box',
   settingsHeading: 'Settings',
   settingsIntro: 'Change how this gadget keeps your stuff safe, and the magic box open here.',
   watchHint:
@@ -439,6 +443,7 @@ export const messagesMachine = defineMessages('safu.machine', {
   useAnotherWallet: 'switch wallet',
   walletsTitle: 'wallets',
   walletsSubtitle: 'select wallet to open, or add to device.',
+  walletsOnDevice: 'wallets @device',
   newWallet: 'new wallet',
   restoreWallet: 'restore < backup',
   restoreError: 'err: invalid sharu wallet backup',
@@ -447,6 +452,7 @@ export const messagesMachine = defineMessages('safu.machine', {
   backupWallet: 'export wallet',
   backupHint: 'export backup to restore on another device. contains passphrase — keep private.',
   switchWallet: 'switch wallet',
+  lockWallet: 'wallet → lock',
   settingsHeading: 'settings',
   settingsIntro: 'config: device backup behavior + active wallet.',
   watchHint:

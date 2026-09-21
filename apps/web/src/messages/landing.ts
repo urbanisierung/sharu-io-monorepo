@@ -7,7 +7,6 @@ export const landing = defineMessages('safu.landing', {
   logoAlt: 'Sharu wolf logo',
   whitepaper: 'Read the whitepaper',
   comparison: 'IPFS vs. Iroh',
-  badge: 'zero-knowledge · local-first · peer-to-peer',
   heroLine1: 'Your data.',
   heroLine2: 'Your devices.',
   heroLine3: 'Nobody else.',
@@ -17,6 +16,13 @@ export const landing = defineMessages('safu.landing', {
   launchShort: 'Launch',
   learnMore: 'See the pipeline',
   watchFlow: 'How it works',
+
+  statCryptoValue: 'AES-256',
+  statCryptoLabel: 'GCM · sealed on device',
+  statServersValue: 'Zero',
+  statServersLabel: 'Servers that can read a file',
+  statP2pValue: 'P2P',
+  statP2pLabel: 'Iroh QUIC · direct',
 
   problemKicker: 'The problem',
   problemTitle: 'Cloud backup asks you to trust someone else with everything.',
@@ -74,6 +80,8 @@ export const landing = defineMessages('safu.landing', {
   cliWindowsLabel: 'Windows · PowerShell',
   cliWindowsCmd: `irm ${SITE_URL}/install.ps1 | iex`,
   cliLink: 'Read the backup-node docs',
+  cliCopy: 'Copy',
+  cliCopied: 'Copied',
   cliVerify: 'Prefer to read it first? Inspect the install script before you run it.',
 
   ctaTitle: 'Take your backups back.',
@@ -90,7 +98,6 @@ export const landingEli5 = defineMessages('safu.landing.eli5', {
   logoAlt: 'Picture of the Sharu wolf',
   whitepaper: 'Read the big story about how it works',
   comparison: 'IPFS next to Iroh',
-  badge: 'only-you-can-peek · lives-on-your-stuff · talks-friend-to-friend',
   heroLine1: 'Your things.',
   heroLine2: 'Your gadgets.',
   heroLine3: 'Nobody else.',
@@ -100,6 +107,13 @@ export const landingEli5 = defineMessages('safu.landing.eli5', {
   launchShort: 'Open',
   learnMore: 'See how the boxes travel',
   watchFlow: 'How it works',
+
+  statCryptoValue: 'Locked',
+  statCryptoLabel: 'Sealed shut on your own gadget',
+  statServersValue: 'Zero',
+  statServersLabel: 'Helpers who can peek inside',
+  statP2pValue: 'Direct',
+  statP2pLabel: 'Handed straight to your gadget',
 
   problemKicker: 'The problem',
   problemTitle: 'Faraway helpers want you to trust them with all your things.',
@@ -158,6 +172,8 @@ export const landingEli5 = defineMessages('safu.landing.eli5', {
   cliWindowsLabel: 'Windows · PowerShell',
   cliWindowsCmd: `irm ${SITE_URL}/install.ps1 | iex`,
   cliLink: 'Read the always-awake-helper guide',
+  cliCopy: 'Copy it',
+  cliCopied: 'Copied',
   cliVerify: 'Want to peek first? Look at the little setup script before you run it.',
 
   ctaTitle: 'Take your safe copies back.',
@@ -174,7 +190,6 @@ export const landingMachine = defineMessages('safu.landing.machine', {
   logoAlt: 'img := sharu wolf logo',
   whitepaper: 'whitepaper → read',
   comparison: 'ipfs vs iroh',
-  badge: 'zk · local-first · p2p',
   heroLine1: 'data := yours.',
   heroLine2: 'devices := yours.',
   heroLine3: 'others := none.',
@@ -184,6 +199,13 @@ export const landingMachine = defineMessages('safu.landing.machine', {
   launchShort: 'launch',
   learnMore: 'pipeline → view',
   watchFlow: 'mechanism → how',
+
+  statCryptoValue: 'AES-256',
+  statCryptoLabel: 'gcm · sealed @device',
+  statServersValue: '0',
+  statServersLabel: 'servers that can read a file',
+  statP2pValue: 'P2P',
+  statP2pLabel: 'iroh quic · direct',
 
   problemKicker: 'problem',
   problemTitle: 'cloud-backup ⇒ trust(3rd-party, all).',
@@ -238,6 +260,8 @@ export const landingMachine = defineMessages('safu.landing.machine', {
   cliWindowsLabel: 'Windows · PowerShell',
   cliWindowsCmd: `irm ${SITE_URL}/install.ps1 | iex`,
   cliLink: 'backup-node docs → read',
+  cliCopy: 'copy',
+  cliCopied: 'copied',
   cliVerify: 'read-first? inspect install script before exec.',
 
   ctaTitle: 'backups → reclaim.',

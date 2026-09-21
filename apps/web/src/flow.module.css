@@ -29,21 +29,11 @@
 
 .title {
   margin: 0;
-  font-family: var(--safu-font-mono);
-  font-size: clamp(2rem, 6vw, 3.2rem);
-  line-height: 1.05;
-  letter-spacing: 0.02em;
-  font-weight: 800;
-  background: linear-gradient(
-    92deg,
-    var(--cascivo-color-primary),
-    var(--cascivo-color-accent-2) 55%,
-    var(--cascivo-color-accent)
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 0 2.4rem rgba(177, 92, 255, 0.3);
+  font-size: var(--cascivo-text-3xl);
+  line-height: 1.04;
+  letter-spacing: var(--cascivo-tracking-tight);
+  font-weight: var(--cascivo-font-black);
+  color: var(--cascivo-color-text);
 }
 
 .subtitle {

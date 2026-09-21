@@ -1,22 +1,20 @@
+/* The signed-in app: an 860px content column, centred on the page ground, with
+   24px gutters. The brand, sync indicator and section tabs belong to the global
+   navbar (navbar.module.css). Panels are Cards (ui/card.module.css); this file
+   owns the column, the screen headers and the few app-specific blocks. */
+
 .app {
   flex: 1 0 auto;
   display: flex;
   flex-direction: column;
 }
 
-/* The brand, sync indicator and section tabs that used to live here now belong
-   to the global navbar (navbar.module.css). */
-
-/* Centered content column with comfortable, screen-aware padding. */
 .content {
   flex: 1;
   width: 100%;
-  max-width: 48rem;
+  max-width: var(--sh-app-width);
   margin: 0 auto;
-  padding: clamp(1rem, 4vw, 2rem) clamp(1rem, 4vw, 2rem) 4rem;
-  display: grid;
-  justify-items: center;
-  gap: 1.5rem;
+  padding: 2.75rem var(--sh-app-gutter) 4.5rem;
 }
 
 /* Phone: the navbar's section tabs become a fixed bottom bar, so the content
@@ -27,227 +25,252 @@
   }
 }
 
+/* One screen: a title, an optional lede, then a stack of cards. */
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.screenTitle {
+  margin: 0;
+  font-size: var(--cascivo-text-4xl);
+  line-height: 1;
+  font-weight: var(--cascivo-font-black);
+  letter-spacing: -0.035em;
+  color: var(--cascivo-color-text);
+}
+
+/* A title with a lede under it: the pair sits closer together than the cards
+   that follow, so it reads as one header block. */
+.screenHead {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.screenIntro {
+  margin: 0;
+  max-width: 60ch;
+  font-size: var(--cascivo-text-lg);
+  line-height: var(--cascivo-leading-relaxed);
+  color: var(--cascivo-color-text-subtle);
+}
+
 .booting {
   display: grid;
   place-items: center;
   flex: 1 0 auto;
-  font-family: var(--safu-font-mono);
-  letter-spacing: 0.08em;
-  color: var(--cascivo-color-primary);
-  text-shadow: var(--cascivo-glow-cyan);
+  font-family: var(--cascivo-font-mono);
+  font-size: var(--cascivo-text-xs);
+  letter-spacing: var(--cascivo-tracking-label);
+  text-transform: uppercase;
+  color: var(--cascivo-color-text-muted);
 }
 
+/* A full sentence that is secondary, not a label — so it takes the body tone. */
 .muted {
-  color: color-mix(in srgb, var(--cascivo-color-foreground, #18181b) 60%, transparent);
+  color: var(--cascivo-color-text-subtle);
 }
 
 .warn {
-  color: var(--cascivo-color-warning);
+  color: var(--sh-caution-ink);
 }
 
-.gate {
-  display: grid;
-  gap: 0.75rem;
-  width: min(24rem, 90vw);
-  justify-items: stretch;
+/* Card body text. Paragraphs inside a card all read at the same measure. */
+.cardText {
+  margin: 0;
+  max-width: 62ch;
+  font-size: var(--cascivo-text-base);
+  line-height: var(--cascivo-leading-relaxed);
+  color: var(--cascivo-color-text-subtle);
 }
 
-.input {
-  height: 2.25rem;
-  padding: 0 0.65rem;
-  border: 1px solid var(--cascivo-color-border, #d4d4d8);
-  border-radius: var(--cascivo-radius, 0.5rem);
-  background: var(--cascivo-color-surface);
-  color: var(--cascivo-color-foreground);
-  font: inherit;
-  font-size: 0.95rem;
-  line-height: 1.2;
+/* The rule between a card's two halves. */
+.cardDivider {
+  margin: 1.25rem 0;
 }
 
-.input::placeholder {
-  color: var(--cascivo-color-muted);
-}
-
-.input:focus-visible {
-  outline: 2px solid var(--cascivo-color-primary);
-  outline-offset: 1px;
-  border-color: var(--cascivo-color-primary);
-}
-
-/* Settings: a tight column of compact rows — a title, a short description and a
-   regular control — each only as tall as its content, flowing top to bottom. */
-.settings {
+/* The card stack's internal rhythm: title, copy, then one row of controls. */
+.cardStack {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  width: min(34rem, 92vw);
 }
 
-.settingsHead {
-  display: grid;
-  gap: 0.15rem;
-  margin-bottom: 0.1rem;
-}
-
-.settingsTitle {
-  margin: 0;
-  font-size: 1.2rem;
-}
-
-.settingsIntro {
-  margin: 0;
-  font-size: 0.85rem;
-  line-height: 1.45;
-  color: var(--cascivo-color-muted);
-}
-
-.setting {
-  display: grid;
-  gap: 0.3rem;
-  padding: 0.7rem 0.85rem;
-  border: 1px solid var(--cascivo-color-border);
-  border-radius: var(--cascivo-radius, 0.5rem);
-  background: color-mix(in srgb, var(--cascivo-color-surface) 50%, transparent);
-}
-
-.settingTitle {
-  margin: 0;
-  font-size: 0.95rem;
-  color: var(--cascivo-color-foreground);
-}
-
-.settingDesc {
-  margin: 0;
-  font-size: 0.83rem;
-  line-height: 1.45;
-  color: var(--cascivo-color-muted);
-}
-
-.settingRow {
+.cardRow {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.15rem;
+  gap: 0.625rem;
+  margin-top: 0.75rem;
 }
 
-.settingRow input {
-  flex: 1 1 12rem;
+/* Passed to a field that should take the rest of its row. It sizes the Input's
+   own wrapper: a rule reaching the inner <input> would set a flex basis along
+   the wrapper's column axis and stretch the control vertically. */
+.cardField {
+  flex: 1 1 16rem;
   min-width: 0;
 }
 
-/* The Files view: a column of cards (the file list, then public sharing), the
-   same shape as the Settings and Devices views — just a little wider so the
-   table has room to breathe. */
-.filesView {
+/* Title beside its action, the layout the Devices prompt and the sharing card
+   both use — the two wrap onto separate lines rather than squeezing. */
+.splitRow {
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  width: min(46rem, 92vw);
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.125rem;
 }
 
-/* The file list's card gets a touch more breathing room than a plain setting
-   card, since it holds a whole table, its progress and the reset control. */
-.fileCard {
+/* The accent tile above a settings card's title. */
+.tileHead {
+  display: flex;
+  align-items: center;
   gap: 0.75rem;
-  padding: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.tile {
+  display: grid;
+  place-items: center;
+  width: 2.125rem;
+  height: 2.125rem;
+  flex: none;
+  font-size: 1.0625rem;
+  background: var(--sh-accent-soft);
+  border: 1px solid var(--sh-accent-line);
+  color: var(--cascivo-color-accent);
+}
+
+/* The quieter, second-choice action keeps the neutral tile. */
+.tileNeutral {
+  background: var(--sh-track);
+  border-color: var(--cascivo-color-border);
+  color: var(--cascivo-color-text-subtle);
+}
+
+/* The Files card holds a whole table, its progress and the reset control, so it
+   gets a slightly tighter inset than a text card and owns its own rhythm. */
+.fileCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
 }
 
 /* The file list's surface: a positioned wrapper so the drag-only drop overlay
-   can fill exactly the file area. It now fills its card, which owns the width. */
+   can fill exactly the file area. */
 .fileSurface {
   position: relative;
   width: 100%;
 }
 
-.revealRow {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  color: color-mix(in srgb, var(--cascivo-color-foreground, #18181b) 60%, transparent);
+/* Text fields that are not wrapped in the Input component (inline editors). */
+.input {
+  min-height: var(--cascivo-control-height-md);
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius-field);
+  background: var(--sh-chrome);
+  color: var(--cascivo-color-text);
+  font: inherit;
+  font-size: var(--cascivo-text-base);
 }
 
-.notice {
-  font-size: 0.85rem;
-  line-height: 1.4;
-  color: var(--cascivo-color-warning);
-  background: color-mix(in srgb, var(--cascivo-color-warning) 12%, transparent);
-  padding: 0.6rem 0.75rem;
-  border-radius: var(--cascivo-radius, 0.5rem);
+.input::placeholder {
+  color: var(--cascivo-color-text-muted);
 }
 
-.codeRow {
-  display: grid;
-  gap: 0.25rem;
-  justify-items: start;
+.input:focus {
+  outline: none;
+  border-color: var(--cascivo-color-accent);
 }
 
+/* A machine-produced value shown inline: mono, breaking anywhere rather than
+   widening its column. */
 .code {
-  font-family: var(--safu-font-mono);
-  font-size: 0.8rem;
+  font-family: var(--cascivo-font-mono);
+  font-size: var(--cascivo-text-xs);
   word-break: break-all;
-  color: var(--cascivo-color-primary);
+  color: var(--cascivo-color-text);
 }
 
-/* A labelled key/value list for device details (signing id, transport, relay),
- * used both by the "This device" card and each linked peer's row. */
-.identityList {
-  display: grid;
-  gap: 0.35rem;
-  margin: 0.2rem 0 0;
-}
+/* ---- Devices · share panel ------------------------------------------------ */
 
-.identityRow {
-  display: grid;
-  grid-template-columns: minmax(7rem, max-content) 1fr;
-  gap: 0.2rem 0.75rem;
-  align-items: baseline;
-}
-
-.identityLabel {
-  font-size: 0.78rem;
-  color: var(--cascivo-color-muted);
-}
-
-.identityValue {
+.sharePanel {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  margin: 0;
+  flex-wrap: wrap;
+  gap: 1.625rem;
+  padding: 1.375rem;
+  background: var(--sh-chrome);
+  border: 1px solid var(--sh-divider);
+}
+
+.shareAside {
+  flex: 1 1 15rem;
   min-width: 0;
 }
 
-/* The linked-devices overview: a compact table (device · linked · status)
-   whose rows expand to reveal the full identity and per-device actions, so the
-   Manage card stays scannable instead of stacking every detail inline. */
+.shareAside > p {
+  margin-bottom: 0.875rem;
+}
+
+.shareCode {
+  display: block;
+  font-family: var(--cascivo-font-mono);
+  font-size: var(--cascivo-text-sm);
+  padding: 0.6875rem 0.8125rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--cascivo-color-border);
+  background: var(--cascivo-color-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shareActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5625rem;
+}
+
+/* ---- Devices · the linked-device table ------------------------------------
+   A compact overview (device · linked · status) whose rows expand to reveal the
+   full identity and per-device actions, so the Manage card stays scannable. */
+
 .deviceTable {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: var(--cascivo-text-sm);
 }
 
 .deviceTable th {
   text-align: left;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--cascivo-color-muted);
-  padding: 0.4rem 0.5rem;
-  border-bottom: 1px solid var(--cascivo-color-border, #d4d4d8);
+  padding: 0.5rem 0.5rem 0.625rem 0;
+  border-bottom: 1px solid var(--cascivo-color-border);
+  font-family: var(--cascivo-font-mono);
+  font-size: 0.625rem;
+  font-weight: var(--cascivo-font-normal);
+  letter-spacing: var(--cascivo-tracking-label);
+  text-transform: uppercase;
+  color: var(--cascivo-color-text-muted);
 }
 
 .deviceTable td {
-  padding: 0.45rem 0.5rem;
-  border-bottom: 1px solid var(--cascivo-color-border, #d4d4d8);
+  padding: 0.6875rem 0.5rem 0.6875rem 0;
+  border-bottom: 1px solid var(--sh-divider);
   vertical-align: middle;
 }
 
 /* The name cell doubles as the row's expand toggle. */
 .deviceExpand {
   display: inline-flex;
-  align-items: baseline;
-  gap: 0.45rem;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: var(--cascivo-target-min);
   background: none;
   border: none;
   padding: 0;
@@ -258,51 +281,63 @@
 }
 
 .chevron {
-  width: 0.7rem;
-  font-size: 0.7rem;
-  color: var(--cascivo-color-muted);
+  display: inline-flex;
+  width: 0.75rem;
+  font-size: 0.6875rem;
+  color: var(--cascivo-color-text-muted);
+  transition: transform var(--cascivo-duration-150) var(--cascivo-ease-out);
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+}
+
+.deviceName {
+  font-weight: var(--cascivo-font-semibold);
 }
 
 .deviceLinked {
-  color: var(--cascivo-color-muted);
+  color: var(--cascivo-color-text-muted);
   white-space: nowrap;
 }
 
 /* The expanded detail panel spans the full row width; the border already sits on
    the summary row above it, so it carries none of its own. */
 .deviceDetailRow td {
-  border-bottom: 1px solid var(--cascivo-color-border, #d4d4d8);
+  border-bottom: 1px solid var(--sh-divider);
   padding: 0;
 }
 
 .deviceDetail {
-  display: grid;
-  gap: 0.6rem;
-  padding: 0.5rem 0.5rem 0.9rem 1.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.25rem 0 1rem 1.25rem;
 }
 
 .peerStatus {
-  font-size: 0.78rem;
-  color: var(--cascivo-color-muted);
+  font-size: var(--cascivo-text-xs);
+  color: var(--cascivo-color-text-muted);
 }
 
 .statusOk {
-  color: var(--cascivo-color-primary);
+  color: var(--sh-accent-hover);
 }
 
-/* One stacked column of actions. Each action is a fixed-width button next to a
-   short hint, so the buttons line up regardless of how long their labels run. */
+/* One stacked column of actions: a fixed-width button beside a short hint, so
+   the buttons line up regardless of how long their labels run. */
 .peerActions {
-  display: grid;
-  gap: 0.5rem;
-  margin-top: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin-top: 0.25rem;
 }
 
 .peerAction {
   display: grid;
-  grid-template-columns: 9rem 1fr;
+  grid-template-columns: 10rem minmax(0, 1fr);
   align-items: center;
-  gap: 0.4rem 0.75rem;
+  gap: 0.4rem 0.875rem;
 }
 
 .peerAction button {
@@ -311,9 +346,9 @@
 
 .peerActionHint {
   margin: 0;
-  font-size: 0.8rem;
-  line-height: 1.4;
-  color: var(--cascivo-color-muted);
+  font-size: var(--cascivo-text-xs);
+  line-height: var(--cascivo-leading-normal);
+  color: var(--cascivo-color-text-muted);
 }
 
 /* Inline rename editor: the field and its Save/Cancel buttons wrap together. */
@@ -324,50 +359,51 @@
   gap: 0.5rem;
 }
 
-@media (max-width: 30rem) {
+@media (max-width: 34rem) {
   .peerAction {
-    grid-template-columns: 1fr;
-    gap: 0.2rem;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.25rem;
   }
 }
 
-.qrBlock {
-  display: grid;
-  justify-items: center;
-  gap: 0.5rem;
-}
+/* ---- Devices · the backup-node onboarding flow ----------------------------
+   The two values `sharu serve` asks for, shown big so they are impossible to
+   miss and easy to read off the screen. */
 
-.deviceName {
-  font-weight: 600;
-}
-
-/* The backup-node (CLI) onboarding flow: the two values `sharu serve` asks for,
-   shown big so they’re impossible to miss and easy to copy off the screen. */
 .deviceCode {
-  font-family: var(--safu-font-mono);
-  font-size: 0.85rem;
+  display: block;
+  font-family: var(--cascivo-font-mono);
+  font-size: var(--cascivo-text-xs);
+  line-height: var(--cascivo-leading-normal);
   word-break: break-all;
-  color: var(--cascivo-color-primary);
-  padding: 0.55rem 0.65rem;
-  border: 1px solid var(--cascivo-color-border, #d4d4d8);
-  border-radius: var(--cascivo-radius, 0.5rem);
-  background: color-mix(in srgb, var(--cascivo-color-surface) 60%, transparent);
+  padding: 0.6875rem 0.8125rem;
+  margin-top: 0.25rem;
+  border: 1px solid var(--cascivo-color-border);
+  background: var(--sh-chrome);
   user-select: all;
+}
+
+.fieldLabel {
+  font-size: var(--cascivo-text-xs);
+  font-weight: var(--cascivo-font-semibold);
+  color: var(--cascivo-color-text-muted);
 }
 
 /* A pending node awaiting its safety-number check: the number front and centre,
    with the compare buttons right beneath it. */
 .safetyCheck {
-  display: grid;
-  gap: 0.4rem;
-  justify-items: start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 .safetyNumber {
-  font-family: var(--safu-font-mono);
-  font-size: 1.9rem;
-  letter-spacing: 0.35em;
-  font-weight: 600;
+  font-family: var(--cascivo-font-mono);
+  font-size: 1.75rem;
+  letter-spacing: 0.3em;
+  font-weight: var(--cascivo-font-medium);
   line-height: 1.1;
-  color: var(--cascivo-color-primary);
+  color: var(--cascivo-color-accent);
 }

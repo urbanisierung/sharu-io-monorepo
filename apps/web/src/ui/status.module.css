@@ -1,0 +1,38 @@
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cascivo-space-2);
+  font-family: var(--cascivo-font-sans);
+  font-size: var(--cascivo-text-xs);
+  font-weight: var(--cascivo-font-medium);
+  line-height: var(--cascivo-leading-tight);
+  color: var(--cascivo-color-text-subtle);
+}
+
+/* The header chip: an accent-soft block with an accent-line border. */
+.status[data-variant="pill"] {
+  padding: 0.3125rem 0.6875rem;
+  background: var(--sh-accent-soft);
+  border: 1px solid var(--sh-accent-line);
+  color: var(--sh-accent-hover);
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: var(--cascivo-radius-indicator);
+  background: var(--cascivo-color-text-muted);
+}
+
+.status[data-tone="success"] .dot {
+  background: var(--cascivo-color-success);
+}
+
+.status[data-tone="warning"] .dot {
+  background: var(--cascivo-color-warning);
+}
+
+.status[data-tone="danger"] .dot {
+  background: var(--cascivo-color-error);
+}

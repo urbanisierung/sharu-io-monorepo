@@ -1,0 +1,49 @@
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--cascivo-space-3);
+  padding: var(--cascivo-space-4) var(--cascivo-space-5);
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius-surface);
+  background: var(--cascivo-color-surface);
+  font-family: var(--cascivo-font-sans);
+  color: var(--cascivo-color-text-subtle);
+}
+
+/* The caution notice. Its fill, border and text are one set — the design names
+   all three, so none of them is derived by mixing. */
+.alert[data-tone="warning"] {
+  background: var(--sh-caution-bg);
+  border-color: var(--sh-caution-line);
+  color: var(--sh-caution-ink);
+}
+
+.alert[data-tone="danger"] {
+  background: var(--sh-caution-bg);
+  border-color: var(--sh-caution-line);
+  color: var(--sh-danger);
+}
+
+.icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  color: var(--cascivo-color-text-muted);
+}
+
+.alert[data-tone="warning"] .icon {
+  color: var(--sh-caution-icon);
+}
+
+.alert[data-tone="danger"] .icon {
+  color: var(--sh-danger);
+}
+
+.body {
+  margin: 0;
+  max-width: 64ch;
+  font-size: var(--cascivo-text-base);
+  line-height: var(--cascivo-leading-relaxed);
+}

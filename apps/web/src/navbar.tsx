@@ -2,7 +2,8 @@
 // marketing pages, the running app, and the public share viewer. It always
 // carries the brand and the reading-mode toggle; on marketing routes it adds the
 // section links + Launch, and in the unlocked app it absorbs what used to be the
-// app's own topbar and tab bar (wallet name, sync status, Files/Devices/Settings).
+// app's own topbar and tab bar (wallet name, sync status, Files/Devices/Settings,
+// and the lock button the redesign puts at the end of the row).
 //
 // On a phone the bar collapses to brand + the main CTA + a burger button; the
 // links and the reading-mode toggle move into the menu the burger opens, so the
@@ -19,7 +20,9 @@ import { navigate, type Route } from './router.js';
 import type { Runtime } from './runtime.js';
 import { Button } from './ui/button.js';
 import { Icon, type IconName } from './ui/icon.js';
+import { IconButton } from './ui/icon-button.js';
 import { SegmentedControl } from './ui/segmented-control.js';
+import { Status, type StatusTone } from './ui/status.js';
 import { type AppView, activeView } from './view-state.js';
 
 const MARKETING_ROUTES: readonly Route[] = [
@@ -56,9 +59,11 @@ export interface NavbarProps {
   runtime: Runtime | null;
   /** Open the app (reuses Root's wallet-selection logic). */
   onLaunch: () => void;
+  /** Lock the open wallet and return to the picker. Shown only in the app. */
+  onLock?: () => void;
 }
 
-export function Navbar({ route, runtime, onLaunch }: NavbarProps) {
+export function Navbar({ route, runtime, onLaunch, onLock }: NavbarProps) {
   const isMarketing = MARKETING_ROUTES.includes(route);
   const inApp = route === 'app' && runtime !== null;
   const open = menuOpen.value;
@@ -121,6 +126,9 @@ export function Navbar({ route, runtime, onLaunch }: NavbarProps) {
               <span class={styles.ctaFull}>{tr(landing.launch)}</span>
               <span class={styles.ctaShort}>{tr(landing.launchShort)}</span>
             </Button>
+          ) : null}
+          {inApp && onLock ? (
+            <IconButton icon="lock" label={tr(messages.lockWallet)} onClick={onLock} />
           ) : null}
           <button
             type="button"
@@ -199,14 +207,12 @@ function SyncIndicator({ runtime }: { runtime: Runtime }) {
       : sync === 'error'
         ? tr(messages.syncProblem)
         : tr(messages.syncUpToDate);
-  const dotClass =
-    sync === 'syncing' ? styles.dotSyncing : sync === 'error' ? styles.dotError : styles.dotIdle;
+  const tone: StatusTone = sync === 'syncing' ? 'warning' : sync === 'error' ? 'danger' : 'success';
   return (
-    <span class={styles.sync}>
-      <span class={cn(styles.dot, dotClass)} aria-hidden="true" />
+    <Status class={styles.sync} variant="pill" tone={tone}>
       {/* The text collapses to screen-reader-only on the narrowest phones so the
           dot alone holds the bar to one row; the status stays announced. */}
       <span class={styles.syncLabel}>{label}</span>
-    </span>
+    </Status>
   );
 }

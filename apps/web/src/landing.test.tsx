@@ -27,7 +27,31 @@ describe('Landing', () => {
     // "How it works" now appears twice: the section kicker and the hero link.
     expect(screen.getAllByText('How it works').length).toBeGreaterThan(0);
     expect(screen.getByText(/Encrypt on device/)).toBeTruthy();
-    expect(screen.getByText('Zero-knowledge')).toBeTruthy();
+    // Each principle is named twice — once in the label band under the hero,
+    // once as a term in the principles table.
+    expect(screen.getAllByText('Zero-knowledge').length).toBe(2);
+  });
+
+  it('states the three hero guarantees beside the headline', () => {
+    renderLanding();
+    expect(screen.getByText('AES-256')).toBeTruthy();
+    expect(screen.getByText('GCM · sealed on device')).toBeTruthy();
+    expect(screen.getByText('Zero')).toBeTruthy();
+    expect(screen.getByText('P2P')).toBeTruthy();
+  });
+
+  it('runs a label band of every principle, one cell each', () => {
+    renderLanding();
+    // Seven principles, named in the band and again in the table below it.
+    for (const principle of ['Local-first', 'Peer-to-peer', 'Streaming', 'Relay-optional']) {
+      expect(screen.getAllByText(principle).length).toBe(2);
+    }
+  });
+
+  it('copies an install command without leaving the page', () => {
+    renderLanding();
+    // One copy control per install card, resting on its "Copy" label.
+    expect(screen.getAllByRole('button', { name: 'Copy' }).length).toBe(2);
   });
 
   it('offers the always-on backup node with a one-line install', () => {

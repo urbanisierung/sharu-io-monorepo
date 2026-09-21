@@ -1,0 +1,59 @@
+.wrapper {
+  /* A flex/grid item's default minimum is its content size, and an <input> has an
+     intrinsic ~20ch width — without this it refuses to shrink and spills out of
+     its track. */
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cascivo-space-2);
+}
+
+.label {
+  font-family: var(--cascivo-font-sans);
+  font-size: var(--cascivo-text-xs);
+  font-weight: var(--cascivo-font-semibold);
+  line-height: var(--cascivo-leading-snug);
+  color: var(--cascivo-color-text);
+}
+
+.input {
+  width: 100%;
+  min-height: var(--cascivo-control-height-md);
+  padding: 0.75rem 0.875rem;
+  font: inherit;
+  font-size: var(--cascivo-text-base);
+  color: var(--cascivo-color-text);
+  background: var(--sh-chrome);
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius-field);
+  transition: border-color var(--cascivo-duration-150) var(--cascivo-ease-out);
+}
+
+.input::placeholder {
+  color: var(--cascivo-color-text-muted);
+}
+
+@media (hover: hover) {
+  .input:hover:not(:disabled):not(:focus) {
+    border-color: var(--sh-accent-line);
+  }
+}
+
+.input:focus {
+  border-color: var(--cascivo-color-accent);
+}
+
+.input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.wrapper[data-state="error"] .input {
+  border-color: var(--cascivo-color-destructive);
+}
+
+.error {
+  font-size: var(--cascivo-text-xs);
+  line-height: var(--cascivo-leading-snug);
+  color: var(--cascivo-color-destructive);
+}

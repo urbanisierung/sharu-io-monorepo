@@ -1,8 +1,11 @@
 .qr {
-  width: min(12rem, 60vw);
-  height: auto;
+  width: 150px;
+  height: 150px;
+  flex: none;
   image-rendering: pixelated;
-  border-radius: var(--cascivo-radius, 0.5rem);
+  /* A scanner needs maximum contrast, so the code keeps a white quiet zone even
+     on the cream ground. */
   background: #ffffff;
-  padding: 0.5rem;
+  border: 1px solid var(--cascivo-color-border);
+  padding: 0.625rem;
 }

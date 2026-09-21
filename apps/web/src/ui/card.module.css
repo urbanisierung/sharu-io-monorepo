@@ -1,0 +1,114 @@
+/* Cascivo card, retuned to the Sharu theme: card fill on the page ground,
+   separated by a single hairline. No radius, no elevation. */
+.card {
+  /* Containing block for the stretched-link pattern — without it an overlay
+     `::after { inset: 0 }` resolves against the viewport and swallows clicks
+     across the whole app. */
+  position: relative;
+  background-color: var(--cascivo-color-surface);
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius-surface);
+  padding: var(--_card-p, 0);
+  min-width: 0;
+}
+
+/* When the card holds its own subcomponents, THEY own the inset — otherwise both
+   pad and the header's content sits twice as far from the border as intended. */
+.card:has(> .header, > .content, > .footer) {
+  padding: 0;
+}
+
+.card[data-padding="none"] {
+  --_card-p: 0;
+  /* deliberately no --_card-inner-p: subcomponents keep their own default */
+}
+
+.card[data-padding="sm"] {
+  --_card-p: var(--cascivo-space-4);
+  --_card-inner-p: var(--cascivo-space-4);
+}
+
+.card[data-padding="md"] {
+  --_card-p: var(--cascivo-space-6);
+  --_card-inner-p: var(--cascivo-space-6);
+}
+
+/* The one tinted block on a screen — reserved for the recommended next action. */
+.card[data-tone="accent"] {
+  background-color: var(--sh-accent-soft);
+  border-color: var(--sh-accent-line);
+}
+
+.header {
+  padding: var(--_card-inner-p, var(--cascivo-space-6));
+  padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cascivo-space-2);
+  min-width: 0;
+}
+
+/* Title + trailing actions. The default header is a column, so the row variant
+   is opt-in — the most common layout (title left, action right) needs a row. */
+.headerRow {
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--cascivo-space-5);
+  flex-wrap: wrap;
+}
+
+.headerMain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cascivo-space-2);
+  min-width: 0;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--cascivo-space-2);
+  flex-shrink: 0;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--cascivo-font-sans);
+  font-size: var(--cascivo-text-xl);
+  font-weight: var(--cascivo-font-bold);
+  letter-spacing: var(--cascivo-tracking-normal);
+  line-height: var(--cascivo-leading-snug);
+  color: var(--cascivo-color-text);
+}
+
+.content {
+  padding: var(--_card-inner-p, var(--cascivo-space-6));
+  font-size: var(--cascivo-text-base);
+  line-height: var(--cascivo-leading-relaxed);
+  color: var(--cascivo-color-text-subtle);
+}
+
+.content > p {
+  margin: 0;
+  max-width: 62ch;
+}
+
+.content > p + p {
+  margin-top: var(--cascivo-space-4);
+}
+
+/* On the tinted card the body copy darkens to stay legible over the accent. */
+.card[data-tone="accent"] .content {
+  color: var(--sh-on-accent-soft);
+}
+
+.footer {
+  padding: var(--_card-inner-p, var(--cascivo-space-6));
+  padding-top: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cascivo-space-3);
+  min-width: 0;
+}

@@ -1,5 +1,5 @@
 .panel {
-  width: min(32rem, 90vw);
+  width: 100%;
 }
 
 .heading {
@@ -36,21 +36,21 @@
 
 .size {
   font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, var(--cascivo-color-foreground, #18181b) 60%, transparent);
+  color: var(--cascivo-color-text-muted);
 }
 
 .queued,
 .adding {
-  color: color-mix(in srgb, var(--cascivo-color-foreground, #18181b) 60%, transparent);
+  color: var(--cascivo-color-text-muted);
   white-space: nowrap;
 }
 
 .done {
-  color: #15803d;
+  color: var(--sh-accent-hover);
   white-space: nowrap;
 }
 
 .error {
-  color: #b91c1c;
+  color: var(--cascivo-color-destructive);
   white-space: nowrap;
 }
