@@ -1,0 +1,76 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cascivo-space-2);
+  min-height: var(--cascivo-control-height-md);
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius-control);
+  font: inherit;
+  font-size: var(--cascivo-text-xs);
+  font-weight: var(--cascivo-font-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--cascivo-duration-150) var(--cascivo-ease-out),
+    border-color var(--cascivo-duration-150) var(--cascivo-ease-out),
+    color var(--cascivo-duration-150) var(--cascivo-ease-out);
+}
+
+.neutral {
+  background: var(--sh-chrome);
+  color: var(--cascivo-color-text);
+}
+
+@media (hover: hover) {
+  .neutral:hover {
+    background: var(--sh-accent-soft);
+    border-color: var(--sh-accent-line);
+  }
+}
+
+.primary {
+  background: var(--cascivo-color-primary);
+  border-color: var(--cascivo-color-primary);
+  color: var(--cascivo-color-primary-fg);
+}
+
+@media (hover: hover) {
+  .primary:hover {
+    background: var(--cascivo-color-primary-hover);
+    border-color: var(--cascivo-color-primary-hover);
+  }
+}
+
+/* The square icon shape the install cards use. Sized to the compact control
+   height so it sits flush beside a one-line command. */
+.iconOnly {
+  width: 2rem;
+  min-width: 2rem;
+  height: 2rem;
+  min-height: 2rem;
+  padding: 0;
+  flex: none;
+  font-size: 0.9375rem;
+  background: var(--cascivo-color-surface);
+  color: var(--cascivo-color-text-subtle);
+}
+
+@media (hover: hover) {
+  .iconOnly:hover {
+    background: var(--sh-accent-soft);
+    border-color: var(--sh-accent-line);
+    color: var(--sh-accent-hover);
+  }
+}
+
+.button[data-state="copied"] {
+  color: var(--sh-accent-hover);
+  border-color: var(--sh-accent-line);
+  background: var(--sh-accent-soft);
+}
+
+.label {
+  display: inline-block;
+}

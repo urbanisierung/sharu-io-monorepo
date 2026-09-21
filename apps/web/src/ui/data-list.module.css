@@ -1,0 +1,65 @@
+.list {
+  margin: 0;
+  font-family: var(--cascivo-font-sans);
+  color: var(--cascivo-color-text);
+  line-height: var(--cascivo-leading-normal);
+}
+
+.row {
+  padding-block: var(--cascivo-space-4);
+  min-width: 0;
+}
+
+/* A trailing control (a copy button) sits beside the pair, never under it, so
+   the rows of a device's identity stay aligned down the card. */
+.rowWithAction {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--cascivo-space-4);
+  align-items: start;
+}
+
+.pair {
+  display: grid;
+  min-width: 0;
+}
+
+.list[data-orientation="horizontal"] .pair {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--cascivo-space-4);
+  align-items: baseline;
+}
+
+.list[data-orientation="vertical"] .pair {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--cascivo-space-1);
+}
+
+.list[data-dividers] .row {
+  border-top: 1px solid var(--sh-divider);
+}
+
+.term {
+  margin: 0;
+  font-size: var(--cascivo-text-xs);
+  font-weight: var(--cascivo-font-semibold);
+  color: var(--cascivo-color-text-muted);
+}
+
+/* Technical values — a signing id, a transport address, a relay URL — are what a
+   machine produced, so they take the mono voice and break anywhere rather than
+   forcing the card wider than its column. */
+.detail {
+  margin: 0;
+  min-width: 0;
+  font-family: var(--cascivo-font-mono);
+  font-size: var(--cascivo-text-xs);
+  line-height: var(--cascivo-leading-normal);
+  word-break: break-all;
+  color: var(--cascivo-color-text);
+}
+
+.action {
+  display: flex;
+  align-items: center;
+}

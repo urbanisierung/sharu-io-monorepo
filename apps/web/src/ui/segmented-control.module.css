@@ -1,43 +1,40 @@
+/* A segmented control on a sunken track. The active option is a raised card-fill
+   block — never a coloured fill, which would compete with the primary action. */
 .group {
   display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  padding: 0.3rem;
+  gap: 2px;
+  padding: 3px;
   border: 1px solid var(--cascivo-color-border);
-  border-radius: 0.7rem;
-  background: var(--cascivo-color-surface);
+  border-radius: var(--cascivo-radius-control);
+  background: var(--sh-track);
 }
 
 .option {
+  position: relative;
   appearance: none;
   border: 0;
   background: transparent;
-  color: var(--cascivo-color-muted);
-  font-family: var(--safu-font-mono);
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 0.45rem 0.95rem;
-  border-radius: 0.5rem;
+  color: var(--cascivo-color-text-subtle);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: var(--cascivo-font-semibold);
+  letter-spacing: 0.03em;
+  padding: 0.375rem 0.8125rem;
+  border-radius: var(--cascivo-radius-control);
   cursor: pointer;
   transition:
-    color var(--dur-micro, 120ms) var(--ease-out, ease),
-    background var(--dur-micro, 120ms) var(--ease-out, ease);
+    background-color var(--cascivo-duration-150) var(--cascivo-ease-out),
+    color var(--cascivo-duration-150) var(--cascivo-ease-out);
 }
 
 @media (hover: hover) {
   .option:hover {
-    color: var(--cascivo-color-foreground);
+    color: var(--cascivo-color-text);
   }
-}
-
-.option:focus-visible {
-  outline: 2px solid var(--cascivo-color-primary);
-  outline-offset: 2px;
 }
 
 .optionActive,
 .optionActive:hover {
-  color: var(--cascivo-color-primary-foreground);
-  background: linear-gradient(92deg, var(--cascivo-color-primary), var(--cascivo-color-accent-2));
+  color: var(--cascivo-color-text);
+  background: var(--cascivo-color-surface);
 }

@@ -1,0 +1,53 @@
+.stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--cascivo-space-3);
+  min-width: 0;
+  font-family: var(--cascivo-font-sans);
+}
+
+.value {
+  font-size: clamp(2.125rem, 4vw, 3.375rem);
+  font-weight: var(--cascivo-font-black);
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+  color: var(--cascivo-color-text);
+}
+
+.label {
+  font-family: var(--cascivo-font-mono);
+  font-size: 0.6875rem;
+  font-weight: var(--cascivo-font-normal);
+  letter-spacing: var(--cascivo-tracking-label);
+  text-transform: uppercase;
+  line-height: var(--cascivo-leading-snug);
+  color: var(--cascivo-color-text-muted);
+}
+
+/* The hero's three panels: highlight, cream, ink. Only the panel fill changes —
+   the type is identical in all three, which is what makes the stack read as one
+   ruled column rather than three badges. */
+.stat[data-tone="mark"] {
+  background: var(--sh-mark);
+}
+
+.stat[data-tone="mark"] .label {
+  color: var(--sh-caution-ink);
+}
+
+.stat[data-tone="chrome"] {
+  background: var(--sh-chrome);
+}
+
+.stat[data-tone="ink"] {
+  background: var(--sh-ink);
+}
+
+.stat[data-tone="ink"] .value {
+  color: var(--sh-chrome);
+}
+
+.stat[data-tone="ink"] .label {
+  color: var(--sh-faint);
+}

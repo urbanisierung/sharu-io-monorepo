@@ -1,550 +1,565 @@
-/* Hallmark · genre: atmospheric · macrostructure: Narrative Workflow · theme: cyberpunk (kept) · enrichment: none · nav: N9 edge-aligned · footer: Ft5 statement
- * F4 step knobs: numbering=01/02/03 · layout=vertical · connector=glowing rail
- * tone: technical/cyberpunk · anchor hue: cyan (~190) primary + magenta (~330) secondary
- * pre-emit critique: P5 H5 E5 S5 R4 V5 */
+/* The marketing page: a full-bleed block grid on cream paper, 1220px of content
+   with 36px gutters.
+ *
+ * The structural rule of the page is a 1px ink hairline. Every card group is one
+ * bordered container whose CELLS draw their own right and bottom borders — the
+ * container never uses `gap` over an inked background, because an auto-fit row
+ * that does not fill would then expose that background as a black slab, and
+ * negative cell margins make the next sibling paint over the preceding border.
+ * The doubled line at the container edge is intentional and invisible at 1px. */
 
 .page {
-  max-width: 64rem;
-  margin: 0 auto;
-  padding-inline: clamp(1rem, 4vw, 2rem);
-  padding-bottom: var(--space-4xl);
+  background: var(--sh-ground);
 }
 
-/* One page-load orchestration: sections fade up, staggered by DOM index. */
-.reveal {
-  opacity: 0;
-  transform: translateY(10px);
-  animation: landing-reveal var(--dur-long) var(--ease-out) forwards;
-  animation-delay: calc(var(--i, 0) * 70ms);
-}
-
-@keyframes landing-reveal {
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-/* ---- Nav · N9 edge-aligned: wordmark hard-left, one CTA hard-right --------- */
-
-.nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
-  padding-block: var(--space-lg);
-}
-
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
-.brandLogo {
-  height: 1.9rem;
-  width: auto;
-  filter: drop-shadow(0 0 0.5rem rgba(0, 234, 255, 0.45));
-}
-
-.wordmark {
-  margin: 0;
-  font-family: var(--safu-font-mono);
-  font-size: var(--text-md);
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  color: var(--cascivo-color-primary);
-  text-shadow: var(--cascivo-glow-cyan);
-  /* Faulty-neon flicker (keyframes in theme.css) — the brand's signature. */
-  animation: safu-flicker 6s linear infinite;
-}
-
-/* ---- Hero · H1 marquee, left-bias ----------------------------------------- */
+/* ---- Hero ----------------------------------------------------------------
+   Two columns, 1.5fr / 0.75fr. The right column is three equal stat rows. */
 
 .hero {
+  border-bottom: 1px solid var(--sh-rule);
+}
+
+.heroGrid {
   display: grid;
-  justify-items: start;
-  gap: var(--space-lg);
-  max-width: 52rem;
-  padding-block: clamp(3rem, 8vw, 6rem) var(--space-3xl);
+  grid-template-columns: minmax(0, 1.5fr) minmax(290px, 0.75fr);
 }
 
-.badge {
-  font-family: var(--safu-font-mono);
-  font-size: var(--text-sm);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--cascivo-color-primary);
-  border: 1px solid var(--cascivo-color-border);
-  border-radius: 999px;
-  padding: 0.35rem 0.85rem;
-  background: rgba(0, 234, 255, 0.05);
-}
-
-.heroTitle {
-  margin: 0;
-  font-size: var(--text-display);
-  line-height: 1.04;
-  letter-spacing: -0.025em;
-  font-weight: 800;
-  color: var(--cascivo-color-foreground);
-  overflow-wrap: anywhere;
+.heroMain {
+  padding: 4.25rem var(--sh-page-gutter) 4.5rem;
+  border-right: 1px solid var(--sh-rule);
+  background: radial-gradient(110% 80% at 15% 0%, var(--sh-chrome) 0%, #f1ede2 65%);
   min-width: 0;
 }
 
-/* Three declaratives, one per line — a deliberate staccato, never a lucky wrap. */
+.heroTitle {
+  margin: 0 0 1.625rem;
+  font-size: var(--cascivo-text-display);
+  line-height: 0.93;
+  font-weight: var(--cascivo-font-black);
+  letter-spacing: var(--cascivo-tracking-display);
+  color: var(--cascivo-color-text);
+  max-width: 15ch;
+}
+
+/* Each declarative gets its own line. The break is authored, never a lucky wrap. */
 .heroLine {
   display: block;
 }
 
-/* The payoff line lands in neon cyan (emphasis via colour, not gradient). */
-.heroLineAccent {
-  color: var(--cascivo-color-primary);
-  text-shadow: 0 0 1.4rem rgba(0, 234, 255, 0.35);
+/* The highlight must stay one rect across the whole line, so the span is inline
+   and clones its decoration if it ever does break. */
+.mark {
+  background: var(--sh-mark);
+  padding: 0 0.08em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 .heroLede {
-  margin: 0;
-  max-width: 58ch;
-  font-size: var(--text-md);
-  line-height: 1.6;
-  color: var(--cascivo-color-muted);
+  margin: 0 0 2.125rem;
+  max-width: 62ch;
+  font-size: 1.125rem;
+  line-height: var(--cascivo-leading-relaxed);
+  color: var(--cascivo-color-text-subtle);
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-sm);
-  margin-top: var(--space-2xs);
+  gap: 0.75rem;
+  margin-bottom: 2.125rem;
 }
 
-/* Tertiary links, in their own row beneath the action buttons. */
+/* The anchor wearing the secondary button's chrome still needs its link styles
+   neutralised — the global `a` rules would otherwise tint and underline it. */
+.actions a {
+  color: var(--cascivo-color-text);
+  text-decoration: none;
+}
+
 .heroLinks {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-md);
-  margin-top: var(--space-xs);
+  gap: 0.5rem 1.5rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--sh-rule);
+  max-width: 640px;
 }
 
-/* Outlined chip (secondary action). */
-.ghost {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 2.75rem;
-  padding: 0.5rem 1rem;
-  font: inherit;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-  color: var(--cascivo-color-primary);
-  background: transparent;
-  border: 1px solid var(--cascivo-color-border);
-  border-radius: var(--cascivo-radius);
-  cursor: pointer;
-  transition:
-    border-color var(--dur-micro) var(--ease-out),
-    color var(--dur-micro) var(--ease-out);
-}
-
-@media (hover: hover) {
-  .ghost:hover {
-    border-color: var(--cascivo-color-primary);
-  }
-}
-
-.ghost:focus-visible {
-  outline: 2px solid var(--cascivo-color-primary);
-  outline-offset: 2px;
-}
-
-/* Typographic link (tertiary action). */
 .textLink {
-  position: relative;
   display: inline-flex;
   align-items: center;
-  min-height: 2.75rem;
-  padding: 0.5rem 0.25rem;
+  min-height: var(--cascivo-control-height-md);
+  padding: 0;
   font: inherit;
-  font-weight: 600;
+  font-size: var(--cascivo-text-sm);
+  font-weight: var(--cascivo-font-semibold);
   white-space: nowrap;
-  color: var(--cascivo-color-foreground);
+  color: var(--cascivo-color-accent);
   background: none;
   border: 0;
-  border-radius: 2px;
   cursor: pointer;
 }
 
-.textLink::after {
-  content: "";
-  position: absolute;
-  left: 0.25rem;
-  right: 0.25rem;
-  bottom: 0.55rem;
-  height: 1px;
-  background: currentColor;
-  opacity: 0.4;
-  transition: opacity var(--dur-micro) var(--ease-out);
-}
-
 @media (hover: hover) {
-  .textLink:hover::after {
-    opacity: 1;
+  .textLink:hover {
+    color: var(--sh-accent-press);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 }
 
-.textLink:focus-visible {
-  outline: 2px solid var(--cascivo-color-primary);
-  outline-offset: 2px;
+.heroStats {
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  min-width: 0;
 }
 
-/* ---- Section scaffolding --------------------------------------------------- */
+.heroStat {
+  min-height: 150px;
+  padding: 1.625rem 1.5rem;
+  border-bottom: 1px solid var(--sh-rule);
+}
+
+.heroStat:last-child {
+  border-bottom: 0;
+}
+
+/* ---- Label band ----------------------------------------------------------
+   One flush row of seven cells, one per principle. Fixed tracks: it must never
+   wrap and never scroll, so a long term truncates inside its own cell. */
+
+.band {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  background: var(--sh-chrome);
+  border-bottom: 1px solid var(--sh-rule);
+}
+
+.bandCell {
+  padding: 0.9375rem 0.75rem;
+  border-right: 1px solid var(--cascivo-color-border);
+  font-family: var(--cascivo-font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--cascivo-color-text-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bandCell:last-child {
+  border-right: 0;
+}
+
+/* ---- Section scaffolding -------------------------------------------------- */
 
 .section {
-  padding-block: var(--space-3xl) 0;
+  max-width: var(--sh-page-width);
+  margin: 0 auto;
+  padding: 5.5rem var(--sh-page-gutter) 0;
 }
 
 .kicker {
-  margin: 0 0 var(--space-sm);
-  font-family: var(--safu-font-mono);
+  margin: 0 0 1.125rem;
+  font-family: var(--cascivo-font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-size: var(--text-sm);
-  color: var(--cascivo-color-accent);
+  color: var(--cascivo-color-text-muted);
 }
 
 .sectionTitle {
-  margin: 0 0 var(--space-xl);
+  margin: 0 0 2.5rem;
   max-width: 24ch;
-  font-size: var(--text-2xl);
-  line-height: 1.15;
-  letter-spacing: -0.015em;
-  font-weight: 700;
-  color: var(--cascivo-color-foreground);
-  overflow-wrap: anywhere;
-  min-width: 0;
+  font-size: var(--cascivo-text-3xl);
+  line-height: 1.04;
+  font-weight: var(--cascivo-font-black);
+  letter-spacing: var(--cascivo-tracking-tight);
+  color: var(--cascivo-color-text);
 }
 
-/* ---- The problem · stacked list, magenta diamond markers (no cards) -------- */
+/* ---- Ruled grids ---------------------------------------------------------
+   One bordered container; each cell draws its own right and bottom rule. See
+   the note at the top of this file for why there is no `gap` here. */
 
-.problems {
+.ruled {
   display: grid;
-  gap: var(--space-lg);
-  max-width: 58rem;
-}
-
-.problem {
-  display: grid;
-  gap: var(--space-2xs);
-  padding-top: var(--space-lg);
-  border-top: 1px solid var(--cascivo-color-border);
-  min-width: 0;
-}
-
-.problemTitle {
-  display: flex;
-  align-items: baseline;
-  gap: 0.7rem;
-  margin: 0;
-  font-size: var(--text-md);
-  font-weight: 700;
-  color: var(--cascivo-color-foreground);
-}
-
-.problemTitle::before {
-  content: "";
-  flex: none;
-  width: 0.5rem;
-  height: 0.5rem;
-  transform: rotate(45deg) translateY(-0.1rem);
-  background: var(--cascivo-color-accent);
-  box-shadow: var(--cascivo-glow-magenta);
-}
-
-.problemBody {
-  margin: 0;
-  max-width: 64ch;
-  line-height: 1.6;
-  color: var(--cascivo-color-muted);
-}
-
-/* ---- The pipeline · F4 step sequence on a glowing cyan→magenta rail -------- */
-
-.pipeline {
-  position: relative;
-  list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  gap: var(--space-2xl);
+  list-style: none;
+  background: var(--sh-chrome);
+  border: 1px solid var(--sh-rule);
 }
 
-/* The data flowing through the encrypted pipeline: a vertical rail behind the
-   stage nodes, lit cyan at the top, magenta at the foot. */
-.pipeline::before {
-  content: "";
-  position: absolute;
-  left: 1.5rem;
-  margin-left: -1px;
-  top: var(--space-lg);
-  bottom: var(--space-2xl);
-  width: 2px;
-  background: linear-gradient(180deg, var(--cascivo-color-primary), var(--cascivo-color-accent));
-  opacity: 0.4;
+.ruled[data-cols="auto"] {
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
 }
 
-.stage {
-  position: relative;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--space-lg);
-  align-items: start;
+.ruled[data-cols="two"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.stageNum {
-  display: grid;
-  place-items: center;
-  width: 3rem;
-  height: 3rem;
-  font-family: var(--safu-font-mono);
-  font-size: var(--text-md);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--cascivo-color-primary);
+.ruled[data-cols="install"] {
+  grid-template-columns: repeat(auto-fit, minmax(min(460px, 100%), 1fr));
+}
+
+.cell {
+  padding: 1.625rem;
   background: var(--cascivo-color-surface);
-  border: 1px solid var(--cascivo-color-primary);
-  border-radius: var(--cascivo-radius);
-  box-shadow: var(--cascivo-glow-cyan);
-}
-
-.stageBody {
-  display: grid;
-  gap: var(--space-xs);
-  padding-top: var(--space-2xs);
+  border-right: 1px solid var(--sh-rule);
+  border-bottom: 1px solid var(--sh-rule);
   min-width: 0;
 }
 
-.stageTitle {
-  margin: 0;
-  font-size: var(--text-lg);
-  font-weight: 700;
-  color: var(--cascivo-color-foreground);
+.cellTitle {
+  margin: 0 0 0.5625rem;
+  font-size: var(--cascivo-text-xl);
+  font-weight: var(--cascivo-font-bold);
+  letter-spacing: var(--cascivo-tracking-normal);
+  color: var(--cascivo-color-text);
 }
 
-.stageText {
+.cellBody {
   margin: 0;
-  max-width: 58ch;
-  line-height: 1.6;
-  color: var(--cascivo-color-muted);
-  overflow-wrap: anywhere;
+  font-size: var(--cascivo-text-base);
+  line-height: var(--cascivo-leading-relaxed);
+  color: var(--cascivo-color-text-subtle);
 }
 
-/* ---- Guarantees · F3 tabular spec sheet ----------------------------------- */
+/* The problem cells carry the caution tile — these are the costs of the status
+   quo, so they take the caution palette rather than the accent. */
+.cautionTile {
+  display: grid;
+  place-items: center;
+  width: 2.375rem;
+  height: 2.375rem;
+  margin-bottom: 1.125rem;
+  font-size: 1.1875rem;
+  background: var(--sh-caution-bg);
+  border: 1px solid var(--sh-caution-line);
+  color: var(--sh-caution-icon);
+}
+
+/* Step numerals sit in accent squares, with a rule running out to the cell edge. */
+.stepHead {
+  display: flex;
+  align-items: center;
+  gap: 0.6875rem;
+  margin-bottom: 1rem;
+}
+
+.stepNum {
+  display: grid;
+  place-items: center;
+  width: 2.125rem;
+  height: 2.125rem;
+  flex: none;
+  background: var(--cascivo-color-accent);
+  color: var(--cascivo-color-primary-fg);
+  font-family: var(--cascivo-font-mono);
+  font-size: var(--cascivo-text-xs);
+  font-weight: var(--cascivo-font-medium);
+}
+
+.stepRule {
+  height: 1px;
+  flex: 1;
+  background: var(--sh-divider);
+}
+
+/* ---- Principles · two-column ruled table --------------------------------- */
 
 .guarantees {
-  display: grid;
   margin: 0;
-  max-width: 58rem;
+  background: var(--cascivo-color-surface);
+  border: 1px solid var(--sh-rule);
 }
 
 .guarantee {
   display: grid;
-  grid-template-columns: 13rem 1fr;
-  gap: var(--space-lg);
-  padding-block: var(--space-lg);
+  grid-template-columns: minmax(150px, 240px) minmax(0, 1fr);
   border-top: 1px solid var(--cascivo-color-border);
-  align-items: baseline;
 }
 
-.guarantee:last-child {
-  border-bottom: 1px solid var(--cascivo-color-border);
+.guarantee:first-child {
+  border-top: 0;
 }
 
 .guaranteeTerm {
   margin: 0;
-  font-family: var(--safu-font-mono);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--cascivo-color-primary);
+  padding: 1.375rem 1.625rem;
+  font-size: var(--cascivo-text-lg);
+  font-weight: var(--cascivo-font-bold);
+  letter-spacing: var(--cascivo-tracking-normal);
+  border-right: 1px solid var(--cascivo-color-border);
 }
 
 .guaranteeDef {
   margin: 0;
-  max-width: 60ch;
-  line-height: 1.6;
-  color: var(--cascivo-color-muted);
-  min-width: 0;
+  padding: 1.375rem 1.625rem;
+  max-width: 68ch;
+  font-size: var(--cascivo-text-base);
+  line-height: var(--cascivo-leading-relaxed);
+  color: var(--cascivo-color-text-subtle);
 }
 
-/* ---- Backup node · one-line install commands ------------------------------ */
+/* ---- Backup node · install cards ----------------------------------------- */
 
 .cliLede {
-  margin: 0 0 var(--space-xl);
-  max-width: 64ch;
-  line-height: 1.6;
-  color: var(--cascivo-color-muted);
+  margin: 0 0 2.125rem;
+  max-width: 66ch;
+  font-size: 1.0625rem;
+  line-height: var(--cascivo-leading-relaxed);
+  color: var(--cascivo-color-text-subtle);
 }
 
-.cliCommands {
-  display: grid;
-  gap: var(--space-lg);
-  max-width: 58rem;
-}
-
-.cliCommand {
-  display: grid;
-  gap: var(--space-xs);
-  min-width: 0;
-}
-
-.cliLabel {
-  font-family: var(--safu-font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-size: var(--text-sm);
-  color: var(--cascivo-color-accent);
-}
-
-.cliCode {
-  display: block;
-  padding: var(--space-md) var(--space-lg);
-  font-family: var(--safu-font-mono);
-  font-size: var(--text-sm);
-  line-height: 1.5;
-  color: var(--cascivo-color-foreground);
+.installCell {
+  padding: 1.125rem 1.25rem;
   background: var(--cascivo-color-surface);
-  border: 1px solid var(--cascivo-color-border);
-  border-radius: var(--cascivo-radius);
-  overflow-x: auto;
-  white-space: pre;
-}
-
-/* ---- Closing statement · Ft5 + final CTA ---------------------------------- */
-
-.cta {
-  display: grid;
-  justify-items: start;
-  gap: var(--space-lg);
-  max-width: 40rem;
-  padding-block: var(--space-4xl) var(--space-2xl);
-}
-
-.ctaTitle {
-  margin: 0;
-  max-width: 14ch;
-  font-size: var(--text-display-s);
-  line-height: 1.08;
-  letter-spacing: -0.02em;
-  font-weight: 800;
-  color: var(--cascivo-color-foreground);
-  overflow-wrap: anywhere;
+  border-right: 1px solid var(--sh-rule);
   min-width: 0;
 }
 
-.ctaBody {
-  margin: 0;
-  max-width: 50ch;
-  line-height: 1.6;
-  color: var(--cascivo-color-muted);
+.installLabel {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-family: var(--cascivo-font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: var(--cascivo-tracking-label);
+  text-transform: uppercase;
+  color: var(--cascivo-color-text-muted);
+}
+
+.command {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.875rem;
+  background: var(--sh-ground);
+  border: 1px solid var(--sh-divider);
+}
+
+/* The command wraps; it never clips and never scrolls horizontally, because the
+   surrounding copy invites the reader to read it before running it. */
+.commandText {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--cascivo-font-mono);
+  font-size: var(--cascivo-text-xs);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.cliFoot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.125rem;
+  margin-top: 1.375rem;
 }
 
 .cliVerify {
-  margin: var(--space-md) 0 0;
+  margin: 0;
   max-width: 64ch;
-  line-height: 1.6;
-  font-size: var(--text-sm);
-  color: var(--cascivo-color-muted);
+  font-size: var(--cascivo-text-base);
+  line-height: var(--cascivo-leading-relaxed);
+  color: var(--cascivo-color-text-subtle);
 }
 
+/* ---- Close · full-bleed accent block ------------------------------------- */
+
+.close {
+  margin-top: 5.5rem;
+  border-top: 1px solid var(--sh-rule);
+  border-bottom: 1px solid var(--sh-rule);
+  background: var(--cascivo-color-accent);
+}
+
+.closeInner {
+  max-width: var(--sh-page-width);
+  margin: 0 auto;
+  padding: clamp(2.75rem, 6vw, 5.25rem) var(--sh-page-gutter);
+}
+
+.closeTitle {
+  margin: 0 0 1rem;
+  max-width: 14ch;
+  font-size: clamp(2.375rem, 7vw, 4.875rem);
+  line-height: 0.95;
+  font-weight: var(--cascivo-font-black);
+  letter-spacing: var(--cascivo-tracking-display);
+  color: var(--sh-on-accent);
+}
+
+.closeBody {
+  margin: 0 0 1.875rem;
+  max-width: 48ch;
+  font-size: 1.125rem;
+  line-height: var(--cascivo-leading-relaxed);
+  color: var(--sh-on-accent-muted);
+}
+
+/* The one cream-on-accent action. Scoped under `.close` so it outranks the
+   secondary button's own single-class rule without reaching for !important. */
+.close .closeAction {
+  background: var(--sh-chrome);
+  border-color: var(--sh-chrome);
+  color: var(--sh-accent-hover);
+  font-weight: var(--cascivo-font-bold);
+}
+
+@media (hover: hover) {
+  .close .closeAction:hover {
+    background: var(--sh-mark);
+    border-color: var(--sh-mark);
+    color: var(--cascivo-color-text);
+  }
+}
+
+.close .closeAction:focus-visible {
+  outline-color: var(--sh-chrome);
+}
+
+/* ---- Footer --------------------------------------------------------------- */
+
 .footer {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-lg);
-  margin-top: var(--space-2xl);
-  padding-top: var(--space-2xl);
-  border-top: 1px solid var(--cascivo-color-border);
-  font-family: var(--safu-font-mono);
-  font-size: var(--text-sm);
-  color: var(--cascivo-color-muted);
+  max-width: var(--sh-page-width);
+  margin: 0 auto;
+  padding: 3.5rem var(--sh-page-gutter) 4rem;
 }
 
 .footerBrand {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-sm) var(--space-md);
+  gap: 0.875rem;
+  margin-bottom: 1.375rem;
+}
+
+.footerMark {
+  height: 1.5rem;
+  width: auto;
 }
 
 .footerWord {
-  letter-spacing: 0.16em;
-  color: var(--cascivo-color-foreground);
+  font-size: var(--cascivo-text-base);
+  font-weight: var(--cascivo-font-bold);
 }
 
-/* Footer link row: page links (buttons) + the external source link, all sharing
-   one row, wrapping on narrow screens, each a full touch target. */
+.footerTag {
+  font-size: var(--cascivo-text-base);
+  color: var(--cascivo-color-text-subtle);
+}
+
 .footerLinks {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-md);
+  flex-wrap: wrap;
+  gap: 0 1.375rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--cascivo-color-border);
 }
 
 .footerLink {
   display: inline-flex;
   align-items: center;
-  min-height: 2.75rem;
-  padding: 0.25rem 0;
+  min-height: var(--cascivo-control-height-md);
+  padding: 0;
   font: inherit;
-  color: var(--cascivo-color-muted);
+  font-size: var(--cascivo-text-sm);
+  color: var(--cascivo-color-text-subtle);
   background: none;
   border: 0;
-  border-radius: 2px;
   text-decoration: none;
   cursor: pointer;
-  transition: color var(--dur-micro) var(--ease-out);
 }
 
 @media (hover: hover) {
   .footerLink:hover {
-    color: var(--cascivo-color-foreground);
+    color: var(--cascivo-color-text);
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
-}
-
-.footerLink:focus-visible {
-  outline: 2px solid var(--cascivo-color-primary);
-  outline-offset: 2px;
 }
 
 .footerRights {
-  color: var(--cascivo-color-muted);
+  margin-left: auto;
+  font-size: var(--cascivo-text-sm);
+  color: var(--sh-faint);
 }
 
-/* ---- Mobile: collapse the spec sheet, shrink the rail --------------------- */
+/* ---- Narrow screens -------------------------------------------------------
+   The hero drops to one column and the stats become a row of three; the label
+   band is the one grid that keeps its seven tracks, shrinking its type instead,
+   because a wrapped or scrolled band stops reading as a single flush row. */
 
-@media (max-width: 40rem) {
+@media (max-width: 60rem) {
+  .heroGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .heroMain {
+    border-right: 0;
+    border-bottom: 1px solid var(--sh-rule);
+  }
+
+  .heroStats {
+    grid-template-rows: none;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .heroStat {
+    min-height: 120px;
+    border-bottom: 0;
+    border-right: 1px solid var(--sh-rule);
+  }
+
+  .heroStat:last-child {
+    border-right: 0;
+  }
+
   .guarantee {
-    grid-template-columns: 1fr;
-    gap: var(--space-2xs);
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .stageNum {
-    width: 2.5rem;
-    height: 2.5rem;
+  .guaranteeTerm {
+    padding-bottom: 0;
+    border-right: 0;
   }
 
-  .pipeline::before {
-    left: 1.25rem;
+  .guaranteeDef {
+    padding-top: 0.5rem;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .reveal {
-    animation: landing-reveal 150ms linear forwards;
+@media (max-width: 34rem) {
+  /* The fixed 2x2 keeps the four steps filling their rows; at phone width one
+     column of four does the same and stops each cell from becoming a gutter.
+     (The design was not reviewed below 600px — see the handoff's open items.) */
+  .ruled[data-cols="two"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 48rem) {
+  .bandCell {
+    padding: 0.75rem 0.375rem;
+    font-size: 0.5rem;
+    letter-spacing: 0.04em;
   }
 
-  .wordmark {
-    animation: none;
+  .heroStats {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: 1fr;
+  }
+
+  .heroStat {
+    border-right: 0;
+    border-bottom: 1px solid var(--sh-rule);
   }
 }

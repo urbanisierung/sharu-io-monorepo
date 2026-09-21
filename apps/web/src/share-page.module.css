@@ -74,15 +74,18 @@
   margin-left: auto;
   padding: 0.45rem 0.9rem;
   font-weight: 600;
-  color: var(--cascivo-color-primary-foreground);
+  min-height: var(--cascivo-control-height-md);
+  display: inline-flex;
+  align-items: center;
+  color: var(--cascivo-color-primary-fg);
   text-decoration: none;
   background: var(--cascivo-color-primary);
-  border-radius: var(--cascivo-radius);
+  border-radius: var(--cascivo-radius-control);
 }
 
 .media {
   max-width: 100%;
-  border-radius: 0.5rem;
+  border-radius: var(--cascivo-radius-surface);
 }
 
 /* Flexible preview height: at least a usable band, never taller than the
@@ -91,7 +94,7 @@
   width: 100%;
   height: clamp(20rem, 80vh, 60rem);
   border: 1px solid var(--cascivo-color-border);
-  border-radius: 0.5rem;
+  border-radius: var(--cascivo-radius-surface);
 }
 
 .text {
@@ -103,7 +106,7 @@
   color: var(--cascivo-color-foreground);
   background: var(--cascivo-color-surface);
   border: 1px solid var(--cascivo-color-border);
-  border-radius: 0.5rem;
+  border-radius: var(--cascivo-radius-surface);
 }
 
 .note {

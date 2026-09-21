@@ -1,17 +1,19 @@
-// The password screen — the highest-stakes moment in the app — as a centered,
-// professional card. Three shades of one component: create a new wallet (name +
-// password + confirm, with the no-reset warning and a recovery download), unlock
-// a known wallet ("welcome back"), and the pairing variant ("link this device",
-// shown when the user arrived via a device-link URL). Signal-driven, no React
-// hooks; all copy via @cascivo/i18n. It only collects + validates input and
-// hands the password (and, when creating, the name) to `onSubmit`.
+// The password screen — the highest-stakes moment in the app — as the design's
+// centred column on a soft radial ground. Three shades of one component: create
+// a new wallet (name + password + confirm, with the no-reset warning and a
+// recovery download), unlock a known wallet ("welcome back"), and the pairing
+// variant ("link this device", shown when the user arrived via a device-link
+// URL). Signal-driven, no React hooks; all copy via @cascivo/i18n. It only
+// collects + validates input and hands the password (and, when creating, the
+// name) to `onSubmit`.
 
 import { signal } from '@preact/signals';
 import styles from './auth.module.css';
-import { messages } from './messages.js';
+import { landing, messages } from './messages.js';
 import { tr as t } from './reading-mode.js';
 import { saveRecoverySheet } from './recovery.js';
 import { Button } from './ui/button.js';
+import { Input } from './ui/input.js';
 
 const MIN_LENGTH = 8;
 
@@ -105,38 +107,34 @@ export function UnlockGate({ mode, walletName, pairing, onSubmit, onBack }: Unlo
 
   return (
     <section class={styles.screen} ref={clearOnUnmount}>
-      <div class={styles.card}>
+      <div class={styles.column}>
         <div class={styles.brand}>
           <img class={styles.logo} src="/logo.png" alt={t(messages.logoAlt)} />
-          <h1 class={styles.title}>{t(title)}</h1>
-          {!creating && walletName && <span class={styles.walletChip}>{walletName}</span>}
-          <p class={styles.subtitle}>{t(subtitle)}</p>
+          <span class={styles.wordmark}>{t(landing.brand)}</span>
         </div>
 
-        <div class={styles.form}>
-          {creating && (
-            <label class={styles.field}>
-              <span class={styles.label}>{t(messages.walletNameLabel)}</span>
-              <input
-                class={styles.input}
-                ref={creating ? focusOnMount : undefined}
-                aria-label={t(messages.walletNameLabel)}
+        <h1 class={styles.title}>{t(title)}</h1>
+        {!creating && walletName && <span class={styles.walletChip}>{walletName}</span>}
+        <p class={styles.subtitle}>{t(subtitle)}</p>
+
+        <div class={styles.card}>
+          <div class={styles.form}>
+            {creating && (
+              <Input
+                inputRef={creating ? focusOnMount : undefined}
+                label={t(messages.walletNameLabel)}
                 placeholder={t(messages.walletNamePlaceholder)}
                 value={name.value}
                 onInput={(event) => {
                   name.value = (event.target as HTMLInputElement).value;
                 }}
               />
-            </label>
-          )}
+            )}
 
-          <label class={styles.field}>
-            <span class={styles.label}>{t(messages.passwordLabel)}</span>
-            <input
-              class={styles.input}
-              ref={creating ? undefined : focusOnMount}
+            <Input
+              inputRef={creating ? undefined : focusOnMount}
               type={reveal.value ? 'text' : 'password'}
-              aria-label={t(messages.passwordLabel)}
+              label={t(messages.passwordLabel)}
               placeholder={t(messages.passwordLabel)}
               value={password.value}
               onInput={(event) => {
@@ -147,15 +145,11 @@ export function UnlockGate({ mode, walletName, pairing, onSubmit, onBack }: Unlo
                 if (event.key === 'Enter' && !creating) void submit();
               }}
             />
-          </label>
 
-          {creating && (
-            <label class={styles.field}>
-              <span class={styles.label}>{t(messages.passwordConfirmLabel)}</span>
-              <input
-                class={styles.input}
+            {creating && (
+              <Input
                 type={reveal.value ? 'text' : 'password'}
-                aria-label={t(messages.passwordConfirmLabel)}
+                label={t(messages.passwordConfirmLabel)}
                 placeholder={t(messages.passwordConfirmLabel)}
                 value={confirm.value}
                 onInput={(event) => {
@@ -163,45 +157,47 @@ export function UnlockGate({ mode, walletName, pairing, onSubmit, onBack }: Unlo
                   error.value = null;
                 }}
               />
+            )}
+
+            <label class={styles.revealRow}>
+              <input
+                type="checkbox"
+                checked={reveal.value}
+                onChange={(event) => {
+                  reveal.value = (event.target as HTMLInputElement).checked;
+                }}
+              />
+              {reveal.value ? t(messages.hidePassword) : t(messages.showPassword)}
             </label>
-          )}
+          </div>
 
-          <label class={styles.revealRow}>
-            <input
-              type="checkbox"
-              checked={reveal.value}
-              onChange={(event) => {
-                reveal.value = (event.target as HTMLInputElement).checked;
-              }}
-            />
-            {reveal.value ? t(messages.hidePassword) : t(messages.showPassword)}
-          </label>
-        </div>
+          {error.value && <p class={styles.error}>{error.value}</p>}
 
-        {error.value && <p class={styles.error}>{error.value}</p>}
+          {creating && <p class={styles.notice}>{t(messages.passwordWarning)}</p>}
 
-        {creating && <p class={styles.notice}>{t(messages.passwordWarning)}</p>}
-
-        <div class={styles.actions}>
-          <Button intent="primary" onClick={() => void submit()}>
-            {busy.value
-              ? t(messages.unlocking)
-              : creating
-                ? t(messages.create)
-                : t(messages.unlock)}
-          </Button>
-
-          {creating && ready && (
-            <Button intent="neutral" onClick={() => saveRecoverySheet(password.value)}>
-              {t(messages.saveRecovery)}
+          <div class={styles.actions}>
+            <Button intent="primary" onClick={() => void submit()}>
+              {busy.value
+                ? t(messages.unlocking)
+                : creating
+                  ? t(messages.create)
+                  : t(messages.unlock)}
             </Button>
-          )}
+
+            {creating && ready && (
+              <Button intent="neutral" onClick={() => saveRecoverySheet(password.value)}>
+                {t(messages.saveRecovery)}
+              </Button>
+            )}
+          </div>
         </div>
 
         {onBack && (
-          <button type="button" class={styles.link} onClick={onBack}>
-            {t(messages.useAnotherWallet)}
-          </button>
+          <p class={styles.footNote}>
+            <button type="button" class={styles.link} onClick={onBack}>
+              {t(messages.useAnotherWallet)}
+            </button>
+          </p>
         )}
       </div>
     </section>

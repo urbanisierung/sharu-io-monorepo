@@ -1,45 +1,281 @@
-/* Cyberpunk theme for Sharu, driven entirely by `--cascivo-*` tokens (plan §0).
- * Neon cyan / magenta on deep space-black, monospace accents, subtle glow.
- * No web fonts: local-first means no runtime dependency on a font CDN. */
+/* Sharu theme — the cascivo direction (design handoff, 21 Sep 2026).
+ *
+ * Cream paper ground, ink hairlines, one deep-green accent, zero radius and no
+ * elevation: separation is a 1px border, never a shadow. It supersedes the
+ * previous cyberpunk theme, whose neon-on-black vocabulary read as a crypto
+ * product rather than as custody of personal files.
+ *
+ * Every value lives here, in one token layer, driven by the `--cascivo-*` names
+ * the design system mandates (plan §0). The handoff's own `--sh-*` names are the
+ * source of truth for the four repeating brand values and are lifted in verbatim,
+ * so a value can be traced from the brief to the screen without a lookup table.
+ *
+ * Fonts are self-hosted (public/fonts): a local-first product must render
+ * offline, so no CDN is in the critical path. Both faces are variable, so one
+ * file per family per unicode range covers every weight the design uses.
+ */
+
+/* Archivo — display + UI. Variable 400–800 in a single file. */
+@font-face {
+  font-family: Archivo;
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/fonts/archivo-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: Archivo;
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/fonts/archivo-latin-ext.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0,
+    U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* JetBrains Mono — machine-produced values and small uppercase labels only. */
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-latin-ext.woff2") format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0,
+    U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 :root {
-  --cascivo-radius: 0.375rem;
+  /* ── Brand values, verbatim from the design handoff ──────────────────────── */
+  --sh-accent: #226b5e;
+  --sh-accent-hover: #1b594e;
+  --sh-accent-press: #164c42;
+  --sh-accent-soft: #e7f0ec;
+  --sh-accent-line: #c3dbd3;
+  --sh-mark: #f6ebb0;
 
-  /* Surfaces */
-  --cascivo-color-bg: #07070f;
-  --cascivo-color-surface: #11111f;
-  --cascivo-color-surface-2: #181830;
-  --cascivo-color-foreground: #e6f1ff;
-  --cascivo-color-muted: #8a93b2;
-  --cascivo-color-border: #2a2a4a;
+  /* Paper. Ground → chrome → card, each one step lighter. */
+  --sh-ground: #f4f1e9;
+  --sh-chrome: #fbf9f2;
+  --sh-card: #fffdf7;
+  --sh-track: #f0ece0;
 
-  /* Neon accents */
-  --cascivo-color-primary: #00eaff;
-  --cascivo-color-primary-hover: #5cf2ff;
-  --cascivo-color-primary-foreground: #04111a;
-  --cascivo-color-accent: #ff2bd6;
-  --cascivo-color-accent-2: #b15cff;
-  --cascivo-color-success: #36f9a0;
-  --cascivo-color-danger: #ff4d6d;
-  /* Legible amber for warnings — the old #b45309 fell to ~3.9:1 on the deep
-     background (below WCAG AA 4.5:1); this clears ~9:1. */
-  --cascivo-color-warning: #f0a850;
+  /* Ink and its two quieter voices. */
+  --sh-ink: #1a1a16;
+  --sh-body: #57544a;
+  --sh-muted: #837f70;
+  --sh-faint: #a9a495;
 
-  /* Glow */
-  --cascivo-glow-cyan: 0 0 0.6rem rgba(0, 234, 255, 0.55);
-  --cascivo-glow-magenta: 0 0 0.7rem rgba(255, 43, 214, 0.5);
+  /* Rules. The landing page's structural hairline is ink; app chrome is soft. */
+  --sh-rule: #1a1a16;
+  --sh-hairline: #e4decd;
+  --sh-divider: #ede7d8;
+  --sh-dashed: #d9d2bf;
 
-  --safu-font-mono:
-    ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", "JetBrains Mono", "Roboto Mono",
-    monospace;
-  --safu-font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Caution — the "no other devices yet" notice. Fill, border, text. */
+  --sh-caution-bg: #fdf6e3;
+  --sh-caution-line: #ebdfb8;
+  --sh-caution-ink: #5c4a16;
+  --sh-caution-icon: #8a6d1f;
 
-  /* Design-system scales (Hallmark redesign · Narrative Workflow). Motion,
-     spacing and type tokens the landing references by name — no raw values. */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
-  --dur-micro: 120ms;
-  --dur-short: 220ms;
-  --dur-long: 420ms;
+  /* On the accent block and the accent-soft block. */
+  --sh-on-accent: #fbf9f2;
+  --sh-on-accent-muted: #dce8e4;
+  --sh-on-accent-soft: #3c5c54;
+
+  --sh-online: #3e9a79;
+  --sh-danger: #a4302a;
+
+  /* ── cascivo semantic tokens ─────────────────────────────────────────────
+     The component layer only ever reads these names, so retheming the app is a
+     matter of repointing them. Surfaces first. */
+  --cascivo-color-background: var(--sh-ground);
+  --cascivo-color-bg: var(--sh-ground);
+  --cascivo-color-bg-subtle: var(--sh-chrome);
+  --cascivo-color-surface: var(--sh-card);
+  --cascivo-color-surface-2: var(--sh-chrome);
+  --cascivo-color-surface-raised: var(--sh-card);
+  --cascivo-color-surface-overlay: var(--sh-card);
+
+  --cascivo-color-border: var(--sh-hairline);
+  --cascivo-color-border-strong: var(--sh-rule);
+  --cascivo-border-subtle: var(--sh-divider);
+  --cascivo-border-default: var(--sh-hairline);
+  --cascivo-border-strong: var(--sh-rule);
+
+  /* Text. */
+  --cascivo-color-foreground: var(--sh-ink);
+  --cascivo-color-foreground-muted: var(--sh-body);
+  --cascivo-color-text: var(--sh-ink);
+  --cascivo-color-text-subtle: var(--sh-body);
+  --cascivo-color-text-muted: var(--sh-muted);
+  --cascivo-color-text-on-accent: var(--sh-on-accent);
+
+  /* Accent / primary. One green, three states. */
+  --cascivo-color-accent: var(--sh-accent);
+  --cascivo-color-accent-foreground: var(--sh-on-accent);
+  --cascivo-color-accent-hover: var(--sh-accent-hover);
+  --cascivo-color-accent-active: var(--sh-accent-press);
+  --cascivo-color-accent-subtle: var(--sh-accent-soft);
+  --cascivo-color-accent-muted: var(--sh-accent-line);
+  --cascivo-color-accent-text: var(--sh-accent);
+
+  --cascivo-color-primary: var(--sh-accent);
+  --cascivo-color-primary-fg: var(--sh-on-accent);
+  --cascivo-color-primary-hover: var(--sh-accent-hover);
+  --cascivo-color-primary-active: var(--sh-accent-press);
+  --cascivo-color-active-bg: var(--sh-accent-soft);
+
+  /* Status. */
+  --cascivo-color-success: var(--sh-online);
+  --cascivo-color-success-foreground: var(--sh-accent-hover);
+  --cascivo-color-success-subtle: var(--sh-accent-soft);
+  --cascivo-color-warning: var(--sh-caution-icon);
+  --cascivo-color-warning-foreground: var(--sh-caution-ink);
+  --cascivo-color-warning-subtle: var(--sh-caution-bg);
+  --cascivo-color-error: var(--sh-danger);
+  --cascivo-color-destructive: var(--sh-danger);
+  --cascivo-color-destructive-foreground: var(--sh-danger);
+  --cascivo-color-destructive-subtle: var(--sh-caution-bg);
+  --cascivo-color-info: var(--sh-accent);
+  --cascivo-color-info-subtle: var(--sh-accent-soft);
+
+  /* ── Geometry ───────────────────────────────────────────────────────────
+     Every corner, no exceptions — including the status dot and the avatars. */
+  --cascivo-radius-base: 0px;
+  --cascivo-radius-none: 0px;
+  --cascivo-radius-control: 0px;
+  --cascivo-radius-field: 0px;
+  --cascivo-radius-item: 0px;
+  --cascivo-radius-surface: 0px;
+  --cascivo-radius-overlay: 0px;
+  --cascivo-radius-indicator: 0px;
+  --cascivo-radius-full: 0px;
+
+  /* Separation is a 1px border. Shadow tokens resolve to nothing so a stray
+     `box-shadow: var(--cascivo-shadow-md)` cannot reintroduce elevation. */
+  --cascivo-shadow-xs: none;
+  --cascivo-shadow-sm: none;
+  --cascivo-shadow-md: none;
+  --cascivo-shadow-lg: none;
+  --cascivo-shadow-overlay: none;
+
+  /* Focus: a hard 2px accent outline everywhere, never the browser default. */
+  --cascivo-ring-width: 2px;
+  --cascivo-ring-offset: 2px;
+  --cascivo-ring-color: var(--sh-accent);
+  --cascivo-color-focus-ring: var(--sh-accent);
+  --cascivo-focus-ring: 0 0 0 2px var(--sh-accent);
+
+  /* ── Type ───────────────────────────────────────────────────────────────
+     Monospace is reserved for two jobs: values a machine produced, and small
+     uppercase labels. It is no longer the interface font. */
+  --cascivo-font-sans: Archivo, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cascivo-font-display: var(--cascivo-font-sans);
+  --cascivo-font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Roboto Mono", monospace;
+
+  --cascivo-font-normal: 400;
+  --cascivo-font-medium: 500;
+  --cascivo-font-semibold: 600;
+  --cascivo-font-bold: 700;
+  --cascivo-font-black: 800;
+
+  --cascivo-text-xs: 0.8125rem; /* 13px — technical values, metadata */
+  --cascivo-text-sm: 0.875rem; /* 14px */
+  --cascivo-text-base: 0.9375rem; /* 15px — body */
+  --cascivo-text-lg: 1rem; /* 16px — lead paragraphs */
+  --cascivo-text-xl: 1.1875rem; /* 19px — card titles */
+  --cascivo-text-2xl: 1.625rem; /* 26px */
+  --cascivo-text-3xl: clamp(1.875rem, 4.6vw, 3.125rem); /* section heads */
+  --cascivo-text-4xl: clamp(2.25rem, 5.5vw, 3.25rem); /* screen titles */
+  --cascivo-text-display: clamp(2.75rem, 7vw, 5.75rem); /* landing hero only */
+
+  --cascivo-leading-none: 1;
+  --cascivo-leading-tight: 1.1;
+  --cascivo-leading-snug: 1.35;
+  --cascivo-leading-normal: 1.5;
+  --cascivo-leading-relaxed: 1.6;
+
+  --cascivo-tracking-display: -0.04em;
+  --cascivo-tracking-tight: -0.03em;
+  --cascivo-tracking-normal: -0.01em;
+  --cascivo-tracking-label: 0.12em;
+
+  /* ── Spacing ────────────────────────────────────────────────────────────── */
+  --cascivo-space-0: 0px;
+  --cascivo-space-1: 0.25rem;
+  --cascivo-space-2: 0.5rem;
+  --cascivo-space-3: 0.75rem;
+  --cascivo-space-4: 1rem;
+  --cascivo-space-5: 1.25rem;
+  --cascivo-space-6: 1.5rem;
+  --cascivo-space-8: 2rem;
+  --cascivo-space-10: 2.5rem;
+  --cascivo-space-12: 3rem;
+  --cascivo-space-16: 4rem;
+  --cascivo-space-20: 5rem;
+  --cascivo-space-24: 6rem;
+
+  /* Hit targets: 44px on every control, 48px on primary actions. */
+  --cascivo-control-height-sm: 2.25rem;
+  --cascivo-control-height-md: 2.75rem;
+  --cascivo-control-height-lg: 3rem;
+  --cascivo-target-min: 2.75rem;
+
+  /* ── Motion ─────────────────────────────────────────────────────────────
+     None is specified by the design. What exists stays under 150ms and on
+     colour only. */
+  --cascivo-duration-75: 75ms;
+  --cascivo-duration-100: 100ms;
+  --cascivo-duration-150: 150ms;
+  --cascivo-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --cascivo-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --cascivo-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ── Page geometry ──────────────────────────────────────────────────────
+     The landing page is a 1220px block grid with 36px gutters; the app is an
+     860px column with 24px gutters. */
+  --sh-page-width: 1220px;
+  --sh-page-gutter: clamp(1.25rem, 4vw, 2.25rem);
+  --sh-app-width: 860px;
+  --sh-app-gutter: clamp(1rem, 4vw, 1.5rem);
+
+  /* ── Names the pre-redesign stylesheets still read ──────────────────────
+     Kept as aliases so every CSS module retheme in one place rather than being
+     rewritten twice. New code uses the `--cascivo-*` names above. */
+  --cascivo-radius: 0px;
+  /* Before the redesign this name carried paragraph text on the dark ground, so
+     it resolves to the BODY tone, not the metadata one: #837F70 on cream is
+     ~3.3:1, fine for a small uppercase label and not for a paragraph. New code
+     names the two apart (`--cascivo-color-text-subtle` / `-text-muted`). */
+  --cascivo-color-muted: var(--sh-body);
+  --safu-font-sans: var(--cascivo-font-sans);
+  --safu-font-mono: var(--cascivo-font-mono);
+  --ease-out: var(--cascivo-ease-out);
+  --ease-in: var(--cascivo-ease-in);
+  --dur-micro: var(--cascivo-duration-100);
+  --dur-short: var(--cascivo-duration-150);
+  --dur-long: var(--cascivo-duration-150);
 
   --space-3xs: 0.125rem;
   --space-2xs: 0.25rem;
@@ -49,53 +285,34 @@
   --space-lg: 1.5rem;
   --space-xl: 2.5rem;
   --space-2xl: 4rem;
-  --space-3xl: 6rem;
-  --space-4xl: 9rem;
+  --space-3xl: 5.5rem;
+  --space-4xl: 7rem;
 
-  --text-sm: 0.8rem;
-  --text-base: 1rem;
-  --text-md: 1.25rem;
-  --text-lg: 1.5625rem;
-  --text-xl: 1.9531rem;
-  --text-2xl: 2.4414rem;
-  --text-display-s: clamp(2.25rem, 4vw + 1rem, 3.5rem);
-  --text-display: clamp(2.5rem, 5vw + 1rem, 4.5rem);
+  --text-sm: var(--cascivo-text-xs);
+  --text-base: var(--cascivo-text-base);
+  --text-md: var(--cascivo-text-lg);
+  --text-lg: var(--cascivo-text-xl);
+  --text-xl: 1.375rem;
+  --text-2xl: var(--cascivo-text-3xl);
+  --text-display-s: var(--cascivo-text-4xl);
+  --text-display: var(--cascivo-text-display);
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
   overflow-x: clip;
 }
 
 body {
   margin: 0;
-  font-family: var(--safu-font-sans);
-  color: var(--cascivo-color-foreground);
+  font-family: var(--cascivo-font-sans);
+  font-size: var(--cascivo-text-base);
+  line-height: var(--cascivo-leading-relaxed);
+  color: var(--cascivo-color-text);
   background-color: var(--cascivo-color-bg);
   min-height: 100dvh;
   overflow-x: clip;
-}
-
-/* Faint neon grid + radial glows for the cyberpunk backdrop. A fixed pseudo
-   layer (not body `background-attachment: fixed`, which janks/repaints on iOS
-   Safari while scrolling) — pinned to the viewport, behind all content. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-color: var(--cascivo-color-bg);
-  background-image:
-    radial-gradient(1100px 600px at 80% -10%, rgba(255, 43, 214, 0.12), transparent 60%),
-    radial-gradient(900px 600px at 0% 0%, rgba(0, 234, 255, 0.12), transparent 55%),
-    linear-gradient(rgba(0, 234, 255, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 234, 255, 0.045) 1px, transparent 1px);
-  background-size:
-    auto,
-    auto,
-    44px 44px,
-    44px 44px;
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
@@ -113,33 +330,15 @@ body::before {
 }
 
 ::selection {
-  background: var(--cascivo-color-accent);
-  color: #fff;
+  background: var(--sh-mark);
+  color: var(--sh-ink);
 }
 
-/* Cyberpunk wordmark flicker — a faulty neon sign that randomly dims and
-   re-strikes its glow. Cascivo's cyberpunk theme aesthetic, expressed with the
-   `--cascivo-*` tokens. Defined globally so CSS Modules reference it by name. */
-@keyframes safu-flicker {
-  0%,
-  19%,
-  21%,
-  23%,
-  55%,
-  57%,
-  100% {
-    opacity: 1;
-    text-shadow:
-      0 0 0.4rem rgba(0, 234, 255, 0.75),
-      0 0 1.2rem rgba(0, 234, 255, 0.45),
-      0 0 2.4rem rgba(177, 92, 255, 0.35);
-  }
-  20%,
-  22%,
-  56% {
-    opacity: 0.45;
-    text-shadow: none;
-  }
+/* No browser default anywhere — a hard accent rule, offset so it clears the
+   control's own 1px border. */
+:focus-visible {
+  outline: 2px solid var(--sh-accent);
+  outline-offset: 2px;
 }
 
 /* View transitions: a quick cross-fade between routes (router.ts wraps each
@@ -148,7 +347,7 @@ body::before {
 @media (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
-    animation-duration: 200ms;
-    animation-timing-function: var(--ease-out, ease);
+    animation-duration: var(--cascivo-duration-150);
+    animation-timing-function: var(--cascivo-ease-out);
   }
 }

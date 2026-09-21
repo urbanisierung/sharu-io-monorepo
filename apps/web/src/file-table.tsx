@@ -14,6 +14,7 @@ import { fileKind, formatBytes, formatDate } from './format.js';
 import { messages } from './messages.js';
 import { tr as t } from './reading-mode.js';
 import { AddFilesButton } from './ui/add-files-button.js';
+import { EmptyState } from './ui/empty-state.js';
 import { Icon } from './ui/icon.js';
 import { IconButton } from './ui/icon-button.js';
 import { canWebShare, webShare } from './web-share.js';
@@ -122,25 +123,23 @@ export function FileTable({ files, onRestore, onDelete, onShare, onAddFiles }: F
 
   return (
     <section class={styles.files}>
-      <div class={styles.toolbar}>
-        <div class={styles.toolbarMeta}>
-          <h2 class={styles.heading}>{t(messages.filesHeading)}</h2>
-          {all.length > 0 && (
-            <span class={styles.summary}>
-              {t(messages.storageSummary, { count: all.length, size: formatBytes(totalBytes) })}
-            </span>
-          )}
-        </div>
-        {all.length > 0 && onAddFiles && <AddFilesButton onFiles={onAddFiles} />}
-      </div>
-
-      {all.length === 0 ? (
-        <div class={styles.empty}>
-          <Icon name="inbox" class={styles.emptyIcon} />
-          <h3 class={styles.emptyTitle}>{t(messages.emptyTitle)}</h3>
-          <p class={styles.emptyBody}>{t(messages.emptyBody)}</p>
+      {all.length > 0 && (
+        <div class={styles.toolbar}>
+          <span class={styles.summary}>
+            {t(messages.storageSummary, { count: all.length, size: formatBytes(totalBytes) })}
+          </span>
           {onAddFiles && <AddFilesButton onFiles={onAddFiles} />}
         </div>
+      )}
+
+      {all.length === 0 ? (
+        <EmptyState
+          well
+          icon="inbox"
+          title={t(messages.emptyTitle)}
+          description={t(messages.emptyBody)}
+          action={onAddFiles ? <AddFilesButton onFiles={onAddFiles} /> : undefined}
+        />
       ) : (
         <>
           <input

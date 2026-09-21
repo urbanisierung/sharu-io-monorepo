@@ -21,6 +21,13 @@ export type IconName =
   | 'check'
   | 'copy'
   | 'more'
+  | 'wallet'
+  | 'lock'
+  | 'chevronRight'
+  | 'info'
+  | 'swap'
+  | 'key'
+  | 'plug'
   | FileKind;
 
 const GLYPHS: Record<IconName, JSX.Element> = {
@@ -78,10 +85,59 @@ const GLYPHS: Record<IconName, JSX.Element> = {
       <line x1="6" x2="18" y1="6" y2="18" />
     </>
   ),
+  // A desktop beside a handset — the redesign's Devices tab and the mental model
+  // the copy uses ("your phones and computers"), not the chain-link it replaced.
   devices: (
     <>
-      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      <rect x="2" y="4" width="13" height="9" rx="1" />
+      <path d="M6.5 20h5" />
+      <path d="M8.5 16v-3" />
+      <rect x="16" y="9" width="6" height="11" rx="1" />
+    </>
+  ),
+  wallet: (
+    <>
+      <path d="M3 7a2 2 0 0 1 2-2h12v3" />
+      <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2H5a2 2 0 0 1-2-2Z" />
+      <circle cx="17" cy="13.5" r="1" />
+    </>
+  ),
+  lock: (
+    <>
+      <rect x="4" y="10" width="16" height="11" rx="1.5" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </>
+  ),
+  chevronRight: <polyline points="9 5 16 12 9 19" />,
+  info: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5" />
+      <path d="M12 8h.01" />
+    </>
+  ),
+  swap: (
+    <>
+      <polyline points="7 7 4 10 7 13" />
+      <path d="M4 10h16" />
+      <polyline points="17 11 20 14 17 17" />
+      <path d="M20 14H4" />
+    </>
+  ),
+  key: (
+    <>
+      <circle cx="8" cy="8" r="4" />
+      <path d="m10.9 10.9 8.1 8.1" />
+      <path d="m16 16-2 2" />
+      <path d="m19 19 2-2" />
+    </>
+  ),
+  plug: (
+    <>
+      <path d="M9 3v5" />
+      <path d="M15 3v5" />
+      <path d="M6 8h12v3a6 6 0 0 1-6 6 6 6 0 0 1-6-6Z" />
+      <path d="M12 17v4" />
     </>
   ),
   settings: (

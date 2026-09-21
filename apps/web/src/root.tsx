@@ -318,7 +318,12 @@ function RouteContent() {
 export function Root() {
   return (
     <>
-      <Navbar route={route.value} runtime={runtime.value} onLaunch={launch} />
+      <Navbar
+        route={route.value}
+        runtime={runtime.value}
+        onLaunch={launch}
+        onLock={() => void switchWallet()}
+      />
       <RouteContent />
     </>
   );

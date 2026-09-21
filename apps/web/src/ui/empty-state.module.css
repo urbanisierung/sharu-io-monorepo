@@ -1,0 +1,52 @@
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--cascivo-space-3);
+  padding: var(--cascivo-space-10) var(--cascivo-space-6);
+  font-family: var(--cascivo-font-sans);
+  color: var(--cascivo-color-text);
+}
+
+/* The drop target: a dashed well inset in its card, so the surface that accepts
+   a drag is visibly distinct from the card that holds it. */
+.well {
+  padding: 3.5rem var(--cascivo-space-6);
+  background: var(--sh-chrome);
+  border: 1.5px dashed var(--sh-dashed);
+}
+
+/* The accent tile the design puts above every empty state and settings title. */
+.icon {
+  display: grid;
+  place-items: center;
+  width: 3.625rem;
+  height: 3.625rem;
+  margin-bottom: var(--cascivo-space-2);
+  font-size: 1.6875rem;
+  line-height: 1;
+  color: var(--cascivo-color-accent);
+  background: var(--sh-accent-soft);
+  border: 1px solid var(--sh-accent-line);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--cascivo-text-2xl);
+  font-weight: var(--cascivo-font-bold);
+  letter-spacing: var(--cascivo-tracking-normal);
+  line-height: var(--cascivo-leading-snug);
+}
+
+.description {
+  margin: 0;
+  max-width: 44ch;
+  font-size: var(--cascivo-text-base);
+  line-height: var(--cascivo-leading-relaxed);
+  color: var(--cascivo-color-text-subtle);
+}
+
+.action {
+  margin-top: var(--cascivo-space-3);
+}

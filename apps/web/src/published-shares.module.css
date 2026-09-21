@@ -24,8 +24,8 @@
   flex-direction: column;
   gap: 0.35rem;
   padding: 0.6rem;
-  border: 1px solid var(--cascivo-border, #ddd);
-  border-radius: 0.4rem;
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius-surface);
 }
 
 .meta {
@@ -43,7 +43,7 @@
 .date {
   flex: none;
   font-size: 0.8rem;
-  color: var(--cascivo-muted, #666);
+  color: var(--cascivo-color-text-muted);
 }
 
 .row {
@@ -59,7 +59,7 @@
   padding: 0.3rem 0.4rem;
   font-size: 0.85em;
   color: inherit;
-  background: var(--cascivo-surface, #fff);
-  border: 1px solid var(--cascivo-border, #ccc);
-  border-radius: 0.3rem;
+  background: var(--cascivo-color-surface);
+  border: 1px solid var(--cascivo-color-border);
+  border-radius: var(--cascivo-radius-field);
 }

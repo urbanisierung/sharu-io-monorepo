@@ -5,10 +5,10 @@
   width: min(32rem, 90vw);
   padding: 2rem;
   text-align: center;
-  border: 2px dashed var(--cascivo-color-border, #d4d4d8);
+  border: 1.5px dashed var(--sh-dashed);
   border-radius: var(--cascivo-radius, 0.5rem);
-  background: var(--cascivo-color-surface, #f4f4f5);
-  color: var(--cascivo-color-foreground, #18181b);
+  background: var(--sh-chrome);
+  color: var(--cascivo-color-text);
   transition:
     border-color var(--dur-micro) var(--ease-out),
     background-color var(--dur-micro) var(--ease-out);
@@ -23,21 +23,21 @@
   width: auto;
   min-height: 0;
   font-weight: 600;
-  background: color-mix(in srgb, var(--cascivo-color-surface, #f4f4f5) 78%, transparent);
+  background: color-mix(in srgb, var(--sh-chrome) 88%, transparent);
   backdrop-filter: blur(3px);
 }
 
 .valid {
-  border-color: var(--cascivo-color-primary, #4f46e5);
-  background: color-mix(in srgb, var(--cascivo-color-primary, #4f46e5) 12%, transparent);
+  border-color: var(--sh-accent-line);
+  background: var(--sh-accent-soft);
 }
 
 .invalid {
-  border-color: #b91c1c;
-  background: color-mix(in srgb, #b91c1c 10%, transparent);
+  border-color: var(--sh-caution-line);
+  background: var(--sh-caution-bg);
 }
 
 .error {
-  border-color: #b91c1c;
-  color: #b91c1c;
+  border-color: var(--cascivo-color-destructive);
+  color: var(--cascivo-color-destructive);
 }
